@@ -1,5 +1,10 @@
 #include <unistd.h>
 
+/* open() */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "ffec.h"
 
 #define SRC_DATA_LEN 64123456	/* 64 MB */
@@ -8,25 +13,30 @@ int main()
 {
 	int err_cnt = 0;
 	/* all pointers here */
-	void *src=NULL, *src_compare=NULL, *repair=NULL, *scratch=NULL, *repair_dec=NULL;
+	void *src=NULL, *src_compare=NULL, *repair=NULL, *scratch=NULL, *rcv_all=NULL;
 
 	/* compute needed sizes */
 	const struct ffec_params fp = {	.fec_ratio = 1.1,	/* 10% */
 					.sym_len = 1280 };	/* largest for a 1500 MTU */
-	size_t src_sz, repair_sz, scratch_sz;
+	struct ffec_sizes sizes;
 	Z_die_if(
-		ffec_calc_lengths(&fp, SRC_DATA_LEN, &src_sz, &repair_sz, &scratch_sz, decode)
+		ffec_calc_lengths(&fp, SRC_DATA_LEN, &sizes, decode)
 		, "");
 
-	/* allocate source memory */
-	src = malloc(src_sz);
-	src_compare = malloc(src_sz);
+	/* allocate source memory and init */
+	src = malloc(sizes.source_sz);
+	src_compare = malloc(sizes.source_sz);
 	Z_die_if(!src || !src_compare, "malloc()");
-	memcpy(src_compare, src, src_sz);
-	Z_die_if(memcmp(src, src_compare, src_sz), "something basic is broken");
+	int fd = open("/dev/urandom", O_RDONLY);
+	size_t init = 0;
+	while (init < sizes.source_sz)
+		init += read(fd, src + init, sizes.source_sz - init);
+	memcpy(src_compare, src, sizes.source_sz);
+	Z_die_if(memcmp(src, src_compare, sizes.source_sz), "something basic is broken");
+
 	/* other memory regions */
-	repair = malloc(repair_sz);
-	scratch = malloc(scratch_sz);
+	repair = malloc(sizes.parity_sz);
+	scratch = malloc(sizes.scratch_sz);
 	Z_die_if(!repair || !scratch, "malloc()");
 
 	/* fec_instance on the stack; initialize it */
@@ -38,20 +48,22 @@ int main()
 	Z_die_if(
 		ffec_encode(&fp, &fi_enc)
 		, "");
-	Z_die_if(memcmp(src, src_compare, src_sz), "encoding must not alter the data");
+	Z_die_if(memcmp(src, src_compare, sizes.source_sz), "encoding must not alter the data");
 
-	repair_dec = malloc(repair_sz);
-	Z_die_if(!repair_dec, "malloc()");
+	/* initialize decoder as a contiguous region */
+	rcv_all = malloc(sizes.source_sz + sizes.parity_sz + sizes.scratch_sz);
+	Z_die_if(!rcv_all, "malloc()");
+	memset(rcv_all, 0xFE, sizes.source_sz); /* should have no dependency on existing memory contents */
 	/* New instance for decoding.
 	Note that 'seed' must be the same between the two.
 	*/
 	struct ffec_instance fi_dec;
-	memset(src, 0xFE, src_sz); /* verify that FEC is overwriting */
 	Z_die_if(
-		ffec_init_instance(&fp, &fi_dec, SRC_DATA_LEN, src_compare, repair_dec, scratch, decode, fi_enc.seed)
+		ffec_init_instance_contiguous(&fp, &fi_dec, SRC_DATA_LEN, rcv_all, decode, fi_enc.seed)
 		, "");
 
 	/* run decode */
+#if 0
 	unsigned int i=0;
 	long rand;
 	struct drand48_data rand_d;
@@ -65,8 +77,20 @@ int main()
 				ffec_get_sym(&fp, &fi_enc, rand),
 				rand)
 	);
+#else
+	unsigned int i;
+	for (i=0; i < fi_enc.cnt.cols; i++) {
+		if (!ffec_decode_sym(&fp, &fi_dec, 
+				ffec_get_sym(&fp, &fi_enc, i),
+				i))
+			break;
+	}
+	Z_die_if(fi_dec.cnt.k_decoded != fi_dec.cnt.k, 
+		"k_decoded %d != k %d", 
+		fi_dec.cnt.k_decoded, fi_dec.cnt.k);
+#endif
 
-	Z_die_if(memcmp(src, src_compare, src_sz), "");
+	Z_die_if(memcmp(src, rcv_all, SRC_DATA_LEN), "");
 	Z_inf(0, "%d iterations on random decode, from %d source symbols",
 		i, fi_enc.cnt.cols);
 
@@ -79,8 +103,8 @@ out:
 		free(repair);
 	if (scratch)
 		free(scratch);
-	if (repair_dec)
-		free(repair_dec);
+	if (rcv_all)
+		free(rcv_all);
 
 	return err_cnt;
 }

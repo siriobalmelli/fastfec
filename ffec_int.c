@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#if 0
 /* YMM intrinsics, for XOR */
 #include "immintrin.h"
 
@@ -35,6 +36,23 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 		dst_blk[7] = _mm256_xor_si256(src_blk[7], dst_blk[7]);
 	}
 }
+#else
+/*	ffec_xor_symbols()
+xor 2 symbols. stand-in for the above function using YMM registers.
+*/
+void __attribute__((hot)) __attribute__((optimize("O3"))) 
+		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
+{
+	/* turn "sym_len" into "word_count" 
+		without pushing another variable onto the stack.
+	uint64_t word_count = sym_len >> 3; // uint64_t is 8 bytes
+		 */
+	sym_len = sym_len >> 3;
+	uint64_t i = 0;
+	for (; i < sym_len; i++)
+		((uint64_t*)to)[i] ^= ((uint64_t*)from)[i];
+}
+#endif
 
 /*	div_ceil(a, b)
 Integer "ceiling" operation.
@@ -135,7 +153,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	Distribute FFEC_N1_DEGREE 1's in the column,
 		where the first 2 ones are ALWAYS in a staircase pattern.
 	*/
-	uint32_t triangle_space;
+	int64_t triangle_space;
 	for (i=0; i < fi->cnt.p; i++) {
 		/* get first cell in parity column */
 		cell = ffec_get_col_first(fi->cells, fi->cnt.k + i);
@@ -186,3 +204,20 @@ regen:
 	}
 }
 
+/*	ffec_calc_lengths_int()
+Calculates lengths for callers who already have symbol counts.
+Internal function, so no sanity checking performed.
+*/
+void		ffec_calc_lengths_int(const struct ffec_params	*fp,
+				size_t				src_len,
+				struct ffec_sizes		*out,
+				enum ffec_direction		dir,
+				struct ffec_counts		*fc)
+{
+		out->source_sz = fc->k * fp->sym_len;
+		out->parity_sz = fc->p * fp->sym_len;
+		out->scratch_sz =  ffec_len_cells(fc) + ffec_len_rows(fc);
+		/* if decoding, scratch must have space for psums */
+		if (dir == decode)
+			out->scratch_sz += fp->sym_len * fc->rows;
+}

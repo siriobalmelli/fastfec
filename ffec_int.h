@@ -11,9 +11,11 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 					struct ffec_counts	*fc);
 void		ffec_init_matrix	(struct ffec_instance	*fi);
 
-
-/* ffec_matrix.c */
-
+void		ffec_calc_lengths_int(const struct ffec_params	*fp,
+				size_t				src_len,
+				struct ffec_sizes		*out,
+				enum ffec_direction		dir,
+				struct ffec_counts		*fc);
 
 /*	ffec_get_col_first()
 Gets the first cell for 'col'.

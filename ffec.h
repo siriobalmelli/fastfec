@@ -75,6 +75,13 @@ struct ffec_params {
 
 };
 
+/* organizes necessary memory region sizes for the caller */
+struct ffec_sizes {
+	size_t		source_sz;
+	size_t		parity_sz;
+	size_t		scratch_sz;
+};
+
 /* symbol counts for a fec block */
 struct ffec_counts {
 	uint32_t			k;	/* number source symbols */
@@ -115,10 +122,9 @@ struct ffec_instance {
 /* public functions */
 int		ffec_calc_lengths(const struct ffec_params	*fp,
 				size_t				src_len,
-				size_t				*src_sz_max,
-				size_t				*par_sz_max,
-				size_t				*scratch_sz,
+				struct ffec_sizes		*out,
 				enum ffec_direction		dir);
+
 int		ffec_init_instance(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				size_t				src_len,
@@ -127,6 +133,22 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 				void				*scratch,
 				enum ffec_direction		dir,
 				uint32_t			seed);
+/*	ffec_init_instance_contiguous()
+Caller crosses his heart and swears that 'memory':
+	- begins with all the source symbols
+	- has enough space for repair symbols and the scratch region
+*/
+Z_INL_FORCE int	ffec_init_instance_contiguous(
+				const struct ffec_params	*fp,
+				struct ffec_instance		*fi,
+				size_t				src_len,
+				void				*memory,
+				enum ffec_direction		dir,
+				uint32_t			seed)
+{
+	return ffec_init_instance(fp, fi, src_len, memory, NULL, NULL, dir, seed);
+}
+
 uint32_t	ffec_encode	(const struct ffec_params	*fp, 
 				struct ffec_instance		*fi);
 uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,

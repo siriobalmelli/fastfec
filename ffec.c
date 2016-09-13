@@ -14,9 +14,7 @@ Calculate the needed memory lengths which the caller must
 */
 int		ffec_calc_lengths(const struct ffec_params	*fp,
 				size_t				src_len,
-				size_t				*src_sz_max,
-				size_t				*par_sz_max,
-				size_t				*scratch_sz,
+				struct ffec_sizes		*out,
 				enum ffec_direction		dir)
 {
 	int err_cnt = 0;
@@ -33,16 +31,8 @@ int		ffec_calc_lengths(const struct ffec_params	*fp,
 		ffec_calc_sym_counts(fp, src_len, &fc)
 		, "");
 
-	if (src_sz_max)
-		src_sz_max[0] = fc.k * fp->sym_len;
-	if (par_sz_max)
-		par_sz_max[0] = fc.p * fp->sym_len;
-	if (scratch_sz) {
-		scratch_sz[0] =  ffec_len_cells(&fc) + ffec_len_rows(&fc);
-		/* if decoding, scratch must have space for psums */
-		if (dir == decode)
-			scratch_sz[0] += fp->sym_len * fc.rows;
-	}
+	/* use counts to calc lengths */
+	ffec_calc_lengths_int(fp, src_len, out, dir, &fc);
 
 out:
 	return err_cnt;
@@ -64,33 +54,45 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 				uint32_t			seed)
 {
 	int err_cnt = 0;
-	Z_die_if(!fp || !fi || !src_len || !source || !parity || !scratch, "args");
+	Z_die_if(!fp || !fi || !src_len || !source, "args");
 
 	/* calculate symbol sizes */
 	Z_die_if(
 		ffec_calc_sym_counts(fp, src_len, &fi->cnt)
 		, "");
+	/* calculate region sizes */
+	struct ffec_sizes sz;
+	ffec_calc_lengths_int(fp, src_len, &sz, dir, &fi->cnt);
 
 	/* assign region pointers */
 	fi->source = source;
-	fi->parity = parity;
-	fi->scratch = scratch;
+	if (parity)
+		fi->parity = parity;
+	else
+		fi->parity = fi->source + sz.source_sz;
+	if (scratch)
+		fi->scratch = scratch;
+	else
+		fi->scratch = fi->parity + sz.parity_sz;
 
 	/* assign pointers into scratch region */
-	size_t scratch_size=0;
 	/* note: fi->cells is a union with fi->scratch : no need to assign it */
-	scratch_size += ffec_len_cells(&fi->cnt);
-	fi->rows = fi->scratch + scratch_size;
-	scratch_size += ffec_len_rows(&fi->cnt);
+	fi->rows = fi->scratch + ffec_len_cells(&fi->cnt);
 	/* psums only when decoding */
-	if (dir == decode) {
-		fi->psums = fi->scratch + scratch_size;
-		scratch_size += fi->cnt.rows * fp->sym_len;
-	} else {
+	if (dir == decode)
+		fi->psums = ((void*)fi->rows) + ffec_len_rows(&fi->cnt);
+	else
 		fi->psums = NULL;
+	/* zero the scratch region */
+	memset(fi->scratch, 0x0, sz.scratch_sz);
+	/* If encoding, the parity region will be zeroed by the encoder
+		function.
+	Otherwise, zero it now.
+	*/
+	if (dir == decode) {
+		memset(fi->parity, 0x0, sz.parity_sz);
+		memset(fi->psums, 0x0, fi->cnt.rows * fp->sym_len);
 	}
-	/* zero the whole chunk */
-	memset(fi->scratch, 0x0, scratch_size);
 
 
 	/* if no seed proposed, fish from /dev/urandom */

@@ -6,6 +6,7 @@ target_link_libraries(ffec -lm)
 link_libraries(ffec)
 
 add_executable(ffec_test.exe ffec_test.c)
+
 add_test(NAME ffec_test COMMAND ffec_test.exe)
 set_tests_properties(ffec_test
 	PROPERTIES	FAIL_REGULAR_EXPRESSION "err_cnt == [^0]"
