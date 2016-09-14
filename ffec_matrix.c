@@ -5,7 +5,7 @@
 #ifdef Z_BLK_LVL
 #undef Z_BLK_LVL
 #endif
-#define Z_BLK_LVL 2
+#define Z_BLK_LVL 0
 /* debug levels:
 	2	:	matrix operations
 */

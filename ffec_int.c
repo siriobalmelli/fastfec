@@ -5,10 +5,10 @@
 #ifdef Z_BLK_LVL
 #undef Z_BLK_LVL
 #endif
-#define Z_BLK_LVL 3
+#define Z_BLK_LVL 0
 /* debug levels:
-	2	:	matrix ops
-	3	:	cell values
+	2	:	
+	3	:	column swaps
 */
 
 #if 0
@@ -147,7 +147,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	long rand48;
 	struct ffec_cell *cell_b;
 	unsigned int j;
-	for (i=0; i < fi->cnt.k * 2; i++) {
+	for (i=0; i < fi->cnt.k * 4; i++) {
 		/* get 2 columns */
 		lrand48_r(&fi->rand_buf, &rand48);
 		cell = ffec_get_col_first(fi->cells, rand48 % fi->cnt.k);
@@ -156,7 +156,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 
 		/* swap all rows with each other */
 		for (j=0; j < FFEC_N1_DEGREE; j++) {
-			Z_inf(2, "r%d <-> r%d", cell[j].row_id, cell_b[j].row_id);
+			Z_inf(3, "r%d <-> r%d", cell[j].row_id, cell_b[j].row_id);
 			/* use rand48 as a scratchpad */
 			rand48 = cell[j].row_id;
 			cell[j].row_id = cell_b[j].row_id;
@@ -170,7 +170,6 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	for (i=0; i < (fi->cnt.k * FFEC_N1_DEGREE); i++) {
 		cell = &fi->cells[i];
 		cell->col_id = i / FFEC_N1_DEGREE;
-		Z_inf(3, "cells[%d](r%d,c%d)", i, cell->row_id, cell->col_id);
 
 		row = &fi->rows[cell->row_id];
 		ffec_matrix_row_link(row, cell);
@@ -209,6 +208,22 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 			row = &fi->rows[cell->row_id];
 			ffec_matrix_row_link(row, cell);		
 		}
+
+		/* DOUBLE staircase:
+			unless there IS no row below.
+		TODO: TEMP (and broken if N1_DEGREE != 3)
+		*/
+		if ( (fi->cnt.p - i -2) > 0) {
+			/* For ease of reference.
+			This is now the 2nd cell in the column.
+			*/
+			cell++;
+			/* set cell row/col, add to matrix */
+			cell->row_id = i+2;
+			cell->col_id = fi->cnt.k + i;
+			row = &fi->rows[cell->row_id];
+			ffec_matrix_row_link(row, cell);		
+		}
 	}
 }
 
@@ -228,6 +243,17 @@ void		ffec_calc_lengths_int(const struct ffec_params	*fp,
 		/* if decoding, scratch must have space for psums */
 		if (dir == decode)
 			out->scratch_sz += fp->sym_len * fc->rows;
+}
+
+/*	ffec_cell_memcmp()
+Satisfies our need to know: "has this cell already been used (decoded)?"
+
+returns 0 if cell is null.
+*/
+int		ffec_cell_memcmp(struct ffec_cell *cell)
+{
+	static const struct ffec_cell zero = { 0, 0, NULL, NULL };
+	return memcmp(&zero, cell, sizeof(zero));
 }
 
 #undef Z_BLK_LVL

@@ -203,7 +203,7 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 		or all source symbols already decoded,
 		bail.
 	*/
-	if (!cell[0].row_id || fi->cnt.k_decoded == fi->cnt.k)
+	if (!ffec_cell_memcmp(cell) || fi->cnt.k_decoded == fi->cnt.k)
 		goto out;
 
 	/* pull symbol onto stack */
@@ -224,17 +224,22 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 	/* get all rows */
 	unsigned int j;
 	struct ffec_row *n_rows[FFEC_N1_DEGREE];
+	memset(&n_rows, 0x0, sizeof(n_rows));
 	for (j=0; j < FFEC_N1_DEGREE; j++) {
 		/* some cells have less 1's, like the bottom
 			right of the pyramid.
 		*/
-		if (!cell[j].row_id)
+		if (!ffec_cell_memcmp(&cell[j]))
 			break;
 		n_rows[j] = &fi->rows[cell[j].row_id];
-		/* XOR into psum */
-		ffec_xor_into_symbol(	stack_sym, 
+		/* XOR into psum, unless we don't have to because we're done
+			decoding.
+		*/
+		if (n_rows[j]->cnt > 1) {
+			ffec_xor_into_symbol(stack_sym, 
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
+		}
 		/* remove from row */
 		ffec_matrix_row_unlink(n_rows[j], &cell[j]);
 	}
