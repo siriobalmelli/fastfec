@@ -175,7 +175,7 @@ int main()
 	Z_inf(0, "decoded with i=%d, n=%d; inefficiency=%lf; loss tolerance=%lf%%",
 		i, fi_dec.cnt.n, 
 		(double)i / (double)fi_dec.cnt.k,
-		(double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n * 100);
+		((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100);
 	Z_inf(0, "source size=%lfMB, bitrates: enc=%lfMbps, dec=%lfMbps",
 		(double)fs.source_sz / (1024 * 1024),
 		(double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC) / (1024 * 1024) * 8,
