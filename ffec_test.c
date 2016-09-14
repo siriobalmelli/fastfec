@@ -9,9 +9,9 @@
 
 #define SRC_DATA_LEN 64123456	/* 64 MB */
 
-int main()
+
+void unused()
 {
-	int err_cnt = 0;
 	/* all pointers here */
 	void *src=NULL, *src_compare=NULL, *repair=NULL, *scratch=NULL, *rcv_all=NULL;
 
@@ -105,6 +105,27 @@ out:
 		free(scratch);
 	if (rcv_all)
 		free(rcv_all);
+
+}
+
+int main()
+{
+	int err_cnt = 0;
+
+	struct ffec_params fp = {
+		.fec_ratio = 1.4, /* 40% FEC */
+		.sym_len = 1280
+	};
+
+	const unsigned int n=5;
+
+	/* 10 source symbols should equal 4 repair symbols */
+	struct ffec_sizes fs;
+	ffec_calc_lengths(&fp, fp.sym_len * n, &fs, encode);
+
+	void *mem = alloca(fs.source_sz + fs.parity_sz + fs.scratch_sz);
+	struct ffec_instance fi;
+	ffec_init_instance_contiguous(&fp, &fi, fp.sym_len * n, mem, encode, 0xaf);
 
 	return err_cnt;
 }

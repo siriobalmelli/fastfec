@@ -23,7 +23,14 @@ The following FFEC_N1_DEGREE cells will be immediately following in memory.
 */
 Z_INL_FORCE struct ffec_cell	*ffec_get_col_first(struct ffec_cell *cells, uint32_t col)
 {
+#if 1
+	struct ffec_cell *ret = &cells[col * FFEC_N1_DEGREE];
+	Z_inf(0, "col %d => cell(r%d, c%d)\t@ 0x%lx", 
+		col, ret->row_id, ret->col_id, (uint64_t)ret);
+	return ret;
+#else
 	return &cells[col * FFEC_N1_DEGREE];
+#endif
 }
 
 

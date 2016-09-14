@@ -63,6 +63,10 @@ TODO:
 						>256MB in size.
 					*/
 
+/* Minimum number of symbols for proper operation. */
+#define FFEC_MIN_K 7
+#define	FFEC_MIN_P 3
+
 
 enum ffec_direction {
 	encode,

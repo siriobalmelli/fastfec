@@ -8,6 +8,14 @@
 
 #include "ffec_int.h"
 
+#ifdef Z_BLK_LVL
+#undef Z_BLK_LVL
+#endif
+#define Z_BLK_LVL 2
+/* debug levels:
+	2	:	?
+*/
+
 /*	ffec_calc_lengths()
 Calculate the needed memory lengths which the caller must
 	allocate so FEC can operate.
@@ -83,8 +91,11 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 		fi->psums = ((void*)fi->rows) + ffec_len_rows(&fi->cnt);
 	else
 		fi->psums = NULL;
-	/* zero the scratch region */
+	/* zero the scratch region, set row IDs */
 	memset(fi->scratch, 0x0, sz.scratch_sz);
+	unsigned int i;
+	for (i=0; i < fi->cnt.rows; i++)
+		fi->rows[i].row_id = i;
 	/* If encoding, the parity region will be zeroed by the encoder
 		function.
 	Otherwise, zero it now.
@@ -114,6 +125,10 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 	lrand48_r() will be used to generate random numbers between 0 - 2^31.
 	*/
 	srand48_r(seed, &fi->rand_buf);
+
+	/* print values for debug */
+	Z_inf(2, "seed=%d\tcnt: .k=%d .n=%d .p=%d",
+		fi->seed, fi->cnt.k, fi->cnt.n, fi->cnt.p);
 
 	/* init the matrix */
 	ffec_init_matrix(fi);
@@ -245,3 +260,6 @@ out:
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;
 }
+
+#undef Z_BLK_LVL
+#define Z_BLK_LVL 0

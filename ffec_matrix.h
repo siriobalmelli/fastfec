@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "zed_dbg.h"
+
 /* parity matrix
 Note that because all cells are stored contiguously in column order,
 	columns are "implicit".
@@ -20,6 +22,7 @@ struct ffec_cell {
 }__attribute__ ((packed));
 
 struct ffec_row {
+	uint32_t		row_id;	/* TODO: only used for debugging. #define it away, perhaps? */
 	uint32_t		cnt;	/* nr of linked cells */
 	struct ffec_cell	*first;
 	struct ffec_cell	*last;	/* for quick navigation when adding an item */

@@ -2,6 +2,15 @@
 
 #include <math.h>
 
+#ifdef Z_BLK_LVL
+#undef Z_BLK_LVL
+#endif
+#define Z_BLK_LVL 3
+/* debug levels:
+	2	:	matrix ops
+	3	:	cell values
+*/
+
 #if 0
 /* YMM intrinsics, for XOR */
 #include "immintrin.h"
@@ -84,10 +93,21 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 	Z_warn_if(src_len > FFEC_SRC_EXCESS,
 		"src_len %ld > recommended limit", src_len);
 
-	/* TODO: figure out the MINIMUM sizes here */
 	fc->k = div_ceil(src_len, fp->sym_len);
+	if (fc->k < FFEC_MIN_K) {
+		Z_wrn("k=%d < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
+			fc->k, FFEC_MIN_K, src_len, fp->sym_len);
+		fc->k = FFEC_MIN_K;
+	}
+
 	fc->n = ceil(fc->k * fp->fec_ratio);
+
 	fc->p = fc->n - fc->k;
+	if (fc->p < FFEC_MIN_P) {
+		Z_wrn("p=%d < FFEC_MIN_P=%d;	k=%d, fec_ratio=%lf",
+			fc->p, FFEC_MIN_P, fc->k, fp->fec_ratio);
+		fc->k = FFEC_MIN_K;
+	}
 
 	fc->k_decoded = 0; /* because common sense */
 out:
@@ -110,10 +130,12 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		b.) RANDOMLY SWAP CELLS between each other,
 		c.) link each cell to its row (assigned in a).
 	*/
-	unsigned int i, j;
+	unsigned int i;
 	struct ffec_cell *cell;
+	struct ffec_row *row;
 	for (i=0; i < fi->cnt.k * FFEC_N1_DEGREE; i++)
 		fi->cells[i].row_id = i % fi->cnt.rows;
+
 	/* Swap just the IDs, since everything else in the matrix is 0s anyhow.
 	Notice that we swap WHOLE COLUMNS. 
 	This is to preclude multiple cells in the same column being part of the
@@ -124,14 +146,17 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	*/
 	long rand48;
 	struct ffec_cell *cell_b;
-	for (i=0; i < fi->cnt.k; i++) {
+	unsigned int j;
+	for (i=0; i < fi->cnt.k * 2; i++) {
 		/* get 2 columns */
 		lrand48_r(&fi->rand_buf, &rand48);
 		cell = ffec_get_col_first(fi->cells, rand48 % fi->cnt.k);
 		lrand48_r(&fi->rand_buf, &rand48);
 		cell_b = ffec_get_col_first(fi->cells, rand48 % fi->cnt.k);
+
 		/* swap all rows with each other */
 		for (j=0; j < FFEC_N1_DEGREE; j++) {
+			Z_inf(2, "r%d <-> r%d", cell[j].row_id, cell_b[j].row_id);
 			/* use rand48 as a scratchpad */
 			rand48 = cell[j].row_id;
 			cell[j].row_id = cell_b[j].row_id;
@@ -142,10 +167,13 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		for their respective row.
 	Also set their column IDs, which is necessary when decoding.
 	*/
-	for (i=0; i < fi->cnt.k * FFEC_N1_DEGREE; i++) {
+	for (i=0; i < (fi->cnt.k * FFEC_N1_DEGREE); i++) {
 		cell = &fi->cells[i];
 		cell->col_id = i / FFEC_N1_DEGREE;
-		ffec_matrix_row_link(&fi->rows[cell->row_id], cell);
+		Z_inf(3, "cells[%d](r%d,c%d)", i, cell->row_id, cell->col_id);
+
+		row = &fi->rows[cell->row_id];
+		ffec_matrix_row_link(row, cell);
 	}
 
 
@@ -153,7 +181,6 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	Distribute FFEC_N1_DEGREE 1's in the column,
 		where the first 2 ones are ALWAYS in a staircase pattern.
 	*/
-	int64_t triangle_space;
 	for (i=0; i < fi->cnt.p; i++) {
 		/* get first cell in parity column */
 		cell = ffec_get_col_first(fi->cells, fi->cnt.k + i);
@@ -164,42 +191,23 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		AKA: this is the "edge" of the triangle.
 		*/
 		cell->row_id = i;
-		ffec_matrix_row_link(&fi->rows[i], cell);
+		cell->col_id = fi->cnt.k + i;
+		row = &fi->rows[i];
+		ffec_matrix_row_link(row, cell);
 
 		/* FEC Staircase: next 1 goes one row BELOW,
 			unless there IS no row below.
-		Use 'triangle_space' to track availability of space
-			"under the triangle".
 		*/
-		triangle_space = fi->cnt.p - i -1;
-		if (triangle_space--) {
-			cell[1].row_id = i+1;
-			ffec_matrix_row_link(&fi->rows[i+1], &cell[1]);		
-		}
-
-		/* FEC Staircase: any next 1(s) go only on rows BELOW the current */
-		unsigned int k;
-		struct ffec_row *row;
-		for (j=2; 
-			j < FFEC_N1_DEGREE && triangle_space > 0; 
-			j++, triangle_space--) 
-		{
-			/* Pick a random row UNDER the staircase which can
-				be added to the equation row.
-			(brute-force) verify that it hasn't already been picked
-				for this column.
+		if ( (fi->cnt.p - i -1) > 0) {
+			/* For ease of reference.
+			This is now the 2nd cell in the column.
 			*/
-regen:
-			lrand48_r(&fi->rand_buf, &rand48);
-			cell[j].row_id = (rand48 % triangle_space) + i + j;
-			for (k=2; k < j; k++) {
-				if (cell[j].row_id == cell[k].row_id)
-					goto regen;
-			}
-			
-			/* add to row */
-			row = &fi->rows[cell[j].row_id];
-			ffec_matrix_row_link(row, &cell[j]);
+			cell++;
+			/* set cell row/col, add to matrix */
+			cell->row_id = i+1;
+			cell->col_id = fi->cnt.k + i;
+			row = &fi->rows[cell->row_id];
+			ffec_matrix_row_link(row, cell);		
 		}
 	}
 }
@@ -221,3 +229,6 @@ void		ffec_calc_lengths_int(const struct ffec_params	*fp,
 		if (dir == decode)
 			out->scratch_sz += fp->sym_len * fc->rows;
 }
+
+#undef Z_BLK_LVL
+#define Z_BLK_LVL 0
