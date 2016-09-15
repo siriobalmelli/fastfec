@@ -22,7 +22,9 @@ struct ffec_cell {
 }__attribute__ ((packed));
 
 struct ffec_row {
+#ifdef DEBUG
 	uint32_t		row_id;	/* TODO: only used for debugging. #define it away, perhaps? */
+#endif 
 	uint32_t		cnt;	/* nr of linked cells */
 	struct ffec_cell	*first;
 	struct ffec_cell	*last;	/* for quick navigation when adding an item */

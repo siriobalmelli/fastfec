@@ -93,9 +93,11 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 		fi->psums = NULL;
 	/* zero the scratch region, set row IDs */
 	memset(fi->scratch, 0x0, sz.scratch_sz);
+#ifdef DEBUG
 	unsigned int i;
 	for (i=0; i < fi->cnt.rows; i++)
 		fi->rows[i].row_id = i;
+#endif
 	/* If encoding, the parity region will be zeroed by the encoder
 		function.
 	Otherwise, zero it now.

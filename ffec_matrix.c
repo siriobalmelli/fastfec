@@ -14,14 +14,27 @@
 Z_INL_FORCE void		ffec_matrix_row_prn(struct ffec_row	*row)
 {
 	if (!row->first && !row->last)
+#ifdef DEBUG
 		Z_inf(2, "r[%02d].cnt=%d\t.first(NULL)\t.last(NULL)", 
 			row->row_id, row->cnt);
+#else
+		Z_inf(2, "row.cnt=%d\t.first(NULL)\t.last(NULL)",
+				row->cnt);
+#endif
 	else
+#ifdef DEBUG
 		Z_inf(2, "r[%02d].cnt=%d\t.first(r%02d,c%02d)\t.last(r%d,c%d) @ 0x%lx", 
 			row->row_id, row->cnt, 
 			row->first->row_id, row->first->col_id,
 			row->last->row_id, row->last->col_id,
 			(uint64_t)row->last);
+#else
+		Z_inf(2, "row.cnt=%d\t.first(r%02d,c%02d)\t.last(r%d,c%d) @ 0x%lx", 	
+			row->cnt, 
+			row->first->row_id, row->first->col_id,
+			row->last->row_id, row->last->col_id,
+			(uint64_t)row->last);
+#endif
 }
 
 /*	ffec_matrix_row_link()
@@ -35,10 +48,11 @@ row:	first	->	s5:	next	->	s2
 void		ffec_matrix_row_link(struct ffec_row		*row, 
 					struct ffec_cell	*new_cell)
 {
+#ifdef DEBUG
 	/* debug print: before */
 	Z_inf(2, "r[%02d].cnt=%d\t++cell(r%02d,c%02d)", 
 		row->row_id, row->cnt, new_cell->row_id, new_cell->col_id);
-
+#endif
 	row->cnt++;
 
 	if (!row->first) {
@@ -62,10 +76,11 @@ Counts in 'row' are updated.
 void		ffec_matrix_row_unlink(struct ffec_row		*row, 
 					struct ffec_cell	*cell)
 {
+#ifdef DEBUG
 	/* debug print: before */
 	Z_inf(2, "r[%02d].cnt=%d\t--cell(r%02d,c%02d)", 
 		row->row_id, row->cnt, cell->row_id, cell->col_id);
-
+#endif
 	row->cnt--;
 
 	/* Look before us 
