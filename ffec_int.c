@@ -56,7 +56,7 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 		without pushing another variable onto the stack.
 	uint64_t word_count = sym_len >> 3; // uint64_t is 8 bytes
 		 */
-	sym_len = sym_len >> 3;
+	sym_len = sym_len / FFEC_SYM_ALIGN;
 	uint64_t i = 0;
 	for (; i < sym_len; i++)
 		((uint64_t*)to)[i] ^= ((uint64_t*)from)[i];
