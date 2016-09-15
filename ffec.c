@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include <alloca.h>
+
 #include "ffec_int.h"
 
 #ifdef Z_BLK_LVL
@@ -59,7 +61,8 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 				void				*parity,
 				void				*scratch,
 				enum ffec_direction		dir,
-				uint32_t			seed)
+				uint64_t			seed1,
+				uint64_t			seed2)
 {
 	int err_cnt = 0;
 	Z_die_if(!fp || !fi || !src_len || !source, "args");
@@ -109,7 +112,7 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 
 
 	/* if no seed proposed, fish from /dev/urandom */
-	if (!seed) {
+	if (!seed1 || !seed2) {
 #if 0
 	/* won't work until we update Ubuntu versions and move away from EGLIBC :O */
 		while (syscall(SYS_getrandom, &seed, sizeof(seed), 0))
@@ -117,20 +120,22 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 #else
 		int fd = 0;
 		Z_die_if((fd = open("/dev/urandom", O_NOATIME | O_RDONLY)) < 1, "");
-		while (read(fd, &seed, sizeof(seed)) != sizeof(seed))
+		while (read(fd, &fi->seeds, sizeof(fi->seeds)) != sizeof(fi->seeds))
 			usleep(100000);
 		close(fd);
 #endif
+	} else {
+		fi->seeds[0] = seed1;
+		fi->seeds[1] = seed2;
 	}
-	fi->seed = seed;
-	/* seed rand48
+	/* seed random number generator
 	lrand48_r() will be used to generate random numbers between 0 - 2^31.
 	*/
-	srand48_r(seed, &fi->rand_buf);
+	ffec_rand_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
 
 	/* print values for debug */
-	Z_inf(2, "seed=%d\tcnt: .k=%d .n=%d .p=%d",
-		fi->seed, fi->cnt.k, fi->cnt.n, fi->cnt.p);
+	Z_inf(2, "seed1=%ld,seed2=%ld\tcnt: .k=%d .n=%d .p=%d",
+		fi->seeds[0], fi->seeds[1], fi->cnt.k, fi->cnt.n, fi->cnt.p);
 
 	/* init the matrix */
 	ffec_init_matrix(fi);
@@ -205,7 +210,7 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 		or all source symbols already decoded,
 		bail.
 	*/
-	if (!ffec_cell_memcmp(cell) || fi->cnt.k_decoded == fi->cnt.k)
+	if (ffec_cell_test(cell) || fi->cnt.k_decoded == fi->cnt.k)
 		goto out;
 
 	/* pull symbol onto stack */
@@ -231,7 +236,7 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 		/* some cells have less 1's, like the bottom
 			right of the pyramid.
 		*/
-		if (!ffec_cell_memcmp(&cell[j]))
+		if (ffec_cell_test(&cell[j]))
 			break;
 		n_rows[j] = &fi->rows[cell[j].row_id];
 		/* XOR into psum, unless we don't have to because we're done

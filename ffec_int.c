@@ -132,97 +132,89 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	*/
 	unsigned int i;
 	struct ffec_cell *cell;
-	struct ffec_row *row;
 	for (i=0; i < fi->cnt.k * FFEC_N1_DEGREE; i++)
 		fi->cells[i].row_id = i % fi->cnt.rows;
 
-	/* Swap just the IDs, since everything else in the matrix is 0s anyhow.
-	Notice that we swap WHOLE COLUMNS. 
-	This is to preclude multiple cells in the same column being part of the
-		same row - they would XOR to 0 and likely affect alignment
-		of universal dark matter, tempting the gods to anger.
-	It's also faster (less random numbers to generate).
-	And diagonals are cute.
+	/* Swap the cells among each other in order to randomize the contents.
+	Notice we swap just the row_id, since every other field
+		identical at this stage.
+	The algorithm used is 'Knuth-Fisher-Yates'.
 	*/
-	long rand48;
+	uint32_t temp;
 	struct ffec_cell *cell_b;
+	struct ffec_row *row;
+	uint32_t cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 	unsigned int j;
-	for (i=0; i < fi->cnt.k * 4; i++) {
-		/* get 2 columns */
-		lrand48_r(&fi->rand_buf, &rand48);
-		cell = ffec_get_col_first(fi->cells, rand48 % fi->cnt.k);
-		lrand48_r(&fi->rand_buf, &rand48);
-		cell_b = ffec_get_col_first(fi->cells, rand48 % fi->cnt.k);
-
-		/* swap all rows with each other */
-		for (j=0; j < FFEC_N1_DEGREE; j++) {
-			Z_inf(3, "r%d <-> r%d", cell[j].row_id, cell_b[j].row_id);
-			/* use rand48 as a scratchpad */
-			rand48 = cell[j].row_id;
-			cell[j].row_id = cell_b[j].row_id;
-			cell_b[j].row_id = rand48;
+	for (i=0, cell = fi->cells; 
+		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
+		i++, cell++)
+	{
+retry:
+		cell_b = &fi->cells[ffec_rand_bound(&fi->rng, cell_cnt - i) + i];
+		temp = cell->row_id;
+		cell->row_id = cell_b->row_id;
+		cell_b->row_id = temp;	
+		/*
+		This added complexity lies in making sure no other cells 
+			in this column contain the same row ID.
+		This is to preclude multiple cells in the same column being 
+			part of the same equation - they would XOR to 0 
+			and likely affect alignment of universal dark matter, 
+			tempting the gods to anger.
+		Simply go back through any previous cells in this column
+			and compare, re-executing the swap if equal.
+		I'm sure this violates the absolute "randomness" of the
+			algorithm, but no better alternative is in sight.
+		*/
+		for (j=0, cell_b = cell-1;
+			j < i % FFEC_N1_DEGREE; 
+			j++, cell_b--) 
+		{
+			if (cell->row_id == cell_b->row_id)
+				goto retry;
 		}
-	}
-	/* Walk through all cells again and add them into the linked list
-		for their respective row.
-	Also set their column IDs, which is necessary when decoding.
-	*/
-	for (i=0; i < (fi->cnt.k * FFEC_N1_DEGREE); i++) {
-		cell = &fi->cells[i];
+		/* successful swap!
+		We won't visit this cell again, so set its column ID
+			and link it to the pertinent row.
+		*/
 		cell->col_id = i / FFEC_N1_DEGREE;
-
 		row = &fi->rows[cell->row_id];
 		ffec_matrix_row_link(row, cell);
 	}
+	/* set last cell.
+	It is recognized that the last cell COULD be a duplicate of any of the
+		FFEC_N1_DEGREE cells before it, but no SIMPLE solution
+		presents itself at this time.
+	It bears note that this is a literal "corner case".
+	*/
+	cell->col_id = i / FFEC_N1_DEGREE;
+	row = &fi->rows[cell->row_id];
+	ffec_matrix_row_link(row, cell);
 
 
 	/* Go through each parity column.
 	Distribute FFEC_N1_DEGREE 1's in the column,
-		where the first 2 ones are ALWAYS in a staircase pattern.
+		all of them in a staircase pattern.
 	*/
 	for (i=0; i < fi->cnt.p; i++) {
 		/* get first cell in parity column */
 		cell = ffec_get_col_first(fi->cells, fi->cnt.k + i);
-
-		/* Get equation row.
-		Because triangular matrix, the first 1 in this column
-			MUST be the same-numbered row.
-		AKA: this is the "edge" of the triangle.
-		*/
-		cell->row_id = i;
-		cell->col_id = fi->cnt.k + i;
-		row = &fi->rows[i];
-		ffec_matrix_row_link(row, cell);
-
-		/* FEC Staircase: next 1 goes one row BELOW,
-			unless there IS no row below.
-		*/
-		if ( (fi->cnt.p - i -1) > 0) {
-			/* For ease of reference.
-			This is now the 2nd cell in the column.
-			*/
-			cell++;
-			/* set cell row/col, add to matrix */
-			cell->row_id = i+1;
-			cell->col_id = fi->cnt.k + i;
-			row = &fi->rows[cell->row_id];
-			ffec_matrix_row_link(row, cell);		
-		}
-
-		/* DOUBLE staircase:
-			unless there IS no row below.
-		TODO: TEMP (and broken if N1_DEGREE != 3)
-		*/
-		if ( (fi->cnt.p - i -2) > 0) {
-			/* For ease of reference.
-			This is now the 2nd cell in the column.
-			*/
-			cell++;
-			/* set cell row/col, add to matrix */
-			cell->row_id = i+2;
-			cell->col_id = fi->cnt.k + i;
-			row = &fi->rows[cell->row_id];
-			ffec_matrix_row_link(row, cell);		
+		/* walk column */
+		for (j=0; 
+			j < FFEC_N1_DEGREE; 
+			j++, cell++)
+		{
+			/* staircase: must be space left under the diagonal */
+			if ( (fi->cnt.p - i -j) > 0) {
+				cell->col_id = fi->cnt.k + i;
+				cell->row_id = i + j;
+				row = &fi->rows[cell->row_id];
+				ffec_matrix_row_link(row, cell);
+			} else {
+				/* otherwise, explicitly "unset" the cell */
+				ffec_cell_unset(cell);
+			}
+			
 		}
 	}
 }
@@ -243,17 +235,6 @@ void		ffec_calc_lengths_int(const struct ffec_params	*fp,
 		/* if decoding, scratch must have space for psums */
 		if (dir == decode)
 			out->scratch_sz += fp->sym_len * fc->rows;
-}
-
-/*	ffec_cell_memcmp()
-Satisfies our need to know: "has this cell already been used (decoded)?"
-
-returns 0 if cell is null.
-*/
-int		ffec_cell_memcmp(struct ffec_cell *cell)
-{
-	static const struct ffec_cell zero = { 0, 0, NULL, NULL };
-	return memcmp(&zero, cell, sizeof(zero));
 }
 
 #undef Z_BLK_LVL

@@ -41,11 +41,11 @@ TODO:
 #define	ffec_h_
 
 #include <stdint.h>
-#include <stdlib.h> /* rand48_r() */
 #include <unistd.h> /* usleep() */
 
 #include "ffec_matrix.h"
 
+#include "ffec_rand.h"
 #include "zed_dbg.h"
 
 #define	FFEC_N1_DEGREE 3		/* minimum number of 1s per matrix column */
@@ -101,8 +101,8 @@ struct ffec_counts {
 }__attribute__ ((packed));
 
 struct ffec_instance {
-	uint32_t			seed;
-	struct drand48_data		rand_buf;
+	uint64_t			seeds[2];
+	struct ffec_rand_state		rng;
 	struct ffec_counts		cnt;
 	/* NO pointers allocated or deallocated by FEC. 
 	Caller is responsible to make sure they're properly sized -
@@ -136,7 +136,8 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 				void				*parity,
 				void				*scratch,
 				enum ffec_direction		dir,
-				uint32_t			seed);
+				uint64_t			seed1,
+				uint64_t			seed2);
 /*	ffec_init_instance_contiguous()
 Caller crosses his heart and swears that 'memory':
 	- begins with all the source symbols
@@ -148,9 +149,10 @@ Z_INL_FORCE int	ffec_init_instance_contiguous(
 				size_t				src_len,
 				void				*memory,
 				enum ffec_direction		dir,
-				uint32_t			seed)
+				uint64_t			seed1,
+				uint64_t			seed2)
 {
-	return ffec_init_instance(fp, fi, src_len, memory, NULL, NULL, dir, seed);
+	return ffec_init_instance(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
 }
 
 uint32_t	ffec_encode	(const struct ffec_params	*fp, 

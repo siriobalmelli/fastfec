@@ -98,8 +98,8 @@ void		ffec_matrix_row_unlink(struct ffec_row		*row,
 	else
 		(cell->row_next)->row_prev = cell->row_prev;
 
-	/* zero cell */
-	memset(cell, 0x0, sizeof(struct ffec_cell));
+	/* invalidate cell, so it won't be used again */
+	ffec_cell_unset(cell);
 
 	/* debug print: after */
 	ffec_matrix_row_prn(row);
