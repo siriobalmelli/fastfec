@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "ffec.h"
 
@@ -24,16 +25,49 @@ wait
 cat something_*.txt >result.txt
 */
 
-int main()
+int main(int argc, char **argv)
 {
 	int err_cnt = 0;
 
+	/* We expect 2 args, fec_ratio and original_sz 
+		fec_ratio will be passed with the -f flag
+		original_sz will be passed with the -o flag
+	*/	
+
+	/* parse arguments passed */
+
+	double fec_ratio = 0;	
+	unsigned int original_sz = 0; /* is prime, to test things */
+
+	int opt;
+	extern char* optarg; /* used by getopt to point to arg values given */
+	while ((opt = getopt(argc, argv, "f:o:")) != -1) {
+		switch (opt) {
+			case 'f':
+				fec_ratio = atof(optarg);
+				printf("fec_ratio: %f\r\n", fec_ratio);
+				break;
+
+			case 'o': 
+				original_sz = atoi(optarg);
+				printf("original_sz: %d\r\n", original_sz);	
+				break;
+
+			default: 
+				printf("ffec_test expects 2 arguments:\r\n" 
+					"- fec_ratio (-f) - a ratio expressed in type double\r\n"
+					"- original_sz (-o) - a size in Mb expressed as unsigned int\r\n"
+					"- example: ffec_test.exe -f 1.1 -o 503927\r\n");
+					return 0; 
+				break;
+		}
+
+	}
+
 	struct ffec_params fp = {
-		.fec_ratio = 1.1, /* 10% FEC */
+		.fec_ratio = fec_ratio, /* 10% FEC */
 		.sym_len = 1280 /* aka: packet size */
 	};
-	unsigned int original_sz = 503927; /* is prime, to test things */
-
 	/* 10 source symbols should equal 4 repair symbols */
 	struct ffec_sizes fs;
 	ffec_calc_lengths(&fp, original_sz, &fs, decode);
