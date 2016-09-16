@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 		set up source memory region
 	*/
 	Z_die_if(!(
-		mem = malloc(fs.source_sz + fs.parity_sz + fs.scratch_sz)
+		mem = calloc(1, fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
 	int fd;
 	
@@ -102,10 +102,10 @@ int main(int argc, char **argv)
 		make random array of symbols to be decoded.
 	*/
 	Z_die_if(!(
-		mem_dec = malloc(fs.source_sz + fs.parity_sz + fs.scratch_sz)
+		mem_dec = calloc(1, fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
 	/* make linear collection of symbols to be decoded */
-	next_esi = malloc(fi.cnt.cols * sizeof(uint32_t));
+	next_esi = calloc(1, fi.cnt.cols * sizeof(uint32_t));
 	unsigned int i;
 	for (i=0; i < fi.cnt.cols; i++)
 		next_esi[i] = i;

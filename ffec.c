@@ -220,25 +220,30 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				void				*symbol,
 				uint32_t			esi)
 {
+	/* state for "recursion" */
+	struct j_array state;
+	j_init_nomutex(&state);
+	ffec_esi_row_t tmp;
+
+	/* set up only only once */
 	err_cnt = 0;
 	Z_die_if(!fp || !fi || !symbol, "args");
-	struct j_array state;
-	j_init(&state);
-	ffec_esi_row_t tmp;
 	struct ffec_cell *cell = NULL;
+	void *stack_sym = alloca(fp->sym_len);
 
 recurse:
-	/* get column */
-	cell = ffec_get_col_first(fi->cells, esi);
-	/* If symbol has already been decoded, 
-		or all source symbols already decoded,
-		bail.
-	*/
-	if (ffec_cell_test(cell) || fi->cnt.k_decoded == fi->cnt.k)
+
+	/* if all symbols have been decoded, bail */
+	if (fi->cnt.k_decoded == fi->cnt.k)
 		goto out;
 
+	/* get column */
+	cell = ffec_get_col_first(fi->cells, esi);
+	/* if this cell has been unlinked, unwind the recusion stack */
+	if (ffec_cell_test(cell))
+		goto check_recurse;
+
 	/* pull symbol onto stack */
-	void *stack_sym = alloca(fp->sym_len);
 	memcpy(stack_sym, symbol, fp->sym_len);
 	/* push it to its destination */
 	memcpy(ffec_get_sym(fp, fi, esi), stack_sym, fp->sym_len);
@@ -249,7 +254,7 @@ recurse:
 		Avoid extra work.
 		*/
 		if (++fi->cnt.k_decoded == fi->cnt.k)
-			return 0;
+			goto out;
 	}
 
 	/* get all rows */
@@ -296,6 +301,7 @@ recurse:
 		}
 	}
 
+check_recurse:
 	/* If any rows are queued to be solved, "recurse".
 	Notice that I am populating 'tmp' with the "row index"
 		which was added into the array at some unknown
@@ -310,6 +316,7 @@ recurse:
 	}
 
 out:
+	j_destroy_(&state);
 	if (err_cnt)
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;
