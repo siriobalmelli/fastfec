@@ -26,14 +26,4 @@ Z_INL_FORCE struct ffec_cell	*ffec_get_col_first(struct ffec_cell *cells, uint32
 	return &cells[col * FFEC_N1_DEGREE];
 }
 
-
-/* region lengths */
-Z_INL_FORCE size_t	ffec_len_cells	(const struct ffec_counts *fc)
-{
-	return sizeof(struct ffec_cell) * fc->cols * FFEC_N1_DEGREE;
-}
-Z_INL_FORCE size_t	ffec_len_rows	(const struct ffec_counts *fc)
-{
-	return sizeof(struct ffec_row) * fc->rows;
-}
 #endif /* ffec_int_h_ */

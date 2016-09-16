@@ -2,7 +2,6 @@
 #define ffec_matrix_h_
 
 #include <stdint.h>
-
 #include "zed_dbg.h"
 
 /* parity matrix
@@ -33,6 +32,16 @@ struct ffec_row {
 	struct ffec_cell	*last;	/* for quick navigation when adding an item */
 }__attribute__ ((packed));
 
+#ifdef DEBUG
+/* debug/printing functions */
+int		ffec_matrix_row_cmp(	struct ffec_row		*a,
+					struct ffec_row		*b);
+int		ffec_matrix_cell_cmp(	struct ffec_cell	*a,
+					struct ffec_cell	*b);
+void		ffec_matrix_row_prn(struct ffec_row		*row);
+#endif
+
+/* operational things */
 void		ffec_matrix_row_link(struct ffec_row		*row, 
 					struct ffec_cell	*new_cell);
 void		ffec_matrix_row_unlink(struct ffec_row		*row, 
@@ -58,7 +67,7 @@ returns 0 if a cell is "set"
 */
 Z_INL_FORCE int		ffec_cell_test(struct ffec_cell *cell)
 {
-	return !(cell->row_prev == (void*)-1);
+	return (cell->row_prev == (void*)-1);
 }
 
 #endif /* ffec_matrix_h_ */

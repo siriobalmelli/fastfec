@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdlib.h> /* atof */
 
+//#define DEBUG
 #include "ffec.h"
 
 void print_usage()
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
 	struct ffec_sizes fs;
 	ffec_calc_lengths(&fp, original_sz, &fs, decode);
 	void *mem = NULL, *mem_dec = NULL;
+	uint32_t *next_esi = NULL;
 
 	/*
 		set up source memory region
@@ -93,7 +95,7 @@ int main(int argc, char **argv)
 		, "");
 	ffec_encode(&fp, &fi);
 	clock_enc = clock() - clock_enc;
-	Z_inf(0, "encode ELAPSED: %lfs", (double)clock_enc / CLOCKS_PER_SEC * 1000);
+	Z_inf(0, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
 
 	/*
 		malloc destination region.
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
 		mem_dec = malloc(fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
 	/* make linear collection of symbols to be decoded */
-	uint32_t *next_esi = alloca(fi.cnt.cols * sizeof(uint32_t));
+	next_esi = malloc(fi.cnt.cols * sizeof(uint32_t));
 	unsigned int i;
 	for (i=0; i < fi.cnt.cols; i++)
 		next_esi[i] = i;
@@ -128,6 +130,22 @@ int main(int argc, char **argv)
 		ffec_init_instance_contiguous(&fp, &fi_dec, original_sz, mem_dec, 
 				decode, fi.seeds[0], fi.seeds[1])
 		, "");
+#ifdef DEBUG
+	/* compare matrix rows */
+	for (i=0; i < fi.cnt.rows; i++) {
+		if (ffec_matrix_row_cmp(&fi.rows[i], &fi_dec.rows[i])) {
+			Z_wrn("row %d differs", i);
+			ffec_matrix_row_prn(&fi.rows[i]);
+			ffec_matrix_row_prn(&fi_dec.rows[i]);
+			printf("\n");
+		}
+	}
+	/* compare matrix columns */
+	for (i=0; i < fi.cnt.n * FFEC_N1_DEGREE; i++) {
+		if (ffec_matrix_cell_cmp(&fi.cells[i], &fi_dec.cells[i]))
+			Z_wrn("cell %d differs", i);
+	}
+#endif
 	/* iterate through randomly ordered ESIs and decode for each */
 	for (i=0; i < fi_dec.cnt.cols; i++) {
 		if (!ffec_decode_sym(&fp, &fi_dec, 
@@ -140,25 +158,37 @@ int main(int argc, char **argv)
 	/*
 		verify
 	*/
-	Z_die_if(memcmp(mem, mem_dec, fs.source_sz), "sum ting willy wong");
+	uint8_t *cmp_src = mem, *cmp_dst = mem_dec;
+	for (i=0; i < fi.cnt.k; i ++) {
+		Z_die_if(memcmp(&cmp_src[i * fp.sym_len], 
+				&cmp_dst[i * fp.sym_len], 
+				fp.sym_len), 
+				"first non-matching k @ %d < %d n",
+				i, fi.cnt.k);
+	}
 
 	/*
 		report
 	*/
-	Z_inf(0, "decode ELAPSED: %lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
-	Z_inf(0, "decoded with i=%d, n=%d; inefficiency=%lf; loss tolerance=%lf%%",
-		i, fi_dec.cnt.n, 
+	Z_inf(0, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
+	Z_inf(0, "decoded with k=%d < i=%d < n=%d;\n\
+\tinefficiency=%lf; loss tolerance=%ld%%\n\
+\tsource size=%.4lf MB, bitrates: enc=%ldMb/s, dec=%ldMb/s",
+		fi_dec.cnt.k, i, fi_dec.cnt.n, 
 		(double)i / (double)fi_dec.cnt.k,
-		((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100);
-	Z_inf(0, "source size=%lfMB, bitrates: enc=%lfMbps, dec=%lfMbps",
+		(uint64_t)(((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100),
 		(double)fs.source_sz / (1024 * 1024),
-		(double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC) / (1024 * 1024) * 8,
-		(double)fs.source_sz / ((double)clock_dec / CLOCKS_PER_SEC) / (1024 * 1024) * 8);
+		(uint64_t)((double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC) 
+			/ (1024 * 1024) * 8),
+		(uint64_t)((double)fs.source_sz / ((double)clock_dec / CLOCKS_PER_SEC) 
+			/ (1024 * 1024) * 8));
 
 out:
 	if (mem)
 		free(mem);
 	if (mem_dec)
 		free(mem_dec);
+	if (next_esi)
+		free(next_esi);
 	return err_cnt;
 }

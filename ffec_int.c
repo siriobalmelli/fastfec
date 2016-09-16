@@ -8,7 +8,7 @@
 #define Z_BLK_LVL 0
 /* debug levels:
 	2	:	
-	3	:	column swaps
+	3	:
 */
 
 #if 0
@@ -46,20 +46,20 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 	}
 }
 #else
+
+/* for very fast vector instruction usage XORing blocks */
+typedef uint64_t ffec_sym_aligned_ __attribute__((vector_size (FFEC_SYM_ALIGN)));
 /*	ffec_xor_symbols()
 xor 2 symbols. stand-in for the above function using YMM registers.
 */
 void __attribute__((hot)) __attribute__((optimize("O3"))) 
 		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
 {
-	/* turn "sym_len" into "word_count" 
-		without pushing another variable onto the stack.
-	uint64_t word_count = sym_len >> 3; // uint64_t is 8 bytes
-		 */
-	sym_len = sym_len / FFEC_SYM_ALIGN;
+	ffec_sym_aligned_ *fr_a = from;
+	ffec_sym_aligned_ *to_a = to;
 	uint64_t i = 0;
-	for (; i < sym_len; i++)
-		((uint64_t*)to)[i] ^= ((uint64_t*)from)[i];
+	for (; i < sym_len / sizeof(ffec_sym_aligned_); i++)
+		(*to_a) ^= (*fr_a);
 }
 #endif
 
@@ -106,7 +106,8 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 	if (fc->p < FFEC_MIN_P) {
 		Z_wrn("p=%d < FFEC_MIN_P=%d;	k=%d, fec_ratio=%lf",
 			fc->p, FFEC_MIN_P, fc->k, fp->fec_ratio);
-		fc->k = FFEC_MIN_K;
+		fc->p = FFEC_MIN_P;
+		fc->n = fc->p + fc->k;
 	}
 
 	fc->k_decoded = 0; /* because common sense */
@@ -170,8 +171,12 @@ retry:
 			j < i % FFEC_N1_DEGREE; 
 			j++, cell_b--) 
 		{
-			if (cell->row_id == cell_b->row_id)
+			if (cell->row_id == cell_b->row_id) {
+#ifdef DEBUG
+				Z_wrn("column conflict");
+#endif
 				goto retry;
+			}
 		}
 		/* successful swap!
 		We won't visit this cell again, so set its column ID
@@ -205,7 +210,7 @@ retry:
 			j++, cell++)
 		{
 			/* staircase: must be space left under the diagonal */
-			if ( (fi->cnt.p - i -j) > 0) {
+			if ( ((int64_t)fi->cnt.p -i -j) > 0) {
 				cell->col_id = fi->cnt.k + i;
 				cell->row_id = i + j;
 				row = &fi->rows[cell->row_id];
@@ -214,7 +219,6 @@ retry:
 				/* otherwise, explicitly "unset" the cell */
 				ffec_cell_unset(cell);
 			}
-			
 		}
 	}
 }

@@ -134,7 +134,7 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 	ffec_rand_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
 
 	/* print values for debug */
-	Z_inf(2, "seed1=%ld,seed2=%ld\tcnt: .k=%d .n=%d .p=%d",
+	Z_inf(2, "\n\tseeds=[0x%lx,0x%lx]\tcnt: .k=%d .n=%d .p=%d",
 		fi->seeds[0], fi->seeds[1], fi->cnt.k, fi->cnt.n, fi->cnt.p);
 
 	/* init the matrix */

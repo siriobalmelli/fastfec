@@ -192,4 +192,14 @@ Z_INL_FORCE void	*ffec_get_psum	(const struct ffec_params	*fp,
 {
 	return fi->psums + (fp->sym_len * row);
 }
+
+/* region lengths */
+Z_INL_FORCE size_t	ffec_len_cells	(const struct ffec_counts *fc)
+{
+	return sizeof(struct ffec_cell) * fc->cols * FFEC_N1_DEGREE;
+}
+Z_INL_FORCE size_t	ffec_len_rows	(const struct ffec_counts *fc)
+{
+	return sizeof(struct ffec_row) * fc->rows;
+}
 #endif /* ffec_h_ */
