@@ -9,7 +9,7 @@ rm -rf ffec_results && mkdir ffec_results
 #bash doesn't do loops with non-integers, generate list with awk
 #iterate through with bash
 
-ratios=$(awk 'BEGIN{for(i=1.10;i<1.22;i+=0.02)print i}')
+ratios=$(awk 'BEGIN{for(i=1.02;i<1.22;i+=0.02)print i}')
 sizes=(500000 1000000 2000000 5000000 10000000 40000000 80000000 100000000 200000000 500000000)
 
 for i in $ratios

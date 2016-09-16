@@ -9,6 +9,7 @@
 #include <alloca.h>
 
 #include "ffec_int.h"
+#include "judyutil_L.h"
 
 #ifdef Z_BLK_LVL
 #undef Z_BLK_LVL
@@ -183,6 +184,16 @@ out:
 	return err_cnt;
 }
 
+/* this is because I need all relavant "recursion" state represented in 64b */
+typedef struct {
+	union {
+		uint64_t index;
+	struct {
+		uint32_t esi;
+		uint32_t row;
+	};
+	};
+} __attribute__ ((packed)) ffec_esi_row_t;
 /*	ffec_decode_sym()
 Decode a symbol:
 a. XOR it into the PartialSum for all of its rows.
@@ -195,6 +206,14 @@ c. If any row is now left with only one symbol, the PartialSum of that
 Returns number of source symbols yet to receive/decode.
 A return of '0' means "all source symbols decoded".
 Returns '-1' on error.
+
+Note on recursion:
+This function, if simply calling itself, can (with large blocks) recurse 
+	to a point where it stack overflows.
+The solution is to use a state variable 'state', which MUST be NULL
+	on first invocation of the function, and which is otherwise
+	used as a pointer to a J1 array which into which can be queued
+	the remaining "cnt==1" rows to be decoded.
 */
 uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
@@ -203,9 +222,14 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 {
 	err_cnt = 0;
 	Z_die_if(!fp || !fi || !symbol, "args");
+	struct j_array state;
+	j_init(&state);
+	ffec_esi_row_t tmp;
+	struct ffec_cell *cell = NULL;
 
+recurse:
 	/* get column */
-	struct ffec_cell *cell = ffec_get_col_first(fi->cells, esi);
+	cell = ffec_get_col_first(fi->cells, esi);
 	/* If symbol has already been decoded, 
 		or all source symbols already decoded,
 		bail.
@@ -261,10 +285,28 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 			break;
 		if (n_rows[j]->cnt == 1) {
 			cell = n_rows[j]->first;
+			/*
 			ffec_decode_sym(fp, fi, 
 					ffec_get_psum(fp, fi, cell->row_id),
 					cell->col_id);
+			*/
+			tmp.esi = cell->col_id;
+			tmp.row = cell->row_id;
+			j_add_(&state, tmp.index, (Word_t)&n_rows[j]);
 		}
+	}
+
+	/* If any rows are queued to be solved, "recurse".
+	Notice that I am populating 'tmp' with the "row index"
+		which was added into the array at some unknown
+		past iteration.
+	*/
+	n_rows[0] = (void *)j_deq_idx_(&state, &tmp.index);
+	if (n_rows[0]) {
+		/* reset stack variables */
+		symbol = ffec_get_psum(fp, fi, tmp.row);
+		esi = tmp.esi;
+		goto recurse;
 	}
 
 out:
