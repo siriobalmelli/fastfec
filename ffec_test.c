@@ -193,11 +193,11 @@ int main(int argc, char **argv)
 	*/
 	Z_inf(0, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
 	Z_inf(0, "decoded with k=%d < i=%d < n=%d;\n\
-\tinefficiency=%lf; loss tolerance=%ld%%\n\
+\tinefficiency=%lf; loss tolerance=%.2lf%%\n\
 \tsource size=%.4lf MB, bitrates: enc=%ldMb/s, dec=%ldMb/s",
 		fi_dec.cnt.k, i, fi_dec.cnt.n, 
 		(double)i / (double)fi_dec.cnt.k,
-		(uint64_t)(((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100),
+		((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100,
 		(double)fs.source_sz / (1024 * 1024),
 		(uint64_t)((double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC) 
 			/ (1024 * 1024) * 8),
