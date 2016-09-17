@@ -2,18 +2,23 @@
 The Fast (and barebones) FEC library.
 
 This library implements a basic (and fast) LDGM staircase FEC.
-For some background data and match, please see:
+For some background data and math, please see:
 
-- Design, Evaluation and Comparison of FOur Large Block FEC Codecs ...
+- Design, Evaluation and Comparison of Four Large Block FEC Codecs ...
 	Vincent Roca, Christoph Neumann - 19 May 2006
+
 
 DESIGN
 The design goal is a FEC codec optimized for:
 	a. speed and memory footprint
-	b. large objects (10s of MBs)
+	b. large objects: anything <4GB
 	c. low fec_ratio's (i.e.: <1.2 ... aka <20%)
 For these reasons it was chosen NOT to use gaussian elimination
 	at the decoder.
+
+
+THREAD-SAFETY : NONE
+
 
 NOMENCLATURE
 
@@ -33,9 +38,6 @@ fec_ratio	:	'n = fec_ratio * k'
 			Example: "1.1" == "10% FEC"
 
 2016: Sirio Balmelli and Anthony Soenen
-
-TODO:
-	- handle extremely small object
 */
 #ifndef ffec_h_
 #define	ffec_h_
@@ -54,19 +56,14 @@ TODO:
 #endif
 
 #define FFEC_SYM_ALIGN 256		/* Given in Bytes.
-					Symbols are a multiple of this size.
-					Must be a multiple of 32, since we are using
-						YMM registers to xor.
-					*/
-
-#define	FFEC_SRC_EXCESS 268435456	/* Discourage FEC'ing of blocks
-						>256MB in size.
+					Symbols must be a multiple of this size.
+					Must itself be a multiple of 32, since we are using
+						YMM registers to XOR.
 					*/
 
 /* Minimum number of symbols for proper operation. */
 #define FFEC_MIN_K 7
 #define	FFEC_MIN_P 3
-
 
 enum ffec_direction {
 	encode,
@@ -78,7 +75,6 @@ struct ffec_params {
 	uint32_t	sym_len;	/* Must be multiple of FFEC_SYM_ALIGN */
 
 };
-
 /* organizes necessary memory region sizes for the caller */
 struct ffec_sizes {
 	size_t		source_sz;

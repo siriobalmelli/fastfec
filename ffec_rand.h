@@ -13,14 +13,12 @@ https://www.apache.org/licenses/LICENSE-2.0.txt
 
 It has been stripped down for simplicity, and turned into
 	a pure-inline library for performance reasons.
-Specifically:
-	- no global, thread-unsafe RNG facilities provided
-	- no static initializer
+There are no global, thread-unsafe RNG facilities provided.
 
 In case this software is redistributed, it is done so under APACHE 2.0 and
 	is "AS-IS", with no warranties whatever.
 Seriously, it might be malicious code. Use it at your own risk.
-If you can't read it and understand it, just don't use it ;)
+If you can't read and understand it, just don't use it ;)
 
 Sirio Balmelli, 2016
 */
@@ -98,7 +96,7 @@ Z_INL_FORCE void	ffec_rand_seed(	struct ffec_rand_state	*rng,
 }
 
 /*	ffec_rand_seed_static()
-Seeds an rng with the recommended constants.
+Seeds an rng with the recommended static constants.
 */
 Z_INL_FORCE void	ffec_rand_seed_static(struct ffec_rand_state *rng)
 {

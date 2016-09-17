@@ -11,6 +11,9 @@
 //#define DEBUG
 #include "ffec.h"
 
+/* to verify integrity*/
+#include "fmd5.h"
+
 void print_usage()
 {
 	printf("ffec_test expects 2 arguments:\r\n" 
@@ -27,10 +30,8 @@ int main(int argc, char **argv)
 		fec_ratio will be passed with the -f flag
 		original_sz will be passed with the -o flag
 	*/	
-
-	/* parse arguments passed */
 	double fec_ratio = 0;	
-	unsigned int original_sz = 0; /* is prime, to test things */
+	unsigned int original_sz = 0;
 
 	int opt;
 	extern char* optarg; /* used by getopt to point to arg values given */
@@ -57,6 +58,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	void *mem = NULL, *mem_dec = NULL;
+	uint32_t *next_esi = NULL;
 	/*
 		parameters, lengths
 	*/
@@ -65,9 +68,9 @@ int main(int argc, char **argv)
 		.sym_len = 1280 /* aka: packet size */
 	};
 	struct ffec_sizes fs;
-	ffec_calc_lengths(&fp, original_sz, &fs, decode);
-	void *mem = NULL, *mem_dec = NULL;
-	uint32_t *next_esi = NULL;
+	Z_die_if(
+		ffec_calc_lengths(&fp, original_sz, &fs, decode)
+		, "");
 
 	/*
 		set up source memory region
@@ -76,13 +79,23 @@ int main(int argc, char **argv)
 		mem = calloc(1, fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
 	int fd;
-	
+	/* fill with random data */	
 	Z_die_if((
 		fd = open("/dev/urandom", O_RDONLY)
 		) < 1, "");
-	size_t init = 0;
-	while (init < fs.source_sz)
-		init += read(fd, fs.source_sz + (void*)init, fs.source_sz - init);
+	size_t init = 0, temp;
+	while (init < fs.source_sz) {
+		Z_die_if((
+			temp = read(fd, fs.source_sz + (void*)init, fs.source_sz - init)
+			) < 0, "");
+		init += temp;
+	}
+	/* get a hash of the source */
+	uint8_t src_hash[16], hash_check[16];
+	struct iovec hash_iov = { .iov_len = fs.source_sz, .iov_base = mem };
+	Z_die_if(
+		fmd5_hash(&hash_iov, src_hash)
+		, "");
 
 	/*
 		istantiate FEC, encode
@@ -96,6 +109,13 @@ int main(int argc, char **argv)
 	ffec_encode(&fp, &fi);
 	clock_enc = clock() - clock_enc;
 	Z_inf(0, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
+	/* invariant: encode must NOT alter the source region */
+	Z_die_if(
+		fmd5_hash(&hash_iov, hash_check)
+		, "");
+	Z_die_if(
+		memcmp(src_hash, hash_check, 16)
+		, "");
 
 	/*
 		malloc destination region.
@@ -113,7 +133,7 @@ int main(int argc, char **argv)
 	struct ffec_rand_state rnd;
 	ffec_rand_seed_static(&rnd);
 	/* swap random collection of ESIs */
-	uint32_t temp, rand;
+	uint32_t rand;
 	for (i=0; i < fi.cnt.cols -1; i++) {
 		temp = next_esi[i];
 		rand = next_esi[ffec_rand_bound(&rnd, fi.cnt.cols -i) + i];
@@ -148,6 +168,7 @@ int main(int argc, char **argv)
 #endif
 	/* iterate through randomly ordered ESIs and decode for each */
 	for (i=0; i < fi_dec.cnt.cols; i++) {
+		/* stop decoding when decoder reports 0 symbols left to decode */
 		if (!ffec_decode_sym(&fp, &fi_dec, 
 				ffec_get_sym(&fp, &fi, next_esi[i]),
 				next_esi[i]))
@@ -157,15 +178,15 @@ int main(int argc, char **argv)
 
 	/*
 		verify
+	decoded region must be bit-identical to source
 	*/
-	uint8_t *cmp_src = mem, *cmp_dst = mem_dec;
-	for (i=0; i < fi.cnt.k; i ++) {
-		Z_die_if(memcmp(&cmp_src[i * fp.sym_len], 
-				&cmp_dst[i * fp.sym_len], 
-				fp.sym_len), 
-				"first non-matching k @ %d < %d n",
-				i, fi.cnt.k);
-	}
+	hash_iov.iov_base = mem_dec;
+	Z_die_if(
+		fmd5_hash(&hash_iov, hash_check)
+		, "");
+	Z_die_if(
+		memcmp(src_hash, hash_check, 16)
+		, "");
 
 	/*
 		report

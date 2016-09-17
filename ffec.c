@@ -22,6 +22,11 @@
 /*	ffec_calc_lengths()
 Calculate the needed memory lengths which the caller must
 	allocate so FEC can operate.
+returns 0 if parameters seem copacetic.
+
+NOTE: ffec_init_instance() will NOT perform these safety checks,
+	as it assumes the caller has called ffec_calc_lengths() first
+	AND CHECKED THE RESULT.
 */
 int		ffec_calc_lengths(const struct ffec_params	*fp,
 				size_t				src_len,
@@ -44,6 +49,12 @@ int		ffec_calc_lengths(const struct ffec_params	*fp,
 
 	/* use counts to calc lengths */
 	ffec_calc_lengths_int(fp, src_len, out, dir, &fc);
+	/* sanity-check resulting sizes, keeping in mind that all the
+		FEC math is in 32-bit.
+	*/
+	Z_die_if(out->scratch_sz + out->parity_sz + out->source_sz > UINT32_MAX -2,
+		"proposed total memory area of %ld is out of range for this library",
+		out->scratch_sz + out->parity_sz + out->source_sz);
 
 out:
 	return err_cnt;

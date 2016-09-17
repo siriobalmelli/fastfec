@@ -25,7 +25,7 @@ struct ffec_cell {
 
 struct ffec_row {
 #ifdef DEBUG
-	uint32_t		row_id;	/* TODO: only used for debugging. #define it away, perhaps? */
+	uint32_t		row_id;	/* only used for debug prints */
 #endif 
 	uint32_t		cnt;	/* nr of linked cells */
 	struct ffec_cell	*first;

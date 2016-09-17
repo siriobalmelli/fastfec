@@ -72,7 +72,7 @@ TODO: optimize: turn into inline assembly, checking the remainder register
 TODO: unify, along with other implementation of div_ceil() in fl_bk,
 	into a "bits" library.
 */
-uint64_t	div_ceil		(uint64_t a, uint64_t b)
+uint64_t	div_ceill		(uint64_t a, uint64_t b)
 {
 	uint64_t ret = a / b;
 	if ((ret * b) < a)
@@ -82,6 +82,9 @@ uint64_t	div_ceil		(uint64_t a, uint64_t b)
 
 /*	ffec_calc_sym_counts()
 Calculate the symbol counts for a given source length and FEC params.
+Populates them into 'fc', which must be allocated by the caller.
+
+returns 0 if counts are valid (aka: will not overflow internal math).
 */
 int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 					size_t			src_len,
@@ -89,28 +92,37 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 {
 	int err_cnt = 0;
 	Z_die_if(!fp || !src_len || !fc, "args");
-	/* sanity check length */
-	Z_warn_if(src_len > FFEC_SRC_EXCESS,
-		"src_len %ld > recommended limit", src_len);
+	/* temp 64-bit counters, to test for overflow */
+	uint64_t t_k, t_n, t_p;
 
-	fc->k = div_ceil(src_len, fp->sym_len);
-	if (fc->k < FFEC_MIN_K) {
-		Z_wrn("k=%d < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
-			fc->k, FFEC_MIN_K, src_len, fp->sym_len);
-		fc->k = FFEC_MIN_K;
+	t_k = div_ceill(src_len, fp->sym_len);
+	if (t_k < FFEC_MIN_K) {
+		Z_wrn("k=%ld < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
+			t_k, FFEC_MIN_K, src_len, fp->sym_len);
+		t_k = FFEC_MIN_K;
 	}
 
-	fc->n = ceil(fc->k * fp->fec_ratio);
+	t_n = ceill(t_k * fp->fec_ratio);
 
-	fc->p = fc->n - fc->k;
-	if (fc->p < FFEC_MIN_P) {
-		Z_wrn("p=%d < FFEC_MIN_P=%d;	k=%d, fec_ratio=%lf",
-			fc->p, FFEC_MIN_P, fc->k, fp->fec_ratio);
-		fc->p = FFEC_MIN_P;
-		fc->n = fc->p + fc->k;
+	t_p = t_n - t_k;
+	if (t_p < FFEC_MIN_P) {
+		Z_wrn("p=%ld < FFEC_MIN_P=%d;	k=%ld, fec_ratio=%lf",
+			t_p, FFEC_MIN_P, t_k, fp->fec_ratio);
+		t_p = FFEC_MIN_P;
+		t_n = t_p + t_k;
 	}
 
+	/* sanity check: matrix counters and iterators are all 32-bit */
+	Z_die_if(
+		t_n * FFEC_N1_DEGREE > (uint64_t)UINT32_MAX -2,
+		"n=%ld symbols is excessive for this implementation",
+		t_n);
+	/* assign everything */
+	fc->n = t_n;
+	fc->k = t_k;
+	fc->p = t_p;
 	fc->k_decoded = 0; /* because common sense */
+
 out:
 	return err_cnt;
 }
