@@ -1,3 +1,68 @@
+/*	ffec.h
+The Fast (and barebones) FEC library.
+
+This library implements a basic (and fast) LDGM staircase FEC.
+For some background data and math, please see:
+
+- Design, Evaluation and Comparison of Four Large Block FEC Codecs ...
+	Vincent Roca, Christoph Neumann - 19 May 2006
+	https://hal.inria.fr/inria-00070770/document
+- Systems of Linear Equations: Gaussian Elimination
+	http://www.sosmath.com/matrix/system1/system1.html
+
+
+DESIGN
+The design goal is a FEC codec optimized for:
+	a. speed and memory footprint
+	b. large objects: depending on 'fec_ratio' (see def. below),
+		anything <=2GB should be OK.
+	c. low fec_ratio's (i.e.: <1.2 ... aka <20%)
+For these reasons it was chosen NOT to use gaussian elimination
+	at the decoder.
+
+
+THREAD-SAFETY : NONE
+
+
+NOMENCLATURE
+
+FEC		:	Forward Error Correction
+			The practice of generating some additional data at the
+				"sender", to be sent along with the original data,
+				so that "receiver" can re-compute data lost
+				in transit (as long as it is under a certain
+				percentage).
+LDGM		:	Low Density Generator Matrix
+			Describes the method for implementing this type of FEC,
+				where computations to be done on the data
+				are represented in a "low density" (aka: sparse)
+				matrix, which is also then used to GENERATE the
+				FEC data (therefore: "generator").
+
+symbol		:	A single "unit" of data in FEC.
+			It is assumed that "symbol" is the payload of a single
+				network packet, therefore <=9KB and >=1KB.
+k		:	Number of "source" symbols.
+			This is the data which must be recovered at the receiver.
+n		:	Total number of symbols.
+			This is "k" source symbols plus "p" parity symbols.
+p		:	Number of "parity" symbols (created by XORing several source symbols together).
+			AKA: "repair" symbols.
+			p = n - k
+esi		:	Encoding Symbol ID (zero-indexed).
+fec_ratio	:	'n = fec_ratio * k'
+			Example: "1.1" == "10% FEC"
+inefficiency	:	"number of symbols needed to decode" / k
+			This is always greater than 1, and denotes
+				how many MORE symbols than source are needed
+				to allow decoding.
+			A perfect codec (e.g. reed-solomon) has inefficiency == 1,
+				but the tradeoff of LDGM is (slight) inefficiency.
+
+
+2016: Sirio Balmelli and Anthony Soenen
+*/
+
 /* /dev/urandom */
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE
@@ -10,14 +75,6 @@
 
 #include "ffec_int.h"
 #include "judyutil_L.h"
-
-#ifdef Z_BLK_LVL
-#undef Z_BLK_LVL
-#endif
-#define Z_BLK_LVL 2
-/* debug levels:
-	2	:	?
-*/
 
 /*	ffec_calc_lengths()
 Calculate the needed memory lengths which the caller must
@@ -108,7 +165,8 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 		fi->psums = NULL;
 	/* zero the scratch region, set row IDs */
 	memset(fi->scratch, 0x0, sz.scratch_sz);
-#ifdef DEBUG
+#ifdef FFEC_DEBUG
+	/* initialize row IDs for use by debug prints */
 	unsigned int i;
 	for (i=0; i < fi->cnt.rows; i++)
 		fi->rows[i].row_id = i;
@@ -145,9 +203,11 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 	*/
 	ffec_rand_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
 
+#ifdef FFEC_DEBUG
 	/* print values for debug */
-	Z_inf(2, "\n\tseeds=[0x%lx,0x%lx]\tcnt: .k=%d .n=%d .p=%d",
+	Z_inf(0, "\n\tseeds=[0x%lx,0x%lx]\tcnt: .k=%d .n=%d .p=%d",
 		fi->seeds[0], fi->seeds[1], fi->cnt.k, fi->cnt.n, fi->cnt.p);
+#endif
 
 	/* init the matrix */
 	ffec_init_matrix(fi);
@@ -300,12 +360,7 @@ recurse:
 		if (!n_rows[j])
 			break;
 		if (n_rows[j]->cnt == 1) {
-			cell = n_rows[j]->first;
-			/*
-			ffec_decode_sym(fp, fi, 
-					ffec_get_psum(fp, fi, cell->row_id),
-					cell->col_id);
-			*/
+			cell = n_rows[j]->last;
 			tmp.esi = cell->col_id;
 			tmp.row = cell->row_id;
 			j_add_(&state, tmp.index, (Word_t)&n_rows[j]);
@@ -332,6 +387,3 @@ out:
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;
 }
-
-#undef Z_BLK_LVL
-#define Z_BLK_LVL 0

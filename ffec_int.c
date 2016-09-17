@@ -11,57 +11,27 @@
 	3	:
 */
 
-#if 0
-/* YMM intrinsics, for XOR */
-#include "immintrin.h"
-
+/* declare sizes for unrolling and optimizing at compile-time */
+typedef uint64_t vYMM_ __attribute__((vector_size (32)));
+typedef struct {
+	vYMM_	data[FFEC_SYM_ALIGN / sizeof(vYMM_)];
+}__attribute__ ((packed)) sym_aligned;
 /*	ffec_xor_symbols()
-xor 2 symbols.
-make heavy use of SIMD instructions.
-TODO: verify the resultant assembly is optimal.
+XOR 2 symbols.
+Note that inner loop is to allow the compiler to unroll into XOR instructions using
+	parallel YMM registers.
 */
 void __attribute__((hot)) __attribute__((optimize("O3"))) 
 		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
 {
-	__m256i *src_blk = from;
-	__m256i *dst_blk = to;
-
-	/* loop through symbol in blocks of 256B at one time */
-	uint32_t i, loop_iter;
-	for (i=0, loop_iter = sym_len / FFEC_SYM_ALIGN;
-		i < loop_iter; 
-		i++, src_blk += FFEC_SYM_ALIGN, dst_blk += FFEC_SYM_ALIGN) 
-	{
-		/* prefetch next block */
-		__builtin_prefetch(src_blk + FFEC_SYM_ALIGN);
-		/* xor */
-		dst_blk[0] = _mm256_xor_si256(src_blk[0], dst_blk[0]);
-		dst_blk[1] = _mm256_xor_si256(src_blk[1], dst_blk[1]);
-		dst_blk[2] = _mm256_xor_si256(src_blk[2], dst_blk[2]);
-		dst_blk[3] = _mm256_xor_si256(src_blk[3], dst_blk[3]);
-		dst_blk[4] = _mm256_xor_si256(src_blk[4], dst_blk[4]);
-		dst_blk[5] = _mm256_xor_si256(src_blk[5], dst_blk[5]);
-		dst_blk[6] = _mm256_xor_si256(src_blk[6], dst_blk[6]);
-		dst_blk[7] = _mm256_xor_si256(src_blk[7], dst_blk[7]);
+	sym_aligned *s_fr = from;
+	sym_aligned *s_to = to;
+	uint64_t i, j;
+	for (i=0; i < sym_len / sizeof(sym_aligned); i++) {
+		for (j=0; j < FFEC_SYM_ALIGN / sizeof(vYMM_); j++)
+			s_to->data[j] ^= s_fr->data[j];
 	}
 }
-#else
-
-/* for very fast vector instruction usage XORing blocks */
-typedef uint64_t ffec_sym_aligned_ __attribute__((vector_size (FFEC_SYM_ALIGN)));
-/*	ffec_xor_symbols()
-xor 2 symbols. stand-in for the above function using YMM registers.
-*/
-void __attribute__((hot)) __attribute__((optimize("O3"))) 
-		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
-{
-	ffec_sym_aligned_ *fr_a = from;
-	ffec_sym_aligned_ *to_a = to;
-	uint64_t i = 0;
-	for (; i < sym_len / sizeof(ffec_sym_aligned_); i++)
-		(*to_a) ^= (*fr_a);
-}
-#endif
 
 /*	div_ceil(a, b)
 Integer "ceiling" operation.
@@ -129,7 +99,6 @@ out:
 
 /*	ffec_init_matrix()
 Initialize the parity matrix.
-TODO: we probably don't have to link the rows when encoding.
 */
 void		ffec_init_matrix	(struct ffec_instance	*fi)
 {
@@ -184,7 +153,7 @@ retry:
 			j++, cell_b--) 
 		{
 			if (cell->row_id == cell_b->row_id) {
-#ifdef DEBUG
+#ifdef FFEC_DEBUG
 				Z_wrn("column conflict");
 #endif
 				goto retry;

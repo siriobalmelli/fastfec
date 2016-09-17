@@ -24,15 +24,16 @@ struct ffec_cell {
 }__attribute__ ((packed));
 
 struct ffec_row {
-#ifdef DEBUG
+#ifdef FFEC_DEBUG
 	uint32_t		row_id;	/* only used for debug prints */
 #endif 
 	uint32_t		cnt;	/* nr of linked cells */
-	struct ffec_cell	*first;
-	struct ffec_cell	*last;	/* for quick navigation when adding an item */
+	struct ffec_cell	*last;	/* We ONLY need the last cell.
+					We can work backwards from there ;)
+					*/
 }__attribute__ ((packed));
 
-#ifdef DEBUG
+#ifdef FFEC_DEBUG
 /* debug/printing functions */
 int		ffec_matrix_row_cmp(	struct ffec_row		*a,
 					struct ffec_row		*b);

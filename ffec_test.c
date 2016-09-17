@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <stdlib.h> /* atof */
 
-//#define DEBUG
+//#define FFEC_DEBUG
 #include "ffec.h"
 
 /* to verify integrity*/
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 		original_sz will be passed with the -o flag
 	*/	
 	double fec_ratio = 0;	
-	unsigned int original_sz = 0;
+	size_t original_sz = 0;
 
 	int opt;
 	extern char* optarg; /* used by getopt to point to arg values given */
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
 			case 'o': 
 				original_sz = atoi(optarg);
-				printf("original_sz: %d\r\n", original_sz);	
+				printf("original_sz: %ld\r\n", original_sz);	
 				break;
 
 			default: 
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 		ffec_init_instance_contiguous(&fp, &fi_dec, original_sz, mem_dec, 
 				decode, fi.seeds[0], fi.seeds[1])
 		, "");
-#ifdef DEBUG
+#ifdef FFEC_DEBUG
 	/* compare matrix rows */
 	for (i=0; i < fi.cnt.rows; i++) {
 		if (ffec_matrix_row_cmp(&fi.rows[i], &fi_dec.rows[i])) {

@@ -1,44 +1,3 @@
-/*	ffec.h
-The Fast (and barebones) FEC library.
-
-This library implements a basic (and fast) LDGM staircase FEC.
-For some background data and math, please see:
-
-- Design, Evaluation and Comparison of Four Large Block FEC Codecs ...
-	Vincent Roca, Christoph Neumann - 19 May 2006
-
-
-DESIGN
-The design goal is a FEC codec optimized for:
-	a. speed and memory footprint
-	b. large objects: anything <4GB
-	c. low fec_ratio's (i.e.: <1.2 ... aka <20%)
-For these reasons it was chosen NOT to use gaussian elimination
-	at the decoder.
-
-
-THREAD-SAFETY : NONE
-
-
-NOMENCLATURE
-
-symbol		:	A single "unit" of data in FEC.
-			It is assumed that "symbol" is the payload of a single
-				network packet, therefore <=9KB and >=1KB.
-			A symbol MUST be a multiple of 256B (2048b) because
-				we rely on parallelized AVX2 instructions for XOR.
-k		:	Number of "source" symbols.
-			This is the data which must be recovered at the receiver.
-n		:	Total number of symbols.
-p		:	Number of "parity" symbols (created by XORing several source symbols together).
-			AKA: "repair" symbols.
-			p = n - k
-esi		:	Encoding Symbol ID.
-fec_ratio	:	'n = fec_ratio * k'
-			Example: "1.1" == "10% FEC"
-
-2016: Sirio Balmelli and Anthony Soenen
-*/
 #ifndef ffec_h_
 #define	ffec_h_
 
@@ -71,7 +30,9 @@ enum ffec_direction {
 };
 
 struct ffec_params {
-	double		fec_ratio;	/* MUST be >1.0, SHOULD be <1.3 */
+	double		fec_ratio;	/* MUST be >1.0, SHOULD be <1.3,
+						although it can be higher
+						b*/
 	uint32_t	sym_len;	/* Must be multiple of FFEC_SYM_ALIGN */
 
 };
@@ -157,6 +118,7 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				void				*symbol,
 				uint32_t			esi);
+
 
 /* symbol locations */
 Z_INL_FORCE void	*ffec_get_sym_k(const struct ffec_params	*fp, 
