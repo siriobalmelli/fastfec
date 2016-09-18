@@ -1,65 +1,71 @@
 #!/bin/bash  
 
-echo "Results will be in ffec/all.csv and ffec/total_avgs.csv" 
+ITERS=20
+if [[ "$1" = "-i" ]]; then
+	ITERS=$2
+	echo "running with $ITERS test iterations"
+	shift
+	shift
+fi
 
-#fec_ratio 1.02 -> 1.2 in 2% increments
-#original_sz 500k, 1M, 2M, 5M, 10M, 40M, 80M, 100M, 150M, 200M, 500M
-
-#empty results folder from any previous runs
-rm -rf ffec_results && mkdir ffec_results
-
-#bash doesn't do loops with non-integers, generate list with awk
-#iterate through with bash
-
-ratios=$(awk 'BEGIN{for(i=1.02;i<1.22;i+=0.02)print i}')
-sizes=(500000 1000000 2000000 5000000 10000000 40000000 80000000 100000000 200000000 500000000)
-
-for i in $ratios
-do
-	echo "fec ratio: $i"
-	for j in ${sizes[@]}
-		do
-			echo "size is ${j}"
-			for k in {1..10}; do
-				name=$(echo "${i}_${j}")
-				./ffec_test.exe -f $i -o ${j} >> ffec_results/result_${name}.txt_${k} & 
-			done
-			wait
-			cat ffec_results/result_${name}.txt_* > ffec_results/result_${name}.txt 
-			rm ffec_results/result_${name}.txt_*  
-		done
+SINGLE_THREADED=
+if [[ "$1" = "-s" ]]; then
+	echo "running single-threaded (stats mode)"
+	SINGLE_THREADED=1
+	shift
+fi
 	
-done
-
-
+echo "Results will be in total_avgs.csv" 
+#empty results folder from any previous runs
+DIR="ffec_results"
+rm -rf $DIR && mkdir $DIR
 #remove the total_avgs.csv and all.csv from previous runs
 rm -f total_avgs.csv
 rm -f all.csv
 
-#parse the results in ffec_results/result_*.txt to make averages
 
-FILES=ffec_results/*
-for i in $FILES
+#fec_ratio 1.02 -> 1.2 in 2% increments
+#original_sz 500k, 1M, 2M, 5M, 10M, 40M, 80M, 100M, 150M, 200M, 500M
+
+#bash doesn't do loops with non-integers, generate list with awk
+#iterate through with bash
+ratios=$(awk 'BEGIN{for(i=1.02;i<1.22;i+=0.02)print i}')
+sizes=(500000 1000000 2000000 5000000 10000000 40000000 80000000 100000000 200000000 500000000)
+
+#	$1 == RATIO
+#	$2 == SIZE
+run_tests()
+{
+	echo "size is ${2}"
+	if [[ -n $SINGLE_THREADED ]]; then 
+		for k in $(seq 1 $ITERS); do
+			name=$(echo "${1}_${2}")
+			./ffec_test.exe -f $1 -o $2 >> $DIR/result_${name}.txt 
+		done
+	else
+		for k in {1..$ITERS}; do
+			name=$(echo "${1}_${2}")
+			./ffec_test.exe -f $1 -o $2 >> $DIR/result_${name}.txt_$2 & 
+		done
+		wait
+		cat $DIR/result_${name}.txt_* > $DIR/result_${name}.txt 
+		rm $DIR/result_${name}.txt_*  
+	fi
+}
+
+# run the actual tests
+for i in $ratios
 do
-	echo "Processing $i file"
-	cat $i | grep "inefficiency=" | cut -d ';' -f 1-2 | grep -Eo '[0-9]\.[0-9]{1,6}' > ffec_results/temp_avgs.txt
-	#read the file temp_avgs.txt and add calc avgs
-	FILENAME=ffec_results/temp_avgs.txt
+	echo "fec ratio: $i"
+	for j in ${sizes[@]}; do
+		run_tests $i $j
+	done
+done
 
-	INEFFICIENCY=()
-	LOSSTOLLERANCE=()
-	INDEX=1;
-	while read -r line
-	do 
-		#pick all inefficieny values from the temp_avgs.txt file
-		if (( INDEX % 2 )); then
-			INEFFICIENCY+=("$line")	
-		else
-			LOSSTOLLERANCE+=("$line")
-		fi
-
-		INDEX=$((INDEX+1))
-	done < $FILENAME
+TEMPS=
+for i in $DIR/*; do
+	INEFFICIENCY=( $(sed -rn 's/.*inefficiency=([0-9.]+).*/\1 /p' "$i") )
+	LOSSTOLLERANCE=( $(sed -rn 's/.*loss tolerance=([0-9.]+)%.*/\1 /p' "$i") )
 
 	#sum the array and divide by count	
 	sum=$(echo "${INEFFICIENCY[*]}" | sed 's/ /+/g' | bc)
@@ -68,21 +74,11 @@ do
 	lsum=$(echo "${LOSSTOLLERANCE[*]}" | sed 's/ /+/g' | bc)
 	lsumavg=$(echo "$lsum / ${#LOSSTOLLERANCE[@]}" | bc -l)
 
-	echo "$i, $isumavg, $lsumavg" >> total_avgs.csv
+	params=( $(echo "$i" | sed -rn 's/.*result_([0-9.]+)_([0-9]+).txt/\1 \2/p') )
 
-	#make a new file with only loss tolerance and ineffficiency in it
-	
-	if [ "${#INEFFICIENCY[@]}" == "${#LOSSTOLLERANCE[@]}" ]; then 
-		echo "Sizes are equal"
-	fi
+	printf "%.2lf,%ld,%.4lf,%.2lf\n" \
+		${params[0]} ${params[1]} $isumavg $lsumavg >> total_avgs.csv
 
-	ext=".csv"
-	IFS='.' read -a arr <<< $i
-	filename=${arr[0]}${arr[1]}${ext}
-	echo "\# $filename" > $filename
-	for ((i=0; i<=${#INEFFICIENCY[@]}; i++)); do printf '%s,%s\n' "${INEFFICIENCY[i]}" "${LOSSTOLLERANCE[i]}"; done >> $filename
+	# remove the txt file once done
+	rm "$i"
 done
-
-cat ffec_results/result_*.txt > ffec_results/total_result.txt
-cat ffec_results/result_*.csv > all.csv
-

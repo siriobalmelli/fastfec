@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 			) < 0, "");
 		init += temp;
 	}
+	close(fd);
 	/* get a hash of the source */
 	uint8_t src_hash[16], hash_check[16];
 	struct iovec hash_iov = { .iov_len = fs.source_sz, .iov_base = mem };
