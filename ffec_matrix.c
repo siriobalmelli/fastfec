@@ -31,6 +31,24 @@ All rows are contiguous in memory, so a cell doesn't need a pointer to its
 	row, simply the row ID, which it can then use as an index into the
 	array of rows.
 
+Here is a basic conceptual diagram which was of help in visualizing the process:
+
+[matrix at start of decode]
+		idx=2	idx=1	idx=2	idx=2	idx=2	idx=2	idx=1
+		s1	s2	s3	s4	p1	p2	p3
+idx=4	r1	1	0	1	1	1	0	0	psum=0
+idx=4	r2	0	1	0	1	1	1	0	psum=0
+idx=4	r3	1	0	1	0	0	1	1	psum=0
+
+
+[after receipt of some symbols]
+		idx=0	idx=1	idx=2	idx=0	idx=2	idx=0	idx=1
+		s1	s2	s3	s4	p1	p2	p3
+idx=2	r1	0	0	1	0	1	0	0	psum=s1^s4
+idx=2	r2	0	1	0	0	1	0	0	psum=p2^s4
+idx=2	r3	0	0	1	0	0	0	1	psum=s1^p2
+
+
 2016 Sirio Balmelli
 */
 
