@@ -230,7 +230,8 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 	/* zero out all parity symbols */
 	memset(fi->parity, 0x0, fi->cnt.p * fp->sym_len);
 
-	unsigned int i, j;
+	int64_t i;
+	uint32_t j;
 	struct ffec_cell *cell;
 	void *symbol;
 	for (i=0; i < fi->cnt.cols; i++) {
@@ -240,14 +241,26 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 		*/
 		cell = ffec_get_col_first(fi->cells, i);
 		symbol = ffec_get_sym(fp, fi, i);
+#ifdef FFEC_DEBUG
+		Z_inf(0, "enc(esi %ld) @0x%lx", 
+			i, (uint64_t)symbol);
+#endif
 		for (j=0; j < FFEC_N1_DEGREE; j++) {
+			/* avoid empty cells under the staircase */
+			if (ffec_cell_test(&cell[j]))
+				continue;
 			/* Avoid XOR-ing parity symbol with itself */
-			if (i == cell[j].row_id)
+			if (i - fi->cnt.k == cell[j].row_id)
 				continue;
 			/* XOR into parity symbol for that row */
 			ffec_xor_into_symbol(symbol, 
 					ffec_get_sym_p(fp, fi, cell[j].row_id),
 					fp->sym_len);
+#ifdef FFEC_DEBUG
+					Z_inf(0, "xor(esi %ld) -> p%d @0x%lx", 
+						i, cell[j].row_id, 
+						(uint64_t)ffec_get_sym_p(fp, fi, cell[j].row_id));
+#endif
 		}
 	}
 
@@ -316,8 +329,16 @@ recurse:
 
 	/* pull symbol onto stack */
 	memcpy(stack_sym, symbol, fp->sym_len);
+#ifdef FFEC_DEBUG
+	Z_inf(0, "pull <-(esi %d) @0x%lx", 
+		esi, (uint64_t)symbol);
+#endif
 	/* push it to its destination */
 	memcpy(ffec_get_sym(fp, fi, esi), stack_sym, fp->sym_len);
+#ifdef FFEC_DEBUG
+	Z_inf(0, "push ->(esi %d) @0x%lx", 
+		esi, (uint64_t)ffec_get_sym(fp, fi, esi));
+#endif
 
 	/* If it's a source symbol, log it. */
 	if (esi < fi->cnt.k) {
@@ -363,7 +384,7 @@ recurse:
 			cell = n_rows[j]->last;
 			tmp.esi = cell->col_id;
 			tmp.row = cell->row_id;
-			j_add_(&state, tmp.index, (Word_t)&n_rows[j]);
+			j_add_(&state, tmp.index, (Word_t)n_rows[j]);
 		}
 	}
 

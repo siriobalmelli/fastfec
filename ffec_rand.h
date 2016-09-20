@@ -95,11 +95,15 @@ Z_INL_FORCE void	ffec_rand_seed(	struct ffec_rand_state	*rng,
 	ffec_rand(rng);
 }
 
+/* make static seeds available to callers if desired */
+#define FFEC_RAND_S1 0x853c49e6748fea9bULL
+#define FFEC_RAND_S2 0xda3e39cb94b95bdbULL
+
 /*	ffec_rand_seed_static()
 Seeds an rng with the recommended static constants.
 */
 Z_INL_FORCE void	ffec_rand_seed_static(struct ffec_rand_state *rng)
 {
-	ffec_rand_seed(rng, 0x853c49e6748fea9bULL, 0xda3e39cb94b95bdbULL);
+	ffec_rand_seed(rng, FFEC_RAND_S1, FFEC_RAND_S2);
 }
 #endif /* ffec_rand_h_ */
