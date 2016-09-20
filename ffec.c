@@ -317,7 +317,7 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 
 recurse:
 
-	/* if all symbols have been decoded, bail */
+	/* if all source symbols have been decoded, bail */
 	if (fi->cnt.k_decoded == fi->cnt.k)
 		goto out;
 
@@ -329,13 +329,11 @@ recurse:
 
 	/* pull symbol onto stack */
 	memcpy(stack_sym, symbol, fp->sym_len);
-#ifdef FFEC_DEBUG
-	Z_inf(0, "pull <-(esi %d) @0x%lx", 
-		esi, (uint64_t)symbol);
-#endif
 	/* push it to its destination */
 	memcpy(ffec_get_sym(fp, fi, esi), stack_sym, fp->sym_len);
 #ifdef FFEC_DEBUG
+	Z_inf(0, "pull <-(esi %d) @0x%lx", 
+		esi, (uint64_t)symbol);
 	Z_inf(0, "push ->(esi %d) @0x%lx", 
 		esi, (uint64_t)ffec_get_sym(fp, fi, esi));
 #endif
@@ -357,9 +355,12 @@ recurse:
 		/* some cells have less 1's, like the bottom
 			right of the pyramid.
 		*/
-		if (ffec_cell_test(&cell[j]))
+		if (ffec_cell_test(&cell[j])) {
+			n_rows[j] = NULL;
 			break;
-		n_rows[j] = &fi->rows[cell[j].row_id];
+		} else {
+			n_rows[j] = &fi->rows[cell[j].row_id];
+		}
 		/* XOR into psum, unless we don't have to because we're done
 			decoding.
 		*/
@@ -367,6 +368,11 @@ recurse:
 			ffec_xor_into_symbol(stack_sym, 
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
+#ifdef FFEC_DEBUG
+					Z_inf(0, "xor(esi %d) -> p%d @0x%lx", 
+						esi, cell[j].row_id, 
+						(uint64_t)ffec_get_psum(fp, fi, cell[j].row_id));
+#endif
 		}
 		/* remove from row */
 		ffec_matrix_row_unlink(n_rows[j], &cell[j]);
@@ -379,12 +385,12 @@ recurse:
 	*/
 	for (j=0; j < FFEC_N1_DEGREE; j++) {
 		if (!n_rows[j])
-			break;
+			continue;
 		if (n_rows[j]->cnt == 1) {
 			cell = n_rows[j]->last;
 			tmp.esi = cell->col_id;
 			tmp.row = cell->row_id;
-			j_add_(&state, tmp.index, (Word_t)n_rows[j]);
+			j_enq_(&state, tmp.index);
 		}
 	}
 
@@ -394,8 +400,8 @@ check_recurse:
 		which was added into the array at some unknown
 		past iteration.
 	*/
-	n_rows[0] = (void *)j_deq_idx_(&state, &tmp.index);
-	if (n_rows[0]) {
+	tmp.index = j_deq_(&state);
+	if (tmp.index) {
 		/* reset stack variables */
 		symbol = ffec_get_psum(fp, fi, tmp.row);
 		esi = tmp.esi;

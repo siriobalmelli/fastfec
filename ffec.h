@@ -19,6 +19,9 @@
 					Must itself be a multiple of 32, since we are using
 						YMM registers to XOR.
 					*/
+#if (FFEC_SYM_ALIGN != 256)
+	#error "XOR loop is hand-unrolled. this is bad"
+#endif
 
 /* Minimum number of symbols for proper operation. */
 #define FFEC_MIN_K 7

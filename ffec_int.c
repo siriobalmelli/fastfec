@@ -11,11 +11,8 @@
 	3	:
 */
 
-/* declare sizes for unrolling and optimizing at compile-time */
-typedef uint64_t vYMM_ __attribute__((vector_size (32)));
-typedef struct {
-	vYMM_	data[FFEC_SYM_ALIGN / sizeof(vYMM_)];
-}__attribute__ ((packed)) sym_aligned;
+#if 1
+#include "immintrin.h"
 /*	ffec_xor_symbols()
 XOR 2 symbols.
 Note that inner loop is to allow the compiler to unroll into XOR instructions using
@@ -24,14 +21,67 @@ Note that inner loop is to allow the compiler to unroll into XOR instructions us
 void __attribute__((hot)) __attribute__((optimize("O3"))) 
 		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
 {
-	sym_aligned *s_fr = from;
-	sym_aligned *s_to = to;
-	uint64_t i, j;
-	for (i=0; i < sym_len / sizeof(sym_aligned); i++) {
-		for (j=0; j < FFEC_SYM_ALIGN / sizeof(vYMM_); j++)
-			s_to->data[j] ^= s_fr->data[j];
+	uint32_t i;
+	for (i=0; i < sym_len / FFEC_SYM_ALIGN; i++) {
+		asm (
+			"vlddqu		0x0(%[src]),	%%ymm8;"
+			"vlddqu		0x0(%[dst]),	%%ymm0;"
+			"vpxor		%%ymm0,		%%ymm8,		%%ymm0;"
+			"vmovdqu	%%ymm0,		0x0(%[dst]);"
+
+			"vlddqu		0x20(%[src]),	%%ymm9;"
+			"vlddqu		0x20(%[dst]),	%%ymm1;"
+			"vpxor		%%ymm1,		%%ymm9,		%%ymm1;"
+			"vmovdqu	%%ymm1,		0x20(%[dst]);"
+
+			"vlddqu		0x40(%[src]),	%%ymm10;"
+			"vlddqu		0x40(%[dst]),	%%ymm2;"
+			"vpxor		%%ymm2,		%%ymm10,	%%ymm1;"
+			"vmovdqu	%%ymm2,		0x40(%[dst]);"
+
+			"vlddqu		0x60(%[src]),	%%ymm11;"
+			"vlddqu		0x60(%[dst]),	%%ymm3;"
+			"vpxor		%%ymm3,		%%ymm11,	%%ymm1;"
+			"vmovdqu	%%ymm3,		0x60(%[dst]);"
+
+			"vlddqu		0x80(%[src]),	%%ymm12;"
+			"vlddqu		0x80(%[dst]),	%%ymm4;"
+			"vpxor		%%ymm4,		%%ymm12,	%%ymm1;"
+			"vmovdqu	%%ymm4,		0x80(%[dst]);"
+
+			"vlddqu		0xA0(%[src]),	%%ymm13;"
+			"vlddqu		0xA0(%[dst]),	%%ymm5;"
+			"vpxor		%%ymm5,		%%ymm13,	%%ymm1;"
+			"vmovdqu	%%ymm5,		0xA0(%[dst]);"
+
+			"vlddqu		0xC0(%[src]),	%%ymm14;"
+			"vlddqu		0xC0(%[dst]),	%%ymm6;"
+			"vpxor		%%ymm6,		%%ymm14,	%%ymm1;"
+			"vmovdqu	%%ymm6,		0xC0(%[dst]);"
+
+			"vlddqu		0xE0(%[src]),	%%ymm15;"
+			"vlddqu		0xE0(%[dst]),	%%ymm7;"
+			"vpxor		%%ymm7,		%%ymm15,	%%ymm1;"
+			"vmovdqu	%%ymm7,		0xE0(%[dst]);"
+
+			:						/* output */
+			: [src] "r" (from), [dst] "r" (to)		/* input */
+			: "memory"				/* clobber */
+		    );
+		from += FFEC_SYM_ALIGN;
+		to += FFEC_SYM_ALIGN;
 	}
 }
+#else
+void		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
+{
+	uint64_t *i_fr = from;
+	uint64_t *i_to  = to;
+	uint32_t i;
+	for (i=0; i < sym_len / sizeof(uint64_t); i++)
+		i_to[i] ^= i_fr[i];
+}
+#endif
 
 /*	div_ceil(a, b)
 Integer "ceiling" operation.

@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <stdlib.h> /* atof */
 
-#define FFEC_DEBUG
+//#define FFEC_DEBUG
 #include "ffec.h"
 
 #define OWN_RAND
@@ -189,14 +189,25 @@ int main(int argc, char **argv)
 			printf("\n");
 		}
 	}
-	/* compare matrix columns */
+	/* compare cells */
 	for (i=0; i < fi.cnt.n * FFEC_N1_DEGREE; i++) {
 		if (ffec_matrix_cell_cmp(&fi.cells[i], &fi_dec.cells[i]))
 			Z_wrn("cell %d differs", i);
 	}
+	/* print symbol addresses */
+	for (i=0; i < fi.cnt.n; i++) {
+		Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(&fp, &fi, i));
+		Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(&fp, &fi_dec, i));
+	}
+	for (i=0; i < fi.cnt.p; i++)
+		Z_inf(0, "dst psum row %d @ 0x%lx", 
+			i, (uint64_t)ffec_get_psum(&fp, &fi_dec, i));
 #endif
 	/* iterate through randomly ordered ESIs and decode for each */
 	for (i=0; i < fi_dec.cnt.cols; i++) {
+#ifdef FFEC_DEBUG
+		Z_inf(0, "submit ESI %d", next_esi[i]);
+#endif
 		/* stop decoding when decoder reports 0 symbols left to decode */
 		if (!ffec_decode_sym(&fp, &fi_dec, 
 				ffec_get_sym(&fp, &fi, next_esi[i]),
@@ -209,6 +220,12 @@ int main(int argc, char **argv)
 		verify
 	decoded region must be bit-identical to source
 	*/
+#ifdef FFEC_DEBUG
+	for (i=0; i < fi.cnt.k; i++)
+		Z_warn_if(memcmp(ffec_get_sym(&fp, &fi, i), ffec_get_sym(&fp, &fi_dec, i), fp.sym_len),
+			"symbol %d differs", i);
+#endif
+
 	hash_iov.iov_base = mem_dec;
 	Z_die_if(
 		fmd5_hash(&hash_iov, hash_check)
