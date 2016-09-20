@@ -352,15 +352,14 @@ recurse:
 	struct ffec_row *n_rows[FFEC_N1_DEGREE];
 	memset(&n_rows, 0x0, sizeof(n_rows));
 	for (j=0; j < FFEC_N1_DEGREE; j++) {
-		/* some cells have less 1's, like the bottom
-			right of the pyramid.
+		/* if any cells are unset, avoid processing them
+			and avoid processing their row.
 		*/
 		if (ffec_cell_test(&cell[j])) {
 			n_rows[j] = NULL;
-			break;
-		} else {
-			n_rows[j] = &fi->rows[cell[j].row_id];
+			continue;
 		}
+		n_rows[j] = &fi->rows[cell[j].row_id];
 		/* XOR into psum, unless we don't have to because we're done
 			decoding.
 		*/
