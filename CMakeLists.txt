@@ -1,8 +1,8 @@
 #ffec library
 add_library(ffec SHARED ffec.c ffec_int.c ffec_matrix.c)
 # TODO: how to compile both debug and production versions of the library?
-#target_compile_options(ffec PRIVATE -fPIC -mavx2 -m64 -DFFEC_DEBUG)
-target_compile_options(ffec PRIVATE -fPIC -mavx2 -m64)
+target_compile_options(ffec PRIVATE -fPIC -mavx2 -m64 -DFFEC_DEBUG)
+#target_compile_options(ffec PRIVATE -fPIC -mavx2 -m64)
 target_link_libraries(ffec -lm judyutil)
 
 

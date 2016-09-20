@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <stdlib.h> /* atof */
 
-//#define FFEC_DEBUG
+#define FFEC_DEBUG
 #include "ffec.h"
 
 /* to verify integrity*/
@@ -83,14 +83,55 @@ int main(int argc, char **argv)
 	Z_die_if((
 		fd = open("/dev/urandom", O_RDONLY)
 		) < 1, "");
+	//init our own PRNG lib here with urandom as a seed,
+	//pass its results into temp.
 	size_t init = 0, temp;
+	uint64_t seed1 = 0, seed2 = 0;
+	struct ffec_rand_state rnd_state;
+	Z_die_if((
+		read(fd, (uint64_t*)&seed1, sizeof(uint64_t))
+		) < 0, "");	
+
+	Z_die_if((
+		read(fd, (uint64_t*)&seed2, sizeof(uint64_t))
+		) < 0, "");
+
+ 
+	if (!seed1 || !seed2)
+		Z_inf(0, "Seeds not initialized");
+
+	Z_inf(0, "Seed1: %ju", seed1);
+	Z_inf(0, "Seed2: %ju", seed2);
+	//seed random number generator from dev/urandom seeds	
+	ffec_rand_seed(&rnd_state, seed1, seed2);
+	
 	while (init < fs.source_sz) {
 		Z_die_if((
-			temp = read(fd, mem + init, fs.source_sz - init)
-			) < 0, "");
-		init += temp;
+		          temp = read(fd, mem + init, fs.source_sz - init)
+		) < 0, "");
+                init += temp;
+
+		/*uint32_t rand = ffec_rand(&rnd_state);
+		uint32_t check = 0;
+		//Z_inf(0, "rand: %ju", (uintmax_t)rand);
+		memcpy(mem + init, &rand, sizeof(uint32_t));
+		memcpy(&check, mem + init, sizeof(uint32_t));
+
+		if (init == 32)
+		{
+			Z_inf(0, "check %ju", (uintmax_t)check);
+			Z_inf(0, "rand %ju", (uintmax_t)rand);
+		}
+
+		Z_die_if((check != rand), "");
+
+		init += sizeof(uint32_t);*/
 	}
 	close(fd);
+
+	Z_inf(0, "Bytes copied: %ju", init);
+	Z_inf(0, "fs.source_sz: %ju", fs.source_sz);
+
 	/* get a hash of the source */
 	uint8_t src_hash[16], hash_check[16];
 	struct iovec hash_iov = { .iov_len = fs.source_sz, .iov_base = mem };
