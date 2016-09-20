@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	size_t init = 0, temp;
 	while (init < fs.source_sz) {
 		Z_die_if((
-			temp = read(fd, fs.source_sz + (void*)init, fs.source_sz - init)
+			temp = read(fd, mem + init, fs.source_sz - init)
 			) < 0, "");
 		init += temp;
 	}
