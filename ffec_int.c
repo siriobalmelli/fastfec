@@ -180,6 +180,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	struct ffec_row *row;
 	uint32_t cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 	unsigned int j;
+	uint32_t retry_cnt = 0;
 	for (i=0, cell = fi->cells; 
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
@@ -200,17 +201,26 @@ retry:
 			and compare, re-executing the swap if equal.
 		I'm sure this violates the absolute "randomness" of the
 			algorithm, but no better alternative is in sight.
+		Also, there IS a small chance that we are stuck at the end
+			and no amount of retries will get us a column without
+			a double cell, so use "retry_cnt" to avoid infinite
+			loops. The algorithm DOES still work with double
+			XOR of a symbol into the same column, but for obvious
+			reasons it subtracts its own entropy and reduces
+			our efficiency ... but OH F'ING WELL we TRIED.
 		*/
 		for (j=0, cell_b = cell-1;
 			j < i % FFEC_N1_DEGREE; 
 			j++, cell_b--) 
 		{
-			if (cell->row_id == cell_b->row_id) {
+			if (cell->row_id == cell_b->row_id
+				&& retry_cnt++ > FFEC_COLLISION_RETRY) {
 #ifdef FFEC_DEBUG
 				Z_wrn("column conflict");
 #endif
 				goto retry;
 			}
+			retry_cnt=0;
 		}
 		/* successful swap!
 		We won't visit this cell again, so set its column ID
@@ -261,18 +271,34 @@ retry:
 Calculates lengths for callers who already have symbol counts.
 Internal function, so no sanity checking performed.
 */
-void		ffec_calc_lengths_int(const struct ffec_params	*fp,
+int		ffec_calc_lengths_int(const struct ffec_params	*fp,
 				size_t				src_len,
 				struct ffec_sizes		*out,
 				enum ffec_direction		dir,
 				struct ffec_counts		*fc)
 {
-		out->source_sz = fc->k * fp->sym_len;
-		out->parity_sz = fc->p * fp->sym_len;
-		out->scratch_sz =  ffec_len_cells(fc) + ffec_len_rows(fc);
-		/* if decoding, scratch must have space for psums */
-		if (dir == decode)
-			out->scratch_sz += fp->sym_len * fc->rows;
+	int err_cnt = 0;
+
+	/* do all maths in 64-bit, so we can avoid overflow */
+	uint64_t src, par, scr;
+	src = (uint64_t)fc->k * fp->sym_len;
+	par = (uint64_t)fc->p * fp->sym_len;
+	scr = (uint64_t)ffec_len_cells(fc) + ffec_len_rows(fc);
+	/* if decoding, scratch must have space for psums */
+	if (dir == decode)
+		scr += fp->sym_len * fc->rows;
+
+	/* combined size must not exceed UINT32_MAX */
+	Z_die_if(src + par + scr > (uint64_t)UINT32_MAX -2,
+		"cannot handle combined symbol space of %ld",
+		src + par + scr);
+
+	out->source_sz = src;
+	out->parity_sz = par;
+	out->scratch_sz = scr;
+
+out:
+		return err_cnt;
 }
 
 #undef Z_BLK_LVL

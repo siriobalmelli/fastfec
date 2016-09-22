@@ -11,7 +11,7 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 					struct ffec_counts	*fc);
 void		ffec_init_matrix	(struct ffec_instance	*fi);
 
-void		ffec_calc_lengths_int(const struct ffec_params	*fp,
+int		ffec_calc_lengths_int(const struct ffec_params	*fp,
 				size_t				src_len,
 				struct ffec_sizes		*out,
 				enum ffec_direction		dir,

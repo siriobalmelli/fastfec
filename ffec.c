@@ -105,13 +105,9 @@ int		ffec_calc_lengths(const struct ffec_params	*fp,
 		, "");
 
 	/* use counts to calc lengths */
-	ffec_calc_lengths_int(fp, src_len, out, dir, &fc);
-	/* sanity-check resulting sizes, keeping in mind that all the
-		FEC math is in 32-bit.
-	*/
-	Z_die_if(out->scratch_sz + out->parity_sz + out->source_sz > UINT32_MAX -2,
-		"proposed total memory area of %ld is out of range for this library",
-		out->scratch_sz + out->parity_sz + out->source_sz);
+	Z_die_if(
+		ffec_calc_lengths_int(fp, src_len, out, dir, &fc)
+		, "");
 
 out:
 	return err_cnt;
@@ -142,7 +138,9 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 		, "");
 	/* calculate region sizes */
 	struct ffec_sizes sz;
-	ffec_calc_lengths_int(fp, src_len, &sz, dir, &fi->cnt);
+	Z_die_if(
+		ffec_calc_lengths_int(fp, src_len, &sz, dir, &fi->cnt)
+		, "");
 
 	/* assign region pointers */
 	fi->source = source;

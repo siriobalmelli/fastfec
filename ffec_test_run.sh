@@ -36,11 +36,12 @@ sizes=(500000 1000000 2000000 5000000 10000000 40000000 80000000 100000000 20000
 #	$2 == SIZE
 run_tests()
 {
-	echo "size is ${2}"
+	echo -n "size is ${2}: "
 	if [[ -n $SINGLE_THREADED ]]; then 
 		for k in $(seq 1 $ITERS); do
 			name=$(echo "${1}_${2}")
 			./ffec_test.exe -f $1 -o $2 >> $DIR/result_${name}.txt 
+			echo -n "$k, "
 		done
 	else
 		for k in {1..$ITERS}; do
@@ -51,6 +52,7 @@ run_tests()
 		cat $DIR/result_${name}.txt_* > $DIR/result_${name}.txt 
 		rm $DIR/result_${name}.txt_*  
 	fi
+	echo
 }
 
 # run the actual tests
@@ -62,10 +64,14 @@ do
 	done
 done
 
+echo "fec_ratio,source_size,inefficiency,loss_tolerance,encode_bitrate,decode_bitrate" \
+	>total_avgs.csv
 TEMPS=
 for i in $DIR/*; do
 	INEFFICIENCY=( $(sed -rn 's/.*inefficiency=([0-9.]+).*/\1 /p' "$i") )
 	LOSSTOLLERANCE=( $(sed -rn 's/.*loss tolerance=([0-9.]+)%.*/\1 /p' "$i") )
+	ENC_BR=( $(sed -rn 's/.*enc=([0-9]+)Mb.*/\1/p' "$i") )
+	DEC_BR=( $(sed -rn 's/.*dec=([0-9]+)Mb.*/\1/p' "$i") )
 
 	#sum the array and divide by count	
 	sum=$(echo "${INEFFICIENCY[*]}" | sed 's/ /+/g' | bc)
@@ -74,10 +80,17 @@ for i in $DIR/*; do
 	lsum=$(echo "${LOSSTOLLERANCE[*]}" | sed 's/ /+/g' | bc)
 	lsumavg=$(echo "$lsum / ${#LOSSTOLLERANCE[@]}" | bc -l)
 
+	encsum=$(echo "${ENC_BR[*]}" | sed 's/ /+/g' | bc)
+	encsumavg=$(( $encsum / ${#ENC_BR[@]} ))
+	decsum=$(echo "${DEC_BR[*]}" | sed 's/ /+/g' | bc)
+	decsumavg=$(( $decsum / ${#DEC_BR[@]} ))
+
+
 	params=( $(echo "$i" | sed -rn 's/.*result_([0-9.]+)_([0-9]+).txt/\1 \2/p') )
 
-	printf "%.2lf,%ld,%.4lf,%.2lf\n" \
-		${params[0]} ${params[1]} $isumavg $lsumavg >> total_avgs.csv
+	printf "%.2lf,%ld,%.4lf,%.2lf,%ld,%ld\n" \
+		${params[0]} ${params[1]} $isumavg $lsumavg $encsumavg $decsumavg \
+		>> total_avgs.csv
 
 	# remove the txt file once done
 	rm "$i"

@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 				break;
 
 			case 'o': 
-				original_sz = atoi(optarg);
+				original_sz = atol(optarg);
 				printf("original_sz: %ld\r\n", original_sz);	
 				break;
 
