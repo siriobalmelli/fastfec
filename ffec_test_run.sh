@@ -1,6 +1,22 @@
 #!/bin/bash  
+# Outputs test data so that it can be processed into graphs.
+# By way of documentation, this is how to generate the surface plot for inefficiency:
+#``` {.octave}
+#+	fec_ratio = dlmread("ffec_test_vec_ratio.csv")
+#+	sizes = dlmread("ffec_test_vec_size.csv")
+#+	inefficiency = dlmread("ffec_test_inefficiency.csv")
+#+	surf(fec_ratio, sizes, inefficiency)
+#+	set (gca, 'yscale', 'log')
+#+	grid("minor", "on")
+#+	title("FEC Inefficiency vs. block size and code rate")
+#+	xlabel("code rate")
+#+	ylabel("block size (Bytes)")
+#+	zlabel("inefficiency")
+#```
+# NOTE that we set the Y axis (sizes) as logarithmic, because our size datapoints
+#+	increase by x2 each time.
 
-ITERS=20
+ITERS=100
 if [[ "$1" = "-i" ]]; then
 	ITERS=$2
 	echo "running with $ITERS test iterations"
@@ -8,90 +24,56 @@ if [[ "$1" = "-i" ]]; then
 	shift
 fi
 
-SINGLE_THREADED=
-if [[ "$1" = "-s" ]]; then
-	echo "running single-threaded (stats mode)"
-	SINGLE_THREADED=1
-	shift
-fi
-	
-echo "Results will be in total_avgs.csv" 
-#empty results folder from any previous runs
-DIR="ffec_results"
-rm -rf $DIR && mkdir $DIR
-#remove the total_avgs.csv and all.csv from previous runs
-rm -f total_avgs.csv
-rm -f all.csv
+RATIO_LIMIT="1.42"
+# size is in KB
+SIZE_START="50"
+SIZE_LIMIT="1000000"
 
+# fec_ratio 1.02 -> 1.2 in 2% increments,
+#+	bash doesn't do loops with non-integers, generate list with awk.
+ratios=( $(awk 'BEGIN{for(i=1.02;i<'"$RATIO_LIMIT"';i+=0.02)print i}') )
+sizes=( $(awk 'BEGIN{for(i=10;i<'"$SIZE_LIMIT"';i *= 2)print i}') )
 
-#fec_ratio 1.02 -> 1.2 in 2% increments
-#original_sz 500k, 1M, 2M, 5M, 10M, 40M, 80M, 100M, 150M, 200M, 500M
+# write vector CSVs for import into e.g. Octave
+echo ${ratios[@]} | tr ' ' ',' >./ffec_test_vec_ratio.csv
+echo ${sizes[@]} | tr ' ' ',' >./ffec_test_vec_size.csv
 
-#bash doesn't do loops with non-integers, generate list with awk
-#iterate through with bash
-ratios=$(awk 'BEGIN{for(i=1.02;i<1.22;i+=0.02)print i}')
-sizes=(500000 1000000 2000000 5000000 10000000 40000000 80000000 100000000 200000000 500000000)
-
-#	$1 == RATIO
-#	$2 == SIZE
-run_tests()
-{
-	echo -n "size is ${2}: "
-	if [[ -n $SINGLE_THREADED ]]; then 
+# generate 2d matrices of test results:
+#+	columns		: 	ratios
+#+	rows		:	sizes
+rm -f ./ffec_test_inefficiency.csv
+rm -f ./ffec_test_enc_speed.csv
+rm -f ./ffec_test_dec_speed.csv
+for s in ${sizes[@]}; do
+	echo "size $(( $s * 1000 )):"
+	INEF_ROW=()
+	ENC_ROW=()
+	DEC_ROW=()
+	for r in ${ratios[@]}; do
+		echo " ratio $r:"
+		INEF=()
+		ENC=()
+		DEC=()
 		for k in $(seq 1 $ITERS); do
-			name=$(echo "${1}_${2}")
-			./ffec_test.exe -f $1 -o $2 >> $DIR/result_${name}.txt 
 			echo -n "$k, "
+			# get program output
+			OUT=$(./ffec_test.exe -f $r -o $(( $s * 1000 )))
+			# add to arrays of temporary values
+			INEF=( ${INEF[@]} $(echo "$OUT" | sed -rn 's/.*inefficiency=([0-9.]+).*/\1 /p') )
+			ENC=( ${ENC[@]} $(echo "$OUT" | sed -rn 's/.*enc=([0-9]+)Mb.*/\1/p') )
+			DEC=( ${DEC[@]} $(echo "$OUT" | sed -rn 's/.*dec=([0-9]+)Mb.*/\1/p') )
 		done
-	else
-		for k in {1..$ITERS}; do
-			name=$(echo "${1}_${2}")
-			./ffec_test.exe -f $1 -o $2 >> $DIR/result_${name}.txt_$2 & 
-		done
-		wait
-		cat $DIR/result_${name}.txt_* > $DIR/result_${name}.txt 
-		rm $DIR/result_${name}.txt_*  
-	fi
-	echo
-}
-
-# run the actual tests
-for i in $ratios
-do
-	echo "fec ratio: $i"
-	for j in ${sizes[@]}; do
-		run_tests $i $j
+		echo
+		# make sums so that we can compute an average 
+		inef_sum=$(echo "${INEF[@]}" | tr ' ' '+' | bc)
+		enc_sum=$(echo "${ENC[@]}" | tr ' ' '+' | bc)
+		dec_sum=$(echo "${DEC[@]}" | tr ' ' '+' | bc)
+		# compute the average, add it to the array
+		INEF_ROW=( ${INEF_ROW[@]} $(printf "%.4f" $(echo "$inef_sum / ${#INEF[@]}" | bc -l)) )
+		ENC_ROW=( ${ENC_ROW[@]} $(( $enc_sum / ${#ENC[@]} )) )
+		DEC_ROW=( ${DEC_ROW[@]} $(( $dec_sum / ${#DEC[@]} )) )
 	done
-done
-
-echo "fec_ratio,source_size,inefficiency,loss_tolerance,encode_bitrate,decode_bitrate" \
-	>total_avgs.csv
-TEMPS=
-for i in $DIR/*; do
-	INEFFICIENCY=( $(sed -rn 's/.*inefficiency=([0-9.]+).*/\1 /p' "$i") )
-	LOSSTOLLERANCE=( $(sed -rn 's/.*loss tolerance=([0-9.]+)%.*/\1 /p' "$i") )
-	ENC_BR=( $(sed -rn 's/.*enc=([0-9]+)Mb.*/\1/p' "$i") )
-	DEC_BR=( $(sed -rn 's/.*dec=([0-9]+)Mb.*/\1/p' "$i") )
-
-	#sum the array and divide by count	
-	sum=$(echo "${INEFFICIENCY[*]}" | sed 's/ /+/g' | bc)
-	isumavg=$(echo "$sum / ${#INEFFICIENCY[@]}" | bc -l)
-
-	lsum=$(echo "${LOSSTOLLERANCE[*]}" | sed 's/ /+/g' | bc)
-	lsumavg=$(echo "$lsum / ${#LOSSTOLLERANCE[@]}" | bc -l)
-
-	encsum=$(echo "${ENC_BR[*]}" | sed 's/ /+/g' | bc)
-	encsumavg=$(( $encsum / ${#ENC_BR[@]} ))
-	decsum=$(echo "${DEC_BR[*]}" | sed 's/ /+/g' | bc)
-	decsumavg=$(( $decsum / ${#DEC_BR[@]} ))
-
-
-	params=( $(echo "$i" | sed -rn 's/.*result_([0-9.]+)_([0-9]+).txt/\1 \2/p') )
-
-	printf "%.2lf,%ld,%.4lf,%.2lf,%ld,%ld\n" \
-		${params[0]} ${params[1]} $isumavg $lsumavg $encsumavg $decsumavg \
-		>> total_avgs.csv
-
-	# remove the txt file once done
-	rm "$i"
+	echo "${INEF_ROW[@]}" | tr ' ' ',' >>./ffec_test_inefficiency.csv
+	echo "${ENC_ROW[@]}" | tr ' ' ',' >>./ffec_test_enc_speed.csv
+	echo "${DEC_ROW[@]}" | tr ' ' ',' >>./ffec_test_dec_speed.csv
 done
