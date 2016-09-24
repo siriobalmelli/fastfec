@@ -1,5 +1,4 @@
-#include "ffec_rand.h"
-#include "bits_fnv1a.h"
+#include "fnv1a.h"
 #include "judyutil_L.h"
 
 #include "mhash.h"
