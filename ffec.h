@@ -6,7 +6,7 @@
 
 #include "ffec_matrix.h"
 
-#include "ffec_rand.h"
+#include "pcg_rand.h"
 #include "zed_dbg.h"
 
 #define	FFEC_N1_DEGREE 3		/* minimum number of 1s per matrix column */
@@ -64,7 +64,7 @@ struct ffec_counts {
 
 struct ffec_instance {
 	uint64_t			seeds[2];
-	struct ffec_rand_state		rng;
+	struct pcg_rand_state		rng;
 	struct ffec_counts		cnt;
 	/* NO pointers allocated or deallocated by FEC. 
 	Caller is responsible to make sure they're properly sized -

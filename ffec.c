@@ -199,7 +199,7 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 	/* seed random number generator
 	lrand48_r() will be used to generate random numbers between 0 - 2^31.
 	*/
-	ffec_rand_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
+	pcg_rand_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
 
 #ifdef FFEC_DEBUG
 	/* print values for debug */

@@ -1,4 +1,5 @@
 #include "ffec_int.h"
+#include "bits.h" /* div_ceil() */
 
 #include <math.h>
 
@@ -79,29 +80,12 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 			:						/* output */
 			: [src] "r" (from), [dst] "r" (to)		/* input */
 			:						/* clobber */
-		    );
+		);
 		from += FFEC_SYM_ALIGN;
 		to += FFEC_SYM_ALIGN;
 	}
 }
 #endif
-
-/*	div_ceil(a, b)
-Integer "ceiling" operation.
-If 'b' divides evenly into 'a', returns 'a / b'.
-Else, returns 'a / b + 1'.
-TODO: optimize: turn into inline assembly, checking the remainder register
-	and xor (see p.3-5 of Intel Optimization manual: 'setge' and family).
-TODO: unify, along with other implementation of div_ceil() in fl_bk,
-	into a "bits" library.
-*/
-uint64_t	div_ceill		(uint64_t a, uint64_t b)
-{
-	uint64_t ret = a / b;
-	if ((ret * b) < a)
-		ret++;
-	return ret;
-}
 
 /*	ffec_calc_sym_counts()
 Calculate the symbol counts for a given source length and FEC params.
@@ -118,7 +102,7 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 	/* temp 64-bit counters, to test for overflow */
 	uint64_t t_k, t_n, t_p;
 
-	t_k = div_ceill(src_len, fp->sym_len);
+	t_k = div_ceil(src_len, fp->sym_len);
 	if (t_k < FFEC_MIN_K) {
 		Z_wrn("k=%ld < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
 			t_k, FFEC_MIN_K, src_len, fp->sym_len);
@@ -186,7 +170,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		i++, cell++)
 	{
 retry:
-		cell_b = &fi->cells[ffec_rand_bound(&fi->rng, cell_cnt - i) + i];
+		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
 		temp = cell->row_id;
 		cell->row_id = cell_b->row_id;
 		cell_b->row_id = temp;	

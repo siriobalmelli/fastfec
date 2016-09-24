@@ -90,19 +90,19 @@ int main(int argc, char **argv)
 	//pass its results into temp.
 	size_t init = 0, temp;
 	uint64_t seeds[2];
-	struct ffec_rand_state rnd_state;
+	struct pcg_rand_state rnd_state;
 	Z_die_if((
 		read(fd, seeds, sizeof(seeds))
 		) != sizeof(seeds), "");	
 	Z_inf(0, "Seed1: 0x%lx", seeds[0]);
 	Z_inf(0, "Seed2: 0x%lx", seeds[1]);
 	//seed random number generator from dev/urandom seeds	
-	ffec_rand_seed(&rnd_state, seeds[0], seeds[1]);
+	pcg_rand_seed(&rnd_state, seeds[0], seeds[1]);
 #endif
 	
 	while (init < fs.source_sz) {
 #ifdef OWN_RAND
-		((uint8_t*)mem)[init] = ffec_rand(&rnd_state);
+		((uint8_t*)mem)[init] = pcg_rand(&rnd_state);
 		init += sizeof(uint32_t);
 #else
 		Z_die_if((
@@ -159,13 +159,13 @@ int main(int argc, char **argv)
 	for (i=0; i < fi.cnt.cols; i++)
 		next_esi[i] = i;
 	/* seed a random number generator */
-	struct ffec_rand_state rnd;
-	ffec_rand_seed_static(&rnd);
+	struct pcg_rand_state rnd;
+	pcg_rand_seed_static(&rnd);
 	/* swap random collection of ESIs */
 	uint32_t rand;
 	for (i=0; i < fi.cnt.cols -1; i++) {
 		temp = next_esi[i];
-		rand = next_esi[ffec_rand_bound(&rnd, fi.cnt.cols -i) + i];
+		rand = next_esi[pcg_rand_bound(&rnd, fi.cnt.cols -i) + i];
 		next_esi[i] = next_esi[rand];
 		next_esi[rand] = temp;
 	}
