@@ -59,6 +59,14 @@ inefficiency	:	"number of symbols needed to decode" / k
 			A perfect codec (e.g. reed-solomon) has inefficiency == 1,
 				but the tradeoff of LDGM is (slight) inefficiency.
 
+TODO:
+-	Encode a single symbol
+-	Encode a range of symbols
+-	Seport decoding "critical path" ... aka: smallest amount of source symbols
+		needed to decode.
+	Simulate decode with "next missing source symbol" until decoding all source symbols.
+
+
 
 2016: Sirio Balmelli and Anthony Soenen
 */
@@ -116,7 +124,7 @@ out:
 /*	ffec_init_instance()
 Requires a pointer to a struct fec_instance rather than allocating it.
 This is to allow caller to decide its location.
-Corollary: we must not assume 'fi' has been zeroed: we must set 
+Corollary: we must not assume 'fi' has been zeroed: we must set
 	EVERY variable.
 */
 int		ffec_init_instance(const struct ffec_params	*fp,
@@ -219,7 +227,7 @@ Go through an entire block and generate its repair symbols.
 The main emphasis is on SEQUENTIALLY accessing source symbols,
 	limiting the pattern of random memory access to the repair symbols.
 */
-uint32_t	ffec_encode	(const struct ffec_params	*fp, 
+uint32_t	ffec_encode	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi)
 {
 	int err_cnt = 0;
@@ -240,7 +248,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 		cell = ffec_get_col_first(fi->cells, i);
 		symbol = ffec_get_sym(fp, fi, i);
 #ifdef FFEC_DEBUG
-		Z_inf(0, "enc(esi %ld) @0x%lx", 
+		Z_inf(0, "enc(esi %ld) @0x%lx",
 			i, (uint64_t)symbol);
 #endif
 		for (j=0; j < FFEC_N1_DEGREE; j++) {
@@ -251,12 +259,12 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 			if (i - fi->cnt.k == cell[j].row_id)
 				continue;
 			/* XOR into parity symbol for that row */
-			ffec_xor_into_symbol(symbol, 
+			ffec_xor_into_symbol(symbol,
 					ffec_get_sym_p(fp, fi, cell[j].row_id),
 					fp->sym_len);
 #ifdef FFEC_DEBUG
-					Z_inf(0, "xor(esi %ld) -> p%d @0x%lx", 
-						i, cell[j].row_id, 
+					Z_inf(0, "xor(esi %ld) -> p%d @0x%lx",
+						i, cell[j].row_id,
 						(uint64_t)ffec_get_sym_p(fp, fi, cell[j].row_id));
 #endif
 		}
@@ -290,7 +298,7 @@ A return of '0' means "all source symbols decoded".
 Returns '-1' on error.
 
 Note on recursion:
-This function, if simply calling itself, can (with large blocks) recurse 
+This function, if simply calling itself, can (with large blocks) recurse
 	to a point where it stack overflows.
 The solution is to use a state variable 'state', which MUST be NULL
 	on first invocation of the function, and which is otherwise
@@ -330,9 +338,9 @@ recurse:
 	/* push it to its destination */
 	memcpy(ffec_get_sym(fp, fi, esi), stack_sym, fp->sym_len);
 #ifdef FFEC_DEBUG
-	Z_inf(0, "pull <-(esi %d) @0x%lx", 
+	Z_inf(0, "pull <-(esi %d) @0x%lx",
 		esi, (uint64_t)symbol);
-	Z_inf(0, "push ->(esi %d) @0x%lx", 
+	Z_inf(0, "push ->(esi %d) @0x%lx",
 		esi, (uint64_t)ffec_get_sym(fp, fi, esi));
 #endif
 
@@ -362,12 +370,12 @@ recurse:
 			decoding.
 		*/
 		if (n_rows[j]->cnt > 1) {
-			ffec_xor_into_symbol(stack_sym, 
+			ffec_xor_into_symbol(stack_sym,
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
 #ifdef FFEC_DEBUG
-					Z_inf(0, "xor(esi %d) -> p%d @0x%lx", 
-						esi, cell[j].row_id, 
+					Z_inf(0, "xor(esi %d) -> p%d @0x%lx",
+						esi, cell[j].row_id,
 						(uint64_t)ffec_get_psum(fp, fi, cell[j].row_id));
 #endif
 		}

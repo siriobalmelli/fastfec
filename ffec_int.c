@@ -8,7 +8,7 @@
 #endif
 #define Z_BLK_LVL 0
 /* debug levels:
-	2	:	
+	2	:
 	3	:
 */
 
@@ -28,7 +28,7 @@ XOR 2 symbols.
 Note that inner loop is to allow the compiler to unroll into XOR instructions using
 	parallel YMM registers.
 */
-void __attribute__((hot)) __attribute__((optimize("O3"))) 
+void __attribute__((hot)) __attribute__((optimize("O3")))
 		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
 {
 	uint32_t i;
@@ -165,7 +165,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	uint32_t cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 	unsigned int j;
 	uint32_t retry_cnt = 0;
-	for (i=0, cell = fi->cells; 
+	for (i=0, cell = fi->cells;
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
 	{
@@ -173,13 +173,13 @@ retry:
 		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
 		temp = cell->row_id;
 		cell->row_id = cell_b->row_id;
-		cell_b->row_id = temp;	
+		cell_b->row_id = temp;
 		/*
-		This added complexity lies in making sure no other cells 
+		This added complexity lies in making sure no other cells
 			in this column contain the same row ID.
-		This is to preclude multiple cells in the same column being 
-			part of the same equation - they would XOR to 0 
-			and likely affect alignment of universal dark matter, 
+		This is to preclude multiple cells in the same column being
+			part of the same equation - they would XOR to 0
+			and likely affect alignment of universal dark matter,
 			tempting the gods to anger.
 		Simply go back through any previous cells in this column
 			and compare, re-executing the swap if equal.
@@ -194,8 +194,8 @@ retry:
 			our efficiency ... but OH F'ING WELL we TRIED.
 		*/
 		for (j=0, cell_b = cell-1;
-			j < i % FFEC_N1_DEGREE; 
-			j++, cell_b--) 
+			j < i % FFEC_N1_DEGREE;
+			j++, cell_b--)
 		{
 			if (cell->row_id == cell_b->row_id
 				&& retry_cnt++ > FFEC_COLLISION_RETRY) {
@@ -233,8 +233,8 @@ retry:
 		/* get first cell in parity column */
 		cell = ffec_get_col_first(fi->cells, fi->cnt.k + i);
 		/* walk column */
-		for (j=0; 
-			j < FFEC_N1_DEGREE; 
+		for (j=0;
+			j < FFEC_N1_DEGREE;
 			j++, cell++)
 		{
 			/* staircase: must be space left under the diagonal */

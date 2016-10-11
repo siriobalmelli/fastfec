@@ -18,7 +18,7 @@
 
 void print_usage()
 {
-	printf("ffec_test expects 2 arguments:\r\n" 
+	printf("ffec_test expects 2 arguments:\r\n"
 		"- fec_ratio (-f) - a ratio expressed in type double\r\n"
 		"- original_sz (-o) - a size in Mb expressed as unsigned int\r\n"
 		"- example: ffec_test.exe -f 1.1 -o 503927\r\n");
@@ -28,11 +28,11 @@ int main(int argc, char **argv)
 {
 	int err_cnt = 0;
 
-	/* We expect 2 args, fec_ratio and original_sz 
+	/* We expect 2 args, fec_ratio and original_sz
 		fec_ratio will be passed with the -f flag
 		original_sz will be passed with the -o flag
-	*/	
-	double fec_ratio = 0;	
+	*/
+	double fec_ratio = 0;
 	size_t original_sz = 0;
 
 	int opt;
@@ -44,14 +44,14 @@ int main(int argc, char **argv)
 				printf("fec_ratio: %f\r\n", fec_ratio);
 				break;
 
-			case 'o': 
+			case 'o':
 				original_sz = atol(optarg);
-				printf("original_sz: %ld\r\n", original_sz);	
+				printf("original_sz: %ld\r\n", original_sz);
 				break;
 
-			default: 
+			default:
 				print_usage();
-				return 0; 
+				return 0;
 		}
 	}
 	/* didn't get args? */
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 		mem = calloc(1, fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
 	int fd;
-	/* fill with random data */	
+	/* fill with random data */
 	Z_die_if((
 		fd = open("/dev/urandom", O_RDONLY)
 		) < 1, "");
@@ -93,13 +93,13 @@ int main(int argc, char **argv)
 	struct pcg_rand_state rnd_state;
 	Z_die_if((
 		read(fd, seeds, sizeof(seeds))
-		) != sizeof(seeds), "");	
+		) != sizeof(seeds), "");
 	Z_inf(0, "Seed1: 0x%lx", seeds[0]);
 	Z_inf(0, "Seed2: 0x%lx", seeds[1]);
-	//seed random number generator from dev/urandom seeds	
+	//seed random number generator from dev/urandom seeds
 	pcg_rand_seed(&rnd_state, seeds[0], seeds[1]);
 #endif
-	
+
 	while (init < fs.source_sz) {
 #ifdef OWN_RAND
 		((uint8_t*)mem)[init] = pcg_rand(&rnd_state);
@@ -128,10 +128,10 @@ int main(int argc, char **argv)
 	Z_die_if(
 #ifdef FFEC_DEBUG
 		/* force random number sequence for debugging purposes */
-		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem, 
+		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem,
 						encode, FFEC_RAND_S1, FFEC_RAND_S2)
 #else
-		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem, 
+		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem,
 						encode, 0, 0)
 #endif
 		, "");
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	clock_t clock_dec = clock();
 	struct ffec_instance fi_dec;
 	Z_die_if(
-		ffec_init_instance_contiguous(&fp, &fi_dec, original_sz, mem_dec, 
+		ffec_init_instance_contiguous(&fp, &fi_dec, original_sz, mem_dec,
 				decode, fi.seeds[0], fi.seeds[1])
 		, "");
 #ifdef FFEC_DEBUG
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 		Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(&fp, &fi_dec, i));
 	}
 	for (i=0; i < fi.cnt.p; i++)
-		Z_inf(0, "dst psum row %d @ 0x%lx", 
+		Z_inf(0, "dst psum row %d @ 0x%lx",
 			i, (uint64_t)ffec_get_psum(&fp, &fi_dec, i));
 #endif
 	/* iterate through randomly ordered ESIs and decode for each */
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 		Z_inf(0, "submit ESI %d", next_esi[i]);
 #endif
 		/* stop decoding when decoder reports 0 symbols left to decode */
-		if (!ffec_decode_sym(&fp, &fi_dec, 
+		if (!ffec_decode_sym(&fp, &fi_dec,
 				ffec_get_sym(&fp, &fi, next_esi[i]),
 				next_esi[i]))
 			break;
@@ -241,13 +241,13 @@ int main(int argc, char **argv)
 	Z_inf(0, "decoded with k=%d < i=%d < n=%d;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%\n\
 \tsource size=%.4lf MB, bitrates: enc=%ldMb/s, dec=%ldMb/s",
-		fi_dec.cnt.k, i, fi_dec.cnt.n, 
+		fi_dec.cnt.k, i, fi_dec.cnt.n,
 		(double)i / (double)fi_dec.cnt.k,
 		((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100,
 		(double)fs.source_sz / (1024 * 1024),
-		(uint64_t)((double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC) 
+		(uint64_t)((double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC)
 			/ (1024 * 1024) * 8),
-		(uint64_t)((double)fs.source_sz / ((double)clock_dec / CLOCKS_PER_SEC) 
+		(uint64_t)((double)fs.source_sz / ((double)clock_dec / CLOCKS_PER_SEC)
 			/ (1024 * 1024) * 8));
 
 out:

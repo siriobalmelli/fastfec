@@ -24,7 +24,7 @@ We are ALWAYS accessing the matrix starting from a SYMBOL (==column), and not
 	an equation.
 Therefore, the cell must know what row and column it's in, and point to its
 	"siblings" (other cells belonging to the same equation).
-However, this means the row structure must only know HOW MANY cells it "has" 
+However, this means the row structure must only know HOW MANY cells it "has"
 	(equations unsolved), and point to one of them.
 
 All rows are contiguous in memory, so a cell doesn't need a pointer to its
@@ -99,11 +99,11 @@ int		ffec_matrix_cell_cmp(struct ffec_cell		*a,
 void		ffec_matrix_row_prn(struct ffec_row		*row)
 {
 	if (!row->last)
-		Z_inf(0, "r[%02d].cnt=%d\t.last(NULL)", 
+		Z_inf(0, "r[%02d].cnt=%d\t.last(NULL)",
 			row->row_id, row->cnt);
 	else
-		Z_inf(0, "r[%02d].cnt=%d\t.last(r%d,c%d) @ 0x%lx", 
-			row->row_id, row->cnt, 
+		Z_inf(0, "r[%02d].cnt=%d\t.last(r%d,c%d) @ 0x%lx",
+			row->row_id, row->cnt,
 			row->last->row_id, row->last->col_id,
 			(uint64_t)row->last);
 }
@@ -116,12 +116,12 @@ There is no requirement that cells be ordered by physical memory location,
 
 row:	last	->	s2:	prev	->	s5
 */
-void		ffec_matrix_row_link(struct ffec_row		*row, 
+void		ffec_matrix_row_link(struct ffec_row		*row,
 					struct ffec_cell	*new_cell)
 {
 #ifdef FFEC_DEBUG
 	/* debug print: before */
-	Z_inf(0, "r[%02d].cnt=%d\t++cell(r%02d,c%02d)", 
+	Z_inf(0, "r[%02d].cnt=%d\t++cell(r%02d,c%02d)",
 		row->row_id, row->cnt, new_cell->row_id, new_cell->col_id);
 #endif
 	row->cnt++;
@@ -146,12 +146,12 @@ Any "previous" cells are pointed to any "later" cells.
 Counts in 'row' are updated.
 'cell' is zeroed.
 */
-void		ffec_matrix_row_unlink(struct ffec_row		*row, 
+void		ffec_matrix_row_unlink(struct ffec_row		*row,
 					struct ffec_cell	*cell)
 {
 #ifdef FFEC_DEBUG
 	/* debug print: before */
-	Z_inf(0, "r[%02d].cnt=%d\t--cell(r%02d,c%02d)", 
+	Z_inf(0, "r[%02d].cnt=%d\t--cell(r%02d,c%02d)",
 		row->row_id, row->cnt, cell->row_id, cell->col_id);
 #endif
 	row->cnt--;

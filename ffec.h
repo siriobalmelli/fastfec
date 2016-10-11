@@ -66,7 +66,7 @@ struct ffec_instance {
 	uint64_t			seeds[2];
 	struct pcg_rand_state		rng;
 	struct ffec_counts		cnt;
-	/* NO pointers allocated or deallocated by FEC. 
+	/* NO pointers allocated or deallocated by FEC.
 	Caller is responsible to make sure they're properly sized -
 		use ffec_calc_lengths().
 	*/
@@ -77,7 +77,7 @@ struct ffec_instance {
 	struct ffec_cell		*cells;	/* ... and the scratch region
 							always begins with the
 							array of cells.
-						*/		
+						*/
 	};
 	/* references into 'scratch' */
 	struct ffec_row			*rows;
@@ -117,7 +117,7 @@ Z_INL_FORCE int	ffec_init_instance_contiguous(
 	return ffec_init_instance(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
 }
 
-uint32_t	ffec_encode	(const struct ffec_params	*fp, 
+uint32_t	ffec_encode	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi);
 uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
@@ -126,19 +126,19 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 
 
 /* symbol locations */
-Z_INL_FORCE void	*ffec_get_sym_k(const struct ffec_params	*fp, 
+Z_INL_FORCE void	*ffec_get_sym_k(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			k)
 {
 	return fi->source + (fp->sym_len * k);
 }
-Z_INL_FORCE void	*ffec_get_sym_p(const struct ffec_params	*fp, 
+Z_INL_FORCE void	*ffec_get_sym_p(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			p)
 {
 	return fi->parity + (fp->sym_len * p);
 }
-Z_INL_FORCE void	*ffec_get_sym	(const struct ffec_params	*fp, 
+Z_INL_FORCE void	*ffec_get_sym	(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			esi)
 {
@@ -149,7 +149,7 @@ Z_INL_FORCE void	*ffec_get_sym	(const struct ffec_params	*fp,
 		return ffec_get_sym_p(fp, fi, esi);
 	}
 }
-Z_INL_FORCE void	*ffec_get_psum	(const struct ffec_params	*fp, 
+Z_INL_FORCE void	*ffec_get_psum	(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			row)
 {

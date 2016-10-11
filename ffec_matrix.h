@@ -26,7 +26,7 @@ struct ffec_cell {
 struct ffec_row {
 #ifdef FFEC_DEBUG
 	uint32_t		row_id;	/* only used for debug prints */
-#endif 
+#endif
 	uint32_t		cnt;	/* nr of linked cells */
 	struct ffec_cell	*last;	/* We ONLY need the last cell.
 					We can work backwards from there ;)
@@ -43,9 +43,9 @@ void		ffec_matrix_row_prn(struct ffec_row		*row);
 #endif
 
 /* operational things */
-void		ffec_matrix_row_link(struct ffec_row		*row, 
+void		ffec_matrix_row_link(struct ffec_row		*row,
 					struct ffec_cell	*new_cell);
-void		ffec_matrix_row_unlink(struct ffec_row		*row, 
+void		ffec_matrix_row_unlink(struct ffec_row		*row,
 					struct ffec_cell	*cell);
 
 /*	ffec_cell_unset()
@@ -63,7 +63,7 @@ Z_INL_FORCE void	ffec_cell_unset(struct ffec_cell *cell)
 }
 
 /*	ffec_cell_test()
-returns 0 if a cell is "set" 
+returns 0 if a cell is "set"
 	(aka: hasn't already been solved out of its row equation).
 */
 Z_INL_FORCE int		ffec_cell_test(struct ffec_cell *cell)
