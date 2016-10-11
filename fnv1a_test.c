@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
 	uint64_t hash;
 	uint32_t crc32;
-	MHASH h_crc32;	
+	MHASH h_crc32;
 
 	size_t line_len;
 	uint64_t fnv_coll=0, crc_coll=0;
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 			fnv_coll++;
 
 		/* re-do this with crc32, as a baseline */
-		h_crc32 = mhash_init(MHASH_CRC32); 
+		h_crc32 = mhash_init(MHASH_CRC32);
 		mhash(h_crc32, lineptr, line_len);
 		mhash_deinit(h_crc32, &crc32);
 		if (j_add_(&j_crc, crc32, line_len))

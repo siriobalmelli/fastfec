@@ -116,7 +116,7 @@ TODO: this scheme needs to change into a bitmask-based idea, rather than sequent
 /* global definitions
 	in case a function does not care to override it locally
 	*/
-static int err_cnt = 0; 
+static int err_cnt = 0;
 static int wrn_cnt = 0;
 
 #define Z_log_err(M, ...) do { \
@@ -125,7 +125,7 @@ static int wrn_cnt = 0;
 			} while(0)
 #define Z_err Z_log_err
 
-/*	Set I/O to always be line-buffered: 
+/*	Set I/O to always be line-buffered:
 If we are writing to files we likely want to be able to tail them effectively.
 	*/
 static void __attribute__ ((constructor)) Z_start_()
@@ -134,15 +134,15 @@ static void __attribute__ ((constructor)) Z_start_()
 	setvbuf(stderr, NULL, _IOLBF, 0);
 }
 
-/* report errors at program close 
-	static because we want every library to run this separately 
+/* report errors at program close
+	static because we want every library to run this separately
 	*/
 static void __attribute__ ((destructor)) Z_end_()
-{ 
+{
 	if (err_cnt)
-		_log(Z_STR_ERR, __BASE_FILE__, "err_cnt == %d", err_cnt); 
+		_log(Z_STR_ERR, __BASE_FILE__, "err_cnt == %d", err_cnt);
 	if (wrn_cnt)
-		_log(Z_STR_OK, __BASE_FILE__, "wrn_cnt == %d", wrn_cnt); 
+		_log(Z_STR_OK, __BASE_FILE__, "wrn_cnt == %d", wrn_cnt);
 }
 
 #define Z_bail(M, ...) do {\

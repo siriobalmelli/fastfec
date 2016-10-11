@@ -30,7 +30,7 @@ Sirio Balmelli, 2016
 struct pcg_rand_state {
 	uint64_t state;		/* RNG state. All values are possible. */
 	uint64_t inc;		/* Controls which RNG sequence (stream) is
-					selected. 
+					selected.
 				Must *always* be odd.
 				*/
 }__attribute__ ((packed));
@@ -54,8 +54,8 @@ Z_INL_FORCE uint32_t	pcg_rand_bound(struct pcg_rand_state	*rng,
 		bound, which we do by dropping output less than a threshold.
 	A naive scheme to calculate the threshold would be to do
 			`uint32_t threshold = 0x100000000ull % bound;`
-		but 64-bit div/mod is slower than 32-bit div/mod 
-		(especially on 32-bit platforms).  
+		but 64-bit div/mod is slower than 32-bit div/mod
+		(especially on 32-bit platforms).
 	In essence, we do
 			`uint32_t threshold = (0x100000000ull-bound) % bound;`
 	because this version will calculate the same modulus,
@@ -63,12 +63,12 @@ Z_INL_FORCE uint32_t	pcg_rand_bound(struct pcg_rand_state	*rng,
 	*/
 	uint32_t threshold = -bound % bound;
 	/* Uniformity guarantees that this loop will terminate.
-	In practice, it should usually terminate quickly; on average 
-		(assuming all bounds are equally likely), 82.25% of the time, 
+	In practice, it should usually terminate quickly; on average
+		(assuming all bounds are equally likely), 82.25% of the time,
 		we can expect it to require just one iteration.
-	In the worst case, someone passes a bound of 2^31 + 1 (i.e., 2147483649), 
+	In the worst case, someone passes a bound of 2^31 + 1 (i.e., 2147483649),
 		which invalidates almost 50% of the range.
-	In practice, bounds are typically small and only a tiny amount 
+	In practice, bounds are typically small and only a tiny amount
 		of the range is eliminated.
 	*/
 	uint32_t r;
@@ -84,7 +84,7 @@ In actual fact, 'seed1' is the "init state" and 'seed2' the "init sequence",
 	but to highlight usage, they are just "seeds".
 For reproducible sequences, use the same pair of seeds across initializations.
 */
-Z_INL_FORCE void	pcg_rand_seed(	struct pcg_rand_state	*rng, 
+Z_INL_FORCE void	pcg_rand_seed(	struct pcg_rand_state	*rng,
 					uint64_t		seed1,
 					uint64_t		seed2)
 {
