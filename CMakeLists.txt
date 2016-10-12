@@ -10,7 +10,7 @@ target_link_libraries(ffec
 
 
 link_libraries(ffec
-		fmd5)
+		hash)
 add_executable(ffec_test.exe ffec_test.c)
 
 add_test(NAME ffec_test COMMAND ffec_test.exe -f 1.05 -o 64000000)
