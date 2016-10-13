@@ -1,0 +1,9 @@
+#include bits.tup 
+include bits.tup
+
+LIB_LOCAL = bits.c
+LIB_NAME=bits
+# compile library objects
+: foreach	$(LIB_LOCAL) |> !cc |> {libs}
+# build the library, export the necessary flags
+: {libs} |> !lib |>
