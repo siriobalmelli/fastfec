@@ -159,7 +159,6 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		identical at this stage.
 	The algorithm used is 'Knuth-Fisher-Yates'.
 	*/
-	uint32_t temp;
 	struct ffec_cell *cell_b;
 	struct ffec_row *row;
 	uint32_t cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
@@ -171,9 +170,10 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	{
 retry:
 		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
-		temp = cell->row_id;
-		cell->row_id = cell_b->row_id;
-		cell_b->row_id = temp;
+		/* To swap, use an XOR trick rather than a temp variable. */
+		cell->row_id ^= cell_b->row_id;
+		cell_b->row_id ^= cell->row_id;
+		cell->row_id ^= cell_b->row_id;
 		/*
 		This added complexity lies in making sure no other cells
 			in this column contain the same row ID.
@@ -282,7 +282,7 @@ int		ffec_calc_lengths_int(const struct ffec_params	*fp,
 	out->scratch_sz = scr;
 
 out:
-		return err_cnt;
+	return err_cnt;
 }
 
 #undef Z_BLK_LVL
