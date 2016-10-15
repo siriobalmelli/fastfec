@@ -11,11 +11,10 @@ LIB_NAME = ffec
 # build the library
 : {libs} |> !lib |>
 
-# Preserve script into build directory.
-#+ NOTE: this occasinally produces a circular dependency error.
-#: some_script.sh |> !tup_preserve |>
-
 # build test files
 EXE_LOCAL = ffec_test.c
 : foreach $(EXE_LOCAL) |> !cc |> {exes}
 : foreach {exes} |> !exe |>
+
+# preserve the Makefile.test
+: Makefile.test |> !tup_preserve |>
