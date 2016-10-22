@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <stdlib.h> /* atof */
 
-//#define FFEC_DEBUG
 #include "ffec.h"
 
 #define OWN_RAND
@@ -129,7 +128,7 @@ int main(int argc, char **argv)
 #ifdef FFEC_DEBUG
 		/* force random number sequence for debugging purposes */
 		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem,
-						encode, FFEC_RAND_S1, FFEC_RAND_S2)
+						encode, PCG_RAND_S1, PCG_RAND_S2)
 #else
 		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem,
 						encode, 0, 0)
@@ -180,20 +179,10 @@ int main(int argc, char **argv)
 				decode, fi.seeds[0], fi.seeds[1])
 		, "");
 #ifdef FFEC_DEBUG
-	/* compare matrix rows */
-	for (i=0; i < fi.cnt.rows; i++) {
-		if (ffec_matrix_row_cmp(&fi.rows[i], &fi_dec.rows[i])) {
-			Z_wrn("row %d differs", i);
-			ffec_matrix_row_prn(&fi.rows[i]);
-			ffec_matrix_row_prn(&fi_dec.rows[i]);
-			printf("\n");
-		}
-	}
-	/* compare cells */
-	for (i=0; i < fi.cnt.n * FFEC_N1_DEGREE; i++) {
-		if (ffec_matrix_cell_cmp(&fi.cells[i], &fi_dec.cells[i]))
-			Z_wrn("cell %d differs", i);
-	}
+	/* compare matrix cells and rows - which should be identical
+		(because their IDs are offsets, not absolute addresses ;)
+	*/
+	Z_die_if(memcmp(fi.cells, fi_dec.cells, fi.cnt.n * FFEC_N1_DEGREE + fi.cnt.rows), "bad");
 	/* print symbol addresses */
 	for (i=0; i < fi.cnt.n; i++) {
 		Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(&fp, &fi, i));

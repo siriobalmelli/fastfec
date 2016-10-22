@@ -27,7 +27,7 @@
 #define FFEC_MIN_K 7
 #define	FFEC_MIN_P 3
 
-#define FFEC_COLLISION_RETRY (FFEC_N1_DEGREE * 2)
+#define FFEC_COLLISION_RETRY (FFEC_N1_DEGREE * 4)
 
 enum ffec_direction {
 	encode,

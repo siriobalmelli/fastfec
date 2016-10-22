@@ -4,62 +4,49 @@
 #include <stdint.h>
 #include "zed_dbg.h"
 
+
 /* parity matrix
 Note that because all cells are stored contiguously in column order,
 	columns are "implicit".
 See the inline ffec_get_col_first().
 */
 struct ffec_cell {
-	uint32_t		col_id;
-	uint32_t		row_id;
-	struct ffec_cell	*row_prev;	/* An unset cell has this as '-1',
-						Note that NULL is a valid value
-							for a cell at the head of a row.
-						*/
-	struct ffec_cell	*row_next;
-	/* note that because cells are all contiguous in an array,
-		'col_prev' will be immediately preceding in memory,
-		and 'col_next' immediately following.
+	/* linked-list stuff: must be at top of struct.
+	An "unset" cell is (id_prev == id_next && id_next == col_id)
 	*/
+	uint32_t		c_prev;
+	uint32_t		c_next;
+	uint32_t		c_me; /* to get col_id, divide by N1_DEGREE */
+
+	uint32_t		row_id;
 }__attribute__ ((packed));
 
+/*	row
+Note that this struct must be of IDENTICAL size to 'ffec_cell'
+	so that we can index using IDs rather than pointers.
+*/
 struct ffec_row {
-#ifdef FFEC_DEBUG
-	uint32_t		row_id;	/* only used for debug prints */
-#endif
-	uint32_t		cnt;	/* nr of linked cells */
-	struct ffec_cell	*last;	/* We ONLY need the last cell.
-					We can work backwards from there ;)
-					*/
-}__attribute__ ((packed));
+	/* linked list stuff */
+	uint32_t		c_last;
+	uint32_t		c_first;
+	uint32_t		c_me;	/* only used for debug prints (and to pad this struct) */
 
-#ifdef FFEC_DEBUG
-/* debug/printing functions */
-int		ffec_matrix_row_cmp(	struct ffec_row		*a,
-					struct ffec_row		*b);
-int		ffec_matrix_cell_cmp(	struct ffec_cell	*a,
-					struct ffec_cell	*b);
-void		ffec_matrix_row_prn(struct ffec_row		*row);
-#endif
+	uint32_t		cnt;	/* nr of linked cells */
+}__attribute__ ((packed));
 
 /* operational things */
-void		ffec_matrix_row_link(struct ffec_row		*row,
-					struct ffec_cell	*new_cell);
-void		ffec_matrix_row_unlink(struct ffec_row		*row,
-					struct ffec_cell	*cell);
+void		ffec_matrix_row_link(	struct ffec_row		*row,
+					struct ffec_cell	*new_cell,
+					struct ffec_cell	*base);
+void		ffec_matrix_row_unlink(	struct ffec_row		*row,
+					struct ffec_cell	*cell,
+					struct ffec_cell	*base);
 
-/*	ffec_cell_unset()
-Unset cell.
-Note that this is a "one-way" unsetting, we don't anticipate
-	relinking this cell, ever.
-We simply link all cells when the matrix is created, and then
-	unlink them one by one as the relevant symbols are solved
-	into their equations.
+/*	ffec_cell_init()
 */
-Z_INL_FORCE void	ffec_cell_unset(struct ffec_cell *cell)
+Z_INL_FORCE void	ffec_cell_init(struct ffec_cell *cell, uint32_t id)
 {
-	memset(cell, 0x0, sizeof(struct ffec_cell));
-	cell->row_prev = (void *)-1;
+	cell->c_prev = cell->c_next = cell->c_me = id;
 }
 
 /*	ffec_cell_test()
@@ -68,7 +55,7 @@ returns 0 if a cell is "set"
 */
 Z_INL_FORCE int		ffec_cell_test(struct ffec_cell *cell)
 {
-	return (cell->row_prev == (void*)-1);
+	return (cell->c_prev == cell->c_next && cell->c_next == cell->c_me);
 }
 
 #endif /* ffec_matrix_h_ */

@@ -5,7 +5,9 @@ FFEC_=1
 
 	LINK_LIBS += -lffec
 	LINK_LIBS += -lm
-	CFLAGS +=
+	ifeq (@(DEBUG),y)
+		CFLAGS += -DFFEC_DEBUG
+	endif
 
 	# unicorns, rainbows, kittens! (no touching)
 	I_DIRS += -I$(TUP_CWD)

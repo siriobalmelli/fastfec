@@ -87,6 +87,7 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 }
 #endif
 
+
 /*	ffec_calc_sym_counts()
 Calculate the symbol counts for a given source length and FEC params.
 Populates them into 'fc', which must be allocated by the caller.
@@ -134,37 +135,82 @@ out:
 	return err_cnt;
 }
 
+
 /*	ffec_init_matrix()
-Initialize the parity matrix.
+Initialize the parity matrix; distribute all the source symbols into the rows (equations).
+
+The rub is we want an EVEN distribution of 1s between the rows,
+	WHILE ensuring every column has precisely FFEC_N1_DEGREE 1s.
+Our tactic takes advantage of the fact that "columns" are implicit
+		in the ordering of cells (which means they will always have FFEC_N1_DEGREE 1s),
+		so we can:
+	a.) assign rows to cells in diagonal fashion,
+	b.) RANDOMLY SWAP CELLS between each other,
+	c.) link each cell to its row.
 */
 void		ffec_init_matrix	(struct ffec_instance	*fi)
 {
-	/* distribute all the source symbols into the rows (equations).
-	The rub is we want an EVEN distribution of 1s between the rows,
-		WHILE ensuring every column has precisely FFEC_N1_DEGREE 1s.
-	The tactic takes advantage of the fact that "columns" are implicit
-		in the ordering of cells (which means they will always have FFEC_N1_DEGREE 1s)
-		so we can:
-		a.) assign rows to cells in diagonal fashion,
-		b.) RANDOMLY SWAP CELLS between each other,
-		c.) link each cell to its row (assigned in a).
+	/*
+		initialize cells and rows
 	*/
-	unsigned int i;
-	struct ffec_cell *cell;
-	for (i=0; i < fi->cnt.k * FFEC_N1_DEGREE; i++)
-		fi->cells[i].row_id = i % fi->cnt.rows;
+	unsigned int i, j;
+	struct ffec_cell *cell = fi->cells;
+	/* Initialize cells for 'k' source symbols. */
+	uint32_t cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
+	for (i=0; i < cell_cnt; i++, cell++) {
+		cell->row_id = i % fi->cnt.rows;
+		ffec_cell_init(cell, i);
+	}
+	/* Initialize cells for 'n-k' repair symbols */
+	cell_cnt += fi->cnt.p * FFEC_N1_DEGREE;
+	for (; i < cell_cnt; i++, cell++)
+		ffec_cell_init(cell, i);
+	/* Initialize the rows which immediately follow cells in memory.
+	Note that part of the matrix linked list trickery involves
+		a 'row' being identically-sized to a 'cell' and having
+		its "c_" columns be interchangeable.
+	We expect the 'cnt' variable for the row to have already been
+		memset to 0 along with the rest of the scratch space.
+	*/
+	cell_cnt += fi->cnt.rows;
+	for (; i < cell_cnt; i++, cell++)
+		ffec_cell_init(cell, i);
 
-	/* Swap the cells among each other in order to randomize the contents.
-	Notice we swap just the row_id, since every other field
-		identical at this stage.
+
+	/*
+		generate parity
+	
+	Go through each parity column.
+	Distribute FFEC_N1_DEGREE 1's in the column,
+		all of them in a staircase pattern.
+
+	This is done before the source symbol swap
+		since the parity cells are more
+		likely to still be in cache.
+	*/
+	for (i=0; i < fi->cnt.p; i++) {
+		/* get first cell in parity column */
+		cell = ffec_get_col_first(fi->cells, fi->cnt.k + i);
+		/* walk column */
+		for (j=0; j < FFEC_N1_DEGREE; j++, cell++) {
+			/* staircase: there must be space left under the diagonal */
+			if ( ((int64_t)fi->cnt.p -i -j) > 0) {
+				cell->row_id = i + j;
+				ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
+			}
+		}
+	}
+
+
+	/*
+		source symbol swap
+	
+	Swap row_id among cells in order to randomize XOR distribution.
 	The algorithm used is 'Knuth-Fisher-Yates'.
 	*/
 	struct ffec_cell *cell_b;
-	struct ffec_row *row;
-	uint32_t cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
-	unsigned int j;
 	uint32_t retry_cnt = 0;
-	for (i=0, cell = fi->cells;
+	for (i=0, cell = fi->cells, cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
 	{
@@ -180,15 +226,18 @@ retry:
 		This is to preclude multiple cells in the same column being
 			part of the same equation - they would XOR to 0
 			and likely affect alignment of universal dark matter,
-			tempting the gods to anger.
+			leading to Lorenz-Fitzgerald-Einstein disturbances
+			and tempting the gods to anger.
 		Simply go back through any previous cells in this column
 			and compare, re-executing the swap if equal.
 		I'm sure this violates the absolute "randomness" of the
 			algorithm, but no better alternative is in sight.
+
 		Also, there IS a small chance that we are stuck at the end
 			and no amount of retries will get us a column without
 			a double cell, so use "retry_cnt" to avoid infinite
-			loops. The algorithm DOES still work with double
+			loops.
+		To be fair, the algorithm DOES still work with double
 			XOR of a symbol into the same column, but for obvious
 			reasons it subtracts its own entropy and reduces
 			our efficiency ... but OH F'ING WELL we TRIED.
@@ -199,57 +248,22 @@ retry:
 		{
 			if (cell->row_id == cell_b->row_id
 				&& retry_cnt++ > FFEC_COLLISION_RETRY) {
-#ifdef FFEC_DEBUG
-				Z_wrn("column conflict");
-#endif
 				goto retry;
 			}
 			retry_cnt=0;
 		}
-		/* successful swap!
-		We won't visit this cell again, so set its column ID
-			and link it to the pertinent row.
-		*/
-		cell->col_id = i / FFEC_N1_DEGREE;
-		row = &fi->rows[cell->row_id];
-		ffec_matrix_row_link(row, cell);
+		/* successful swap! Link into row. */
+		ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
 	}
 	/* set last cell.
 	It is recognized that the last cell COULD be a duplicate of any of the
 		FFEC_N1_DEGREE cells before it, but no SIMPLE solution
 		presents itself at this time.
-	It bears note that this is a literal "corner case".
+	This is a literal "corner case" :P
 	*/
-	cell->col_id = i / FFEC_N1_DEGREE;
-	row = &fi->rows[cell->row_id];
-	ffec_matrix_row_link(row, cell);
-
-
-	/* Go through each parity column.
-	Distribute FFEC_N1_DEGREE 1's in the column,
-		all of them in a staircase pattern.
-	*/
-	for (i=0; i < fi->cnt.p; i++) {
-		/* get first cell in parity column */
-		cell = ffec_get_col_first(fi->cells, fi->cnt.k + i);
-		/* walk column */
-		for (j=0;
-			j < FFEC_N1_DEGREE;
-			j++, cell++)
-		{
-			/* staircase: must be space left under the diagonal */
-			if ( ((int64_t)fi->cnt.p -i -j) > 0) {
-				cell->col_id = fi->cnt.k + i;
-				cell->row_id = i + j;
-				row = &fi->rows[cell->row_id];
-				ffec_matrix_row_link(row, cell);
-			} else {
-				/* otherwise, explicitly "unset" the cell */
-				ffec_cell_unset(cell);
-			}
-		}
-	}
+	ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
 }
+
 
 /*	ffec_calc_lengths_int()
 Calculates lengths for callers who already have symbol counts.

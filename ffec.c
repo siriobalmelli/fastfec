@@ -62,7 +62,7 @@ inefficiency	:	"number of symbols needed to decode" / k
 TODO:
 -	Encode a single symbol
 -	Encode a range of symbols
--	Seport decoding "critical path" ... aka: smallest amount of source symbols
+-	Report decoding "critical path" ... aka: smallest amount of source symbols
 		needed to decode.
 	Simulate decode with "next missing source symbol" until decoding all source symbols.
 
@@ -169,14 +169,9 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 		fi->psums = ((void*)fi->rows) + ffec_len_rows(&fi->cnt);
 	else
 		fi->psums = NULL;
-	/* zero the scratch region, set row IDs */
+	/* zero the scratch region */
 	memset(fi->scratch, 0x0, sz.scratch_sz);
-#ifdef FFEC_DEBUG
-	/* initialize row IDs for use by debug prints */
-	unsigned int i;
-	for (i=0; i < fi->cnt.rows; i++)
-		fi->rows[i].row_id = i;
-#endif
+
 	/* If encoding, the parity region will be zeroed by the encoder
 		function.
 	Otherwise, zero it now.
@@ -300,10 +295,8 @@ Returns '-1' on error.
 Note on recursion:
 This function, if simply calling itself, can (with large blocks) recurse
 	to a point where it stack overflows.
-The solution is to use a state variable 'state', which MUST be NULL
-	on first invocation of the function, and which is otherwise
-	used as a pointer to a J1 array which into which can be queued
-	the remaining "cnt==1" rows to be decoded.
+The solution is to allocate a j_array when entering the function,
+	and then simulate recursion with a jump.
 */
 uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
@@ -329,7 +322,7 @@ recurse:
 
 	/* get column */
 	cell = ffec_get_col_first(fi->cells, esi);
-	/* if this cell has been unlinked, unwind the recusion stack */
+	/* if this cell has been unlinked, unwind the recursion stack */
 	if (ffec_cell_test(cell))
 		goto check_recurse;
 
@@ -367,7 +360,7 @@ recurse:
 		}
 		n_rows[j] = &fi->rows[cell[j].row_id];
 		/* XOR into psum, unless we don't have to because we're done
-			decoding.
+			decoding that row.
 		*/
 		if (n_rows[j]->cnt > 1) {
 			ffec_xor_into_symbol(stack_sym,
@@ -380,7 +373,7 @@ recurse:
 #endif
 		}
 		/* remove from row */
-		ffec_matrix_row_unlink(n_rows[j], &cell[j]);
+		ffec_matrix_row_unlink(n_rows[j], &cell[j], fi->cells);
 	}
 
 	/* See if any row can now be solved.
@@ -392,8 +385,8 @@ recurse:
 		if (!n_rows[j])
 			continue;
 		if (n_rows[j]->cnt == 1) {
-			cell = n_rows[j]->last;
-			tmp.esi = cell->col_id;
+			cell = &fi->cells[n_rows[j]->c_last];
+			tmp.esi = cell->c_me / FFEC_N1_DEGREE;
 			tmp.row = cell->row_id;
 			j_enq_(&state, tmp.index);
 		}

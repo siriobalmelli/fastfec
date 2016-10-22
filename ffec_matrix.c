@@ -17,21 +17,36 @@ The inline ffec_get_col_first() gets the first cell in a column,
 The matrix rows (equations) however ARE implemented as a linked list.
 Each equation is represented by a "row" structure.
 
-Certain factors made it possible to simplify the implementation, with resultant
-	smaller "cell" and "row" structures:
 
-We are ALWAYS accessing the matrix starting from a SYMBOL (==column), and not
-	an equation.
-Therefore, the cell must know what row and column it's in, and point to its
-	"siblings" (other cells belonging to the same equation).
-However, this means the row structure must only know HOW MANY cells it "has"
-	(equations unsolved), and point to one of them.
+Linked list and ID FIELDS:
 
-All rows are contiguous in memory, so a cell doesn't need a pointer to its
-	row, simply the row ID, which it can then use as an index into the
-	array of rows.
+The basic issue here is that we want to cut in half the amount of space being
+	used for linked-list pointers.
+Also, we want to be able to memcpy an entire matrix (rows + cells) elsewhere
+	and still be able to use it (decode simulation, etc).
 
-Here is a basic conceptual diagram which was of help in visualizing the process:
+Therefore, linked list "pointers" are actually offsets from the "base"
+	address (address of first cell).
+"base" must refer to the beginning of an array which contiguously contains
+	all cells and then all rows.
+
+We KNOW the entire array of rows AND columns WON'T ever be larger than
+	UINT32_MAX, so we can use a uint32_t 'id' fields,
+	rather than 64-bit pointers.
+
+INVARIANT this approach only works if:
+	- memory is arranged as "cells, THEN rows"
+	- memory is ALWAYS CONTIGUOUS
+	- sizeof(cell) == sizeof(row)
+
+The counterintuitive part of this is that a row DOES have a "cell_id",
+	which is "cell_cnt + row_id".
+This is ONLY used so that linked list addition and removal operations
+	can treat the row like just another "previous" or "next" cell
+	without wasteful if clauses.
+
+
+Here is a basic conceptual diagram which was of help in visualizing the matrix:
 
 [matrix at start of decode]
 		idx=2	idx=1	idx=2	idx=2	idx=2	idx=2	idx=1
@@ -52,128 +67,87 @@ idx=2	r3	0	0	1	0	0	0	1	psum=s1^p2
 2016 Sirio Balmelli
 */
 
-#include <string.h> /* memset() */
-
 #include "ffec_matrix.h"
 
+
 #ifdef FFEC_DEBUG
-/*	ffec_matrix_row_cmp()
-Returns 0 if rows identical
-*/
-int		ffec_matrix_row_cmp(	struct ffec_row		*a,
-					struct ffec_row		*b)
+#include <signal.h> /* raise() */
+#include <stdlib.h> /* malloc() */
+/* self-test code */
+__attribute__((constructor)) void ffec_matrix_self_test()
 {
-	if (a->cnt != b->cnt)
-		return 1;
-	struct ffec_cell *cell_a = a->last;
-	struct ffec_cell *cell_b = b->last;
+	struct ffec_cell a_cell;
+	ffec_cell_init(&a_cell, 42);
+	Z_die_if(!ffec_cell_test(&a_cell), "expecting cell to be unset after init");
+	
+	Z_inf(0, "matrix self-test OK");
+	return;
+out:
+	raise(SIGQUIT);
+}
 
-	while (cell_a && cell_b)
-	{
-		if (ffec_matrix_cell_cmp(cell_a, cell_b))
-			return 1;
-		/* move one cell down the row */
-		cell_a = cell_a->row_prev;
-		cell_b = cell_b->row_prev;
+/*	ffec_matrix_row_prn()
+Print a row including all its linked cells.
+*/
+void		ffec_matrix_row_prn(struct ffec_row		*row,
+					struct ffec_cell	*base)
+{
+	printf("r[%d].cnt=%02d  %d", row->c_me, row->cnt, row->c_me);
+
+	int i=0;
+	/* for a row, "next" is "first" */
+	struct ffec_cell *c_fwd = (struct ffec_cell*)row; 
+	/* one extra iteration, print row again at the end */
+	for (; i <= row->cnt; i++) {
+		c_fwd = &base[c_fwd->c_next];
+		printf(" -> %d", c_fwd->c_me);
 	}
-	/* if cell_b is not now ALSO NULL, this is bad */
-	if (cell_b)
-		return 1;
-
-	/* all is good */
-	return 0;
-}
-
-/*	ffec_matrix_cell_cmp()
-Compare 2 cells, return non-zero if they differ.
-*/
-int		ffec_matrix_cell_cmp(struct ffec_cell		*a,
-					struct ffec_cell	*b)
-{
-	if (a->col_id != b->col_id || a->row_id != b->row_id)
-		return 1;
-	return 0;
-}
-
-/* debug printing */
-void		ffec_matrix_row_prn(struct ffec_row		*row)
-{
-	if (!row->last)
-		Z_inf(0, "r[%02d].cnt=%d\t.last(NULL)",
-			row->row_id, row->cnt);
-	else
-		Z_inf(0, "r[%02d].cnt=%d\t.last(r%d,c%d) @ 0x%lx",
-			row->row_id, row->cnt,
-			row->last->row_id, row->last->col_id,
-			(uint64_t)row->last);
+	printf("\n");
 }
 #endif
+
 
 /*	ffec_matrix_row_link()
-Link 'new_cell' into the row 'row'.
-There is no requirement that cells be ordered by physical memory location,
-	so something like this would make logical sense:
+Add cell 'c_new' into the linked list of 'row'.
 
-row:	last	->	s2:	prev	->	s5
+The key to the deceptive simplicity of this is that 
 */
-void		ffec_matrix_row_link(struct ffec_row		*row,
-					struct ffec_cell	*new_cell)
+void		ffec_matrix_row_link(	struct ffec_row		*row,
+					struct ffec_cell	*c_new,
+					struct ffec_cell	*base)
 {
-#ifdef FFEC_DEBUG
-	/* debug print: before */
-	Z_inf(0, "r[%02d].cnt=%d\t++cell(r%02d,c%02d)",
-		row->row_id, row->cnt, new_cell->row_id, new_cell->col_id);
-#endif
+	/* we insert at "tail", so our "prev" is the existing "tail" */
+	c_new->c_prev = row->c_last;
+	/* and we are their "next" */
+	base[c_new->c_prev].c_next = c_new->c_me;
+
+	/* we are last, so row (head) is "next" */
+	c_new->c_next = row->c_me;
+	row->c_last = c_new->c_me;
+
+	/* increment row (aka: "head") counter */
 	row->cnt++;
 
-	if (!row->last) {
-		row->last = new_cell;
-	} else {
-		new_cell->row_prev = row->last;
-		(new_cell->row_prev)->row_next = new_cell;
-		row->last = new_cell;
-	}
-
 #ifdef FFEC_DEBUG
-	/* debug print: after */
-	ffec_matrix_row_prn(row);
+	ffec_matrix_row_prn(row, base);
 #endif
 }
 
-/*	ffec_matrix_row_unlink()
-Unlink 'cell' from 'row'.
-Any "previous" cells are pointed to any "later" cells.
-Counts in 'row' are updated.
-'cell' is zeroed.
-*/
-void		ffec_matrix_row_unlink(struct ffec_row		*row,
-					struct ffec_cell	*cell)
+void		ffec_matrix_row_unlink(	struct ffec_row		*row,
+					struct ffec_cell	*cell,
+					struct ffec_cell	*base)
 {
-#ifdef FFEC_DEBUG
-	/* debug print: before */
-	Z_inf(0, "r[%02d].cnt=%d\t--cell(r%02d,c%02d)",
-		row->row_id, row->cnt, cell->row_id, cell->col_id);
-#endif
+	/* we disappear */
+	base[cell->c_prev].c_next = cell->c_next;
+	base[cell->c_next].c_prev = cell->c_prev;
+
+	/* unset (aka: init() but we already know 'c_me' */
+	cell->c_prev = cell->c_next = cell->c_me;
+
+	/* we count */
 	row->cnt--;
 
-	/* Look before us.
-	If there is a cell there, link it to the one after us.
-	*/
-	if (cell->row_prev)
-		(cell->row_prev)->row_next = cell->row_next;
-	/* Look after us.
-	If noone is after us, row considers us "last".
-	*/
-	if (!cell->row_next)
-		row->last = cell->row_prev;
-	else
-		(cell->row_next)->row_prev = cell->row_prev;
-
-	/* invalidate cell, so it won't be used again */
-	ffec_cell_unset(cell);
-
 #ifdef FFEC_DEBUG
-	/* debug print: after */
-	ffec_matrix_row_prn(row);
+	ffec_matrix_row_prn(row, base);
 #endif
 }
