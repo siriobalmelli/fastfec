@@ -31,7 +31,7 @@
 
 /* Global log level. We probably want to see Z_LOG_LVL as a -D in the Makefile */
 #ifndef Z_LOG_LVL
-#define Z_LOG_LVL 2
+#define Z_LOG_LVL 1
 #endif
 /* Z_inf levels:
 	0 = (always print) stats, ending err_cnt
