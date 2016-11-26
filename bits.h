@@ -31,4 +31,89 @@ Can be used e.g.: in check()->free() logic looking at shared variables.
 size_t		bin_2_hex		(uint8_t *bin, char *hex, size_t byte_cnt);
 uint64_t	div_ceil		(uint64_t a, uint64_t b);
 
+
+/*	bits_pause_()
+Proper handling for failed HLE
+*/
+static inline __attribute__((always_inline))	int bits_pause_()
+{
+	__asm__ ( "pause;" );
+	return 0;
+}
+
+
+/*	"bits op" utilities.
+Allows caller to utilize a 'bits_op' variable to signal:
+	a.) Whether it is safe to begin an operation
+	b.) How many operations are "in progress"
+
+To init a new 'bits_op', set it to 'bits_op_init'.
+Then, call _begin() and _end() on it to log operations as they start and finish.
+Finally, call _kill() to:
+	- mark 'op' as "no_start", after which all calls to _begin() will
+		return "unsafe".
+	- wait until all current operations have called _end().
+	- mark 'op' as "unsafe" and return.
+*/
+typedef uint32_t bits_op;
+#define bits_op_unsafe ((__typeof__(bits_op))-1)		/* ALL the bits are '1' if "unsafe" */
+#define bits_op_nostart (0x1 << (sizeof(bits_op) * 8 - 1))	/* MSb is '1' if "nostart " OR "unsafe" */
+#define bits_op_init ((__typeof__(bits_op))0)			/* No pending ops at init */
+
+/*	bits_op_begin()
+Try to add a new operation to 'op'.
+Returns 'bits_op_unsafe' if 'op' is "no_start" or "unsafe",
+	otherwise returns number of operations begun (including this one).
+*/
+static inline __attribute__((always_inline)) uint32_t bits_op_begin(bits_op *op)
+{
+	bits_op local;
+	do {
+		local = __atomic_load_n(op, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE);
+		if (local & bits_op_nostart)
+			return bits_op_unsafe;
+	} while(!__atomic_compare_exchange_n(op, &local, local+1, 1, 
+			__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE, __ATOMIC_RELAXED)
+		&& !pause()
+		);
+
+	/* how many ops active, including ours */
+	return local+1;
+}
+
+/*	bits_op_end()
+Marks an operation as completed.
+All operations started with _begin() MUST be ended, or else _kill() will
+	loop infinitely.
+Returns number of operations still active.
+*/
+static inline __attribute__((always_inline)) uint32_t bits_op_end(bits_op *op)
+{
+	/* Assume that op_begin() WAS called before calling op_end, so don't
+		try and sanity check for -1.
+	*/
+	bits_op ret = __atomic_sub_fetch(op, 1,
+				__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE);
+	/* only return number of operations, NOT any possible "nostart" flag */
+	return ret & ~bits_op_nostart;
+}
+
+/*	bits_op_kill()
+Marks 'op' as "nostart" and then loops until all operations have called _end(),
+	then set 'op' to "unsafe" and returns.
+*/
+static inline __attribute__((always_inline)) void bits_op_kill(bits_op *op)
+{
+	uint32_t expect = bits_op_nostart;
+	do {
+		if (__atomic_fetch_or(op, bits_op_nostart,
+				__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE) == -1)
+			return;
+	} while(!__atomic_compare_exchange_n(op, expect, bits_op_unsafe, 1, 
+			__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE, __ATOMIC_RELAXED)
+		&& !pause()
+		);
+	return;
+}
+
 #endif
