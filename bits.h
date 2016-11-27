@@ -109,7 +109,7 @@ static inline __attribute__((always_inline)) void bits_op_kill(bits_op *op)
 		if (__atomic_fetch_or(op, bits_op_nostart,
 				__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE) == -1)
 			return;
-	} while(!__atomic_compare_exchange_n(op, expect, bits_op_unsafe, 1, 
+	} while(!__atomic_compare_exchange_n(op, &expect, bits_op_unsafe, 1, 
 			__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE, __ATOMIC_RELAXED)
 		&& !pause()
 		);
