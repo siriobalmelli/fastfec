@@ -7,3 +7,11 @@ LIB_NAME=bits
 : foreach	$(LIB_LOCAL) |> !cc |> {libs}
 # build the library, export the necessary flags
 : {libs} |> !lib |>
+#
+# build the test files
+EXE_LOCAL = bits_test.c
+: foreach $(EXE_LOCAL) |> !cc |> {exes}
+: foreach {exes} |> !exe |> 
+
+# preserve the sheel script
+: run_tests.sh |> !tup_preserve |>

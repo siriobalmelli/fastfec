@@ -2,7 +2,7 @@ ifneq ($(BITS_),1)
 BITS_=1
 	include_rules
 
-	LINK_LIBS += -lbits 
+	LINK_LIBS += -lbits -mmovbe
 	CFLAGS +=
 
 	# unicorns, rainbows, kittens! (no touching)
