@@ -4,8 +4,11 @@ Collection of random functions for data manipulation or math.
 */
 
 #include "bits.h"
+#include <stdio.h> /* sscanf() */
+
 /* index into this for bin_2_hex conversions */
 static const char *syms = "0123456789abcdef";
+
 union bits__{
 	uint64_t u64;
 	uint32_t u32;
@@ -74,7 +77,6 @@ size_t	u64_2_hex(const uint64_t *u64, size_t u_cnt, char *hex)
 	return j;
 }
 
-#if 1
 /*	bin_2_hex()
 Writes byte_cnt bytes as (byte_cnt *2 +1) ascii hex digits to the mem in `*out`.
 	(+1 because there's a '\0' at the end).
@@ -98,7 +100,25 @@ size_t bin_2_hex(const uint8_t *bin, char *hex, size_t byte_cnt)
 
 	return byte_cnt*2+1; /* return number of hex CHARACTERS written */
 }
-#endif
+/*	hex_2_bin()
+Writes 'char_cnt' hex CHARACTERS as (char_cnt / 2) bytes in 'bin'.
+Does NOT check that enough mem in 'bin' exists.
+Does NOT check for leading "0x" sequence.
+returns number of BYTES written.
+*/
+size_t hex_2_bin(const char *hex, size_t char_cnt, uint8_t *bin)
+{
+	if (!bin || !hex || !char_cnt)
+		return 0;
+
+	/* get byte count */
+	int bytes = (char_cnt >> 1) -1;
+	/* work backwards, because of the terrible things we did in bin_2_hex() */
+	for (int i=0; bytes >=0; i+=2)
+		sscanf(&hex[i], "%2hhx", &bin[bytes--]);
+
+	return (char_cnt >> 1);
+}
 
 /*	div_ceil(a, b)
 64-bit integer "ceiling" operation.
