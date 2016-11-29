@@ -4,7 +4,7 @@ FFEC_=1
 	include_rules
 
 	LINK_LIBS += -lffec
-	LINK_LIBS += -lm
+	LINK_LIBS += -lm -lcrypto
 	ifeq (@(DEBUG),y)
 		CFLAGS += -DFFEC_DEBUG
 	endif
@@ -19,5 +19,4 @@ FFEC_=1
 
 	include ../bits/bits.tup
 	include ../judyutil/judyutil.tup
-	include ../hash/hash.tup
 endif

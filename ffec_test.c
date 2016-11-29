@@ -3,17 +3,16 @@
 /* open() */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/uio.h> /* iovec */
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
 #include <stdlib.h> /* atof */
+#include <openssl/md5.h>
 
 #include "ffec.h"
 
 #define OWN_RAND
-
-/* to verify integrity*/
-#include "fmd5.h"
 
 void print_usage()
 {
@@ -115,9 +114,7 @@ int main(int argc, char **argv)
 	/* get a hash of the source */
 	uint8_t src_hash[16], hash_check[16];
 	struct iovec hash_iov = { .iov_len = fs.source_sz, .iov_base = mem };
-	Z_die_if(
-		fmd5_hash(&hash_iov, src_hash)
-		, "");
+	MD5(hash_iov.iov_base, hash_iov.iov_len, src_hash);
 
 	/*
 		istantiate FEC, encode
@@ -138,9 +135,8 @@ int main(int argc, char **argv)
 	clock_enc = clock() - clock_enc;
 	Z_inf(0, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
 	/* invariant: encode must NOT alter the source region */
-	Z_die_if(
-		fmd5_hash(&hash_iov, hash_check)
-		, "");
+	MD5(hash_iov.iov_base, hash_iov.iov_len, hash_check);
+
 	Z_die_if(
 		memcmp(src_hash, hash_check, 16)
 		, "");
@@ -216,9 +212,8 @@ int main(int argc, char **argv)
 #endif
 
 	hash_iov.iov_base = mem_dec;
-	Z_die_if(
-		fmd5_hash(&hash_iov, hash_check)
-		, "");
+	MD5(hash_iov.iov_base, hash_iov.iov_len, hash_check);
+
 	Z_die_if(
 		memcmp(src_hash, hash_check, 16)
 		, "");
