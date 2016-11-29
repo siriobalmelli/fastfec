@@ -1,7 +1,7 @@
 #include bits.tup 
 include bits.tup
 
-LIB_LOCAL = bits.c
+LIB_LOCAL = bits.c fnv1a.c
 LIB_NAME=bits
 # compile library objects
 : foreach	$(LIB_LOCAL) |> !cc |> {libs}
@@ -9,7 +9,7 @@ LIB_NAME=bits
 : {libs} |> !lib |>
 #
 # build the test files
-EXE_LOCAL = bits_test.c
+EXE_LOCAL = bits_test.c fnv1a_test.c
 : foreach $(EXE_LOCAL) |> !cc |> {exes}
 : foreach {exes} |> !exe |> 
 

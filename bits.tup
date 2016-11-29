@@ -2,7 +2,7 @@ ifneq ($(BITS_),1)
 BITS_=1
 	include_rules
 
-	LINK_LIBS += -lbits -mmovbe
+	LINK_LIBS += -lbits -mmovbe -lcrypto
 	CFLAGS +=
 
 	# unicorns, rainbows, kittens! (no touching)
@@ -12,5 +12,6 @@ BITS_=1
 	RPATH += -Wl,-rpath='$ORIGIN/$(TUP_CWD)'
 	# auto-generator inputs, for dependency only
 	JSONZ += $(TUP_CWD)/*.json
-
+	
+	include ../judyutil/judyutil.tup
 endif
