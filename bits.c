@@ -77,6 +77,23 @@ size_t	u64_2_hex(const uint64_t *u64, size_t u_cnt, char *hex)
 	return j;
 }
 
+/*	bin_2_hex_straight()
+*/
+size_t bin_2_hex_straight(const uint8_t *bin, char *hex, size_t byte_cnt)
+{
+	if (!bin || !hex || !byte_cnt)
+		return 0;
+	size_t hex_pos = 0;
+	for (int i=0; i < byte_cnt; i++) {
+		hex[hex_pos++] = syms[bin[i] & 0xf];
+		hex[hex_pos++] = syms[bin[i] >>4];
+	}
+	hex[hex_pos++] = '\0'; /* end of string */
+
+	return hex_pos; /* return number of hex CHARACTERS written */
+}
+
+
 /*	bin_2_hex()
 Writes byte_cnt bytes as (byte_cnt *2 +1) ascii hex digits to the mem in `*out`.
 	(+1 because there's a '\0' at the end).
