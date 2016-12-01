@@ -78,50 +78,40 @@ size_t	u64_2_hex(const uint64_t *u64, size_t u_cnt, char *hex)
 }
 
 /*	bin_2_hex_straight()
+Writes byte_cnt bytes as (byte_cnt *2 +1) ascii hex digits to the mem in `*out`.
+	(+1 because there's a '\0' at the end).
+Does NOT check that enough mem in `out` exists.
+
+Returns number of CHARACTERS written (should be `byte_cnt *2 +1`)
+
+NOTE that we consider '*bin' to be a SEQUENTIAL FIELD of bytes,
+	with LSB at the EARLIEST memory address.
+If '*bin' would be an array of e.g.: uint32_t, then this function
+	would output the WRONG result; use the uXX_2_hex() functions instead.
+We output a single hex string, which is in "human" notation: MSB in front.
 */
-size_t bin_2_hex_straight(const uint8_t *bin, char *hex, size_t byte_cnt)
+size_t bin_2_hex(const uint8_t *bin, char *hex, size_t byte_cnt)
 {
 	if (!bin || !hex || !byte_cnt)
 		return 0;
 	size_t hex_pos = 0;
-	for (int i=0; i < byte_cnt; i++) {
-		hex[hex_pos++] = syms[bin[i] & 0xf];
+	for (int i=byte_cnt-1; i >= 0; i--) {
 		hex[hex_pos++] = syms[bin[i] >>4];
+		hex[hex_pos++] = syms[bin[i] & 0xf];
 	}
 	hex[hex_pos++] = '\0'; /* end of string */
 
 	return hex_pos; /* return number of hex CHARACTERS written */
 }
-
-
-/*	bin_2_hex()
-Writes byte_cnt bytes as (byte_cnt *2 +1) ascii hex digits to the mem in `*out`.
-	(+1 because there's a '\0' at the end).
-Does NOT check that enough mem in `out` exists.
-returns number of CHARACTERS written (should be `byte_cnt *2 +1`)
-	*/
-size_t bin_2_hex(const uint8_t *bin, char *hex, size_t byte_cnt)
-{
-	ssize_t i = 0;
-	if (!bin || !hex || !byte_cnt)
-		return 0;
-
-	/* we swap byte order because of the endianness of Intel boxes */
-	size_t hex_pos = byte_cnt *2;
-	hex[hex_pos--] = '\0'; /* end of string */
-	//for (; i < byte_cnt; i++) {
-	for (i=byte_cnt-1; i >= 0; i--) {
-		hex[hex_pos--] = syms[bin[i] & 0xf];
-		hex[hex_pos--] = syms[bin[i] >>4];
-	}
-
-	return byte_cnt*2+1; /* return number of hex CHARACTERS written */
-}
 /*	hex_2_bin()
 Writes 'char_cnt' hex CHARACTERS as (char_cnt / 2) bytes in 'bin'.
 Does NOT check that enough mem in 'bin' exists.
-Does NOT check for leading "0x" sequence.
-returns number of BYTES written.
+Does NOT expect or check for leading "0x" sequence.
+
+Returns number of BYTES written.
+
+NOTE: a hex string generated with bin_2_hex() will return the original sequence
+	of bytes when reversed with hex_2_bin().
 */
 size_t hex_2_bin(const char *hex, size_t char_cnt, uint8_t *bin)
 {
@@ -130,7 +120,7 @@ size_t hex_2_bin(const char *hex, size_t char_cnt, uint8_t *bin)
 
 	/* get byte count */
 	int bytes = (char_cnt >> 1) -1;
-	/* work backwards, because of the terrible things we did in bin_2_hex() */
+	/* work backwards */
 	for (int i=0; bytes >=0; i+=2)
 		sscanf(&hex[i], "%2hhx", &bin[bytes--]);
 
