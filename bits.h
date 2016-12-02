@@ -33,7 +33,14 @@ size_t		u32_2_hex	(const uint32_t *u32, size_t u_cnt, char *hex);
 size_t		u64_2_hex	(const uint64_t *u64, size_t u_cnt, char *hex);
 size_t		bin_2_hex	(const uint8_t *bin, char *hex, size_t byte_cnt);
 size_t		hex_2_bin	(const char *hex, size_t char_cnt, uint8_t *bin);
+
+/*
+	math bits
+*/
 uint64_t	div_ceil	(uint64_t a, uint64_t b);
+uint32_t	next_pow2	(uint32_t x);
+uint32_t	next_mult32	(uint32_t x, uint32_t mult);
+uint64_t	next_mult64	(uint64_t x, uint64_t mult);
 
 
 /*	bits_pause_()
