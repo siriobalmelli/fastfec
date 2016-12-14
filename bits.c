@@ -123,10 +123,8 @@ size_t hex_2_bin(const char *hex, size_t char_cnt, uint8_t *bin)
 	/* get byte count */
 	int bytes = (char_cnt >> 1) -1;
 	/* work backwards */
-	for (int i=0; bytes >=0; i+=2) {
-		sscanf(&hex[i], "%2hhx", &bin[i]);
-		bytes--;
-	}
+	for (int i=0; bytes >=0; i+=2)
+		sscanf(&hex[i], "%2hhx", &bin[bytes--]);
 
 	return (char_cnt >> 1);
 }
