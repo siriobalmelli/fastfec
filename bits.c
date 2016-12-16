@@ -90,7 +90,7 @@ If '*bin' would be an array of e.g.: uint32_t, then this function
 	would output the WRONG result; use the uXX_2_hex() functions instead.
 We output a single hex string, which is in "human" notation: MSB in front.
 */
-size_t bin_2_hex(char *bin, char *hex, size_t byte_cnt)
+size_t bin_2_hex(const char *bin, char *hex, size_t byte_cnt)
 {
 	if (!bin || !hex || !byte_cnt)
 		return 0;
@@ -103,6 +103,46 @@ size_t bin_2_hex(char *bin, char *hex, size_t byte_cnt)
 
 	return hex_pos; /* return number of hex CHARACTERS written */
 }
+
+/*	hex_2_u16()
+returns 0 on success.
+*/
+int hex_2_u16(const char *hex, size_t u_cnt, uint16_t *out)
+{
+	for (int i=0; i < u_cnt; i++, hex += 8) {
+		if (sscanf(hex, "%hx", &out[i]) != 1)
+			return 1;
+	}
+
+	return 0;
+}
+
+/*	hex_2_u32()
+returns 0 on success.
+*/
+int hex_2_u32(const char *hex, size_t u_cnt, uint32_t *out)
+{
+	for (int i=0; i < u_cnt; i++, hex += 8) {
+		if (sscanf(hex, "%x", &out[i]) != 1)
+			return 1;
+	}
+
+	return 0;
+}
+
+/*	hex_2_u64()
+returns 0 on success.
+*/
+int hex_2_u64(const char *hex, size_t u_cnt, uint64_t *out)
+{
+	for (int i=0; i < u_cnt; i++, hex += 16) {
+		if (sscanf(hex, "%lx", &out[i]) != 1)
+			return 1;
+	}
+
+	return 0;
+}
+
 /*	hex_2_bin()
 Writes 'char_cnt' hex CHARACTERS as (char_cnt / 2) bytes in 'bin'.
 Does NOT check that enough mem in 'bin' exists.
@@ -113,7 +153,7 @@ Returns number of BYTES written.
 NOTE: a hex string generated with bin_2_hex() will return the original sequence
 	of bytes when reversed with hex_2_bin().
 */
-size_t hex_2_bin(const char *hex, size_t char_cnt, uint8_t *bin)
+size_t hex_2_bin(const char *hex, size_t char_cnt, char *bin)
 {
 	if (!bin || !hex || !char_cnt)
 		return 0;

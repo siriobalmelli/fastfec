@@ -15,17 +15,27 @@ int main()
 	char hex[33];
 	Z_die_if(u16_2_hex(&n_16, 1, hex) != 5, "");
 	Z_die_if(strcmp(hex, hex_16), "'%s' not expected '%s'", hex, hex_16);
+	uint16_t cmp_16;
+	Z_die_if(hex_2_u16(hex, 1, &cmp_16), "");
+	Z_die_if(cmp_16 != n_16, "%hd != %hd", cmp_16, n_16);
 
 	Z_die_if(u32_2_hex(&n_32, 1, hex) != 9, "");
 	Z_die_if(strcmp(hex, hex_32), "'%s' not expected '%s'", hex, hex_32);
+	uint32_t cmp_32;
+	Z_die_if(hex_2_u32(hex, 1, &cmp_32), "");
+	Z_die_if(cmp_32 != n_32, "%d != %d", cmp_32, n_32);
 
 	Z_die_if(u64_2_hex(&n_64, 1, hex) != 17, "");
 	Z_die_if(strcmp(hex, hex_64), "'%s' not expected '%s'", hex, hex_64);
+	uint64_t cmp_64;
+	Z_die_if(hex_2_u64(hex, 1, &cmp_64), "");
+	Z_die_if(cmp_64 != n_64, "%ld != %ld", cmp_64, n_64);
 
-	const uint8_t byte_field[] = { 0xa0, 0xb1, 0xc2, 0xd3, 0xe4, 0xf5, 0x06, 0x17,
+	const char byte_field[] = { 0xa0, 0xb1, 0xc2, 0xd3, 0xe4, 0xf5, 0x06, 0x17,
 			0x28, 0x39, 0x4a, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f };
 	Z_die_if(bin_2_hex(byte_field, hex, 16) != 33, "");
-	uint8_t bytes_parse[16];
+	Z_die_if(strcmp(hex, "a0b1c2d3e4f5061728394a5b6c7d8e9f"), "hex '%s'", hex);
+	char bytes_parse[16];
 	Z_die_if(hex_2_bin(hex, 32, bytes_parse) != 16, "");
 	Z_die_if(memcmp(byte_field, bytes_parse, 16), "");
 
