@@ -89,10 +89,8 @@ NOTE that we consider '*bin' to be a SEQUENTIAL FIELD of bytes,
 If '*bin' would be an array of e.g.: uint32_t, then this function
 	would output the WRONG result; use the uXX_2_hex() functions instead.
 We output a single hex string, which is in "human" notation: MSB in front.
-TODO: change 'bin' to const char *; update headers; grep all usage of the function and
-	remove STUPID casts
 */
-size_t bin_2_hex(const uint8_t *bin, char *hex, size_t byte_cnt)
+size_t bin_2_hex(char *bin, char *hex, size_t byte_cnt)
 {
 	if (!bin || !hex || !byte_cnt)
 		return 0;

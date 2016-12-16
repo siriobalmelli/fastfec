@@ -31,7 +31,7 @@ Can be used e.g.: in check()->free() logic looking at shared variables.
 size_t		u16_2_hex	(const uint16_t *u16, size_t u_cnt, char *hex);
 size_t		u32_2_hex	(const uint32_t *u32, size_t u_cnt, char *hex);
 size_t		u64_2_hex	(const uint64_t *u64, size_t u_cnt, char *hex);
-size_t		bin_2_hex	(const uint8_t *bin, char *hex, size_t byte_cnt);
+size_t		bin_2_hex	(char *bin, char *hex, size_t byte_cnt);
 size_t		hex_2_bin	(const char *hex, size_t char_cnt, uint8_t *bin);
 
 /*
