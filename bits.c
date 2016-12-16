@@ -88,15 +88,18 @@ NOTE that we consider '*bin' to be a SEQUENTIAL FIELD of bytes,
 If '*bin' would be an array of e.g.: uint32_t, then this function
 	would output the WRONG result; use the uXX_2_hex() functions instead.
 We output a single hex string, which is in "human" notation: MSB in front.
+
+NOTE: 'bin' MUST be unsigned, else array indexing with bitshift yields
+	negative values :O
 */
-size_t bin_2_hex(const char *bin, char *hex, size_t byte_cnt)
+size_t bin_2_hex(const unsigned char *bin, char *hex, size_t byte_cnt)
 {
 	if (!bin || !hex || !byte_cnt)
 		return 0;
+
 	size_t hex_pos = 0;
 	for (int i=byte_cnt-1; i >= 0; i--) {
-//	for (int i = 0; i <= (byte_cnt -1); i++) {
-		hex[hex_pos++] = syms[(bin[i] >>4) & 0x0000000f];
+		hex[hex_pos++] = syms[bin[i] >> 4];
 		hex[hex_pos++] = syms[bin[i] & 0xf];
 	}
 	hex[hex_pos++] = '\0'; /* end of string */
@@ -153,7 +156,7 @@ Returns number of BYTES written.
 NOTE: a hex string generated with bin_2_hex() will return the original sequence
 	of bytes when reversed with hex_2_bin().
 */
-size_t hex_2_bin(const char *hex, size_t char_cnt, char *bin)
+size_t hex_2_bin(const char *hex, size_t char_cnt, unsigned char *bin)
 {
 	if (!bin || !hex || !char_cnt)
 		return 0;
