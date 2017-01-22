@@ -16,6 +16,6 @@ EXE_LOCAL = ffec_test.c
 : foreach $(EXE_LOCAL) |> !cc |> {exes}
 : foreach {exes} |> !exe |>
 
-# preserve the Makefile
+# testing structure
 : run_tests.sh |> !tup_preserve |>
 : ffec_test_run.sh |> !tup_preserve |> 
