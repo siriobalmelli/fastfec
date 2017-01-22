@@ -13,5 +13,6 @@ BITS_=1
 	# auto-generator inputs, for dependency only
 	JSONZ += $(TUP_CWD)/*.json
 	
-	include ../judyutil/judyutil.tup
+	# judyutil include removed, but can no longer do collision test
+	#include ../judyutil/judyutil.tup
 endif

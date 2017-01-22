@@ -12,9 +12,9 @@ The reason for a uint64_t* input as opposed to a straight integer is that
 
 If called with NO data to hash, simply returns the initializer ;)
 */
-uint64_t	fnv_hash_l(uint64_t *hash, void *data, uint64_t data_len)
+uint64_t	fnv_hash_l(uint64_t *hash, const void *data, uint64_t data_len)
 {
-	static const uint64_t prime = 1099511628211;
+	static const uint64_t prime = 1099511628211ul;
 
 	/* get start state, if null then initialize */
 	uint64_t h;
@@ -24,7 +24,7 @@ uint64_t	fnv_hash_l(uint64_t *hash, void *data, uint64_t data_len)
 		h = 14695981039346656037ul;
 	if (!data)
 		return h;
-	uint8_t *d = data;
+	const uint8_t *d = data;
 
 	/* Assume a high percentage of data is 64-bit aligned.
 	Unroll loop accordingly.
@@ -48,7 +48,7 @@ uint64_t	fnv_hash_l(uint64_t *hash, void *data, uint64_t data_len)
 	return h;
 }
 
-uint32_t	fnv_hash(uint32_t *hash, void *data, uint64_t data_len)
+uint32_t	fnv_hash(uint32_t *hash, const void *data, uint64_t data_len)
 {
 	static const uint32_t prime = 16777619;
 
@@ -60,7 +60,7 @@ uint32_t	fnv_hash(uint32_t *hash, void *data, uint64_t data_len)
 		h = 2166136261u;
 	if (!data)
 		return h;
-	uint8_t *d = data;
+	const uint8_t *d = data;
 
 	/* Assume a high percentage of data is 64-bit aligned.
 	Unroll loop accordingly.

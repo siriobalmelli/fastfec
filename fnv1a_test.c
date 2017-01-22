@@ -9,13 +9,27 @@ NOTE that while it would be nice to see a CRC32 comparison in here
 */
 
 #include "fnv1a.h"
-#include "judyutil.h"
 #include "bits.h"
 
 #include<sys/uio.h> /* struct iovec */
 #include<openssl/md5.h>
 
-/*	equivalence()
+#include <string.h>
+
+#include "zed_dbg.h"
+
+static const char *phrases[] = {	/**< for use in correctness testing */
+	"the quick brown fox jumped over the lazy dog",
+	"/the/enemy/gate/is/down",
+	"\t{}[]*\\&^%$#@!",
+	"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+	"The player formerly known as mousecop",
+	"Dan Smith",
+	"blaar"
+};
+#define phrase_cnt (sizeof(phrases) / sizeof(char *))
+
+/**	equivalence()
 Hashing an entire block of bytes at once should give an identical result
 	vs. hashing one byte at a time, reusing the intermediate result
 	each time.
@@ -24,17 +38,8 @@ Verify this.
 int equivalence()
 {
 	int err_cnt = 0;
-	static const char *phrases[] = {
-		"the quick brown fox jumped over the lazy dog",
-		"/the/enemy/gate/is/down",
-		"\t{}[]*\\&^%$#@!",
-		"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-		"The player formerly known as mousecop",
-		"Dan Smith"
-	};
-
 	uint64_t i, j, line_len, hash_a, hash_b;
-	for (i=0; i < sizeof(phrases) / sizeof(char *); i++) {
+	for (i=0; i < phrase_cnt; i++) {
 		line_len = strlen(phrases[i]);	
 		hash_a = fnv_hash_l(0, (uint8_t *)phrases[i], line_len);
 
@@ -50,32 +55,18 @@ out:
 	return err_cnt;
 }
 
-int test_js_double_insert()
+#if 0 /**< don't want to have to build 'bits' against Judy */
+#include "judyutil.h"
+/**	collision_test()
+*/
+int collision_test(char *test_file)
 {
 	int err_cnt = 0;
-
-	uint8_t str[] = "hello";
-	struct js_array js_test;
-	js_init_nomutex(&js_test);
-
-	Z_die_if(js_add_(&js_test, str, 8), "no previous value: add() should return 0");
-	Z_die_if(!js_add_(&js_test, str, 42), "collision!: add() should return non-zero");
-
-out:
-	js_destroy(&js_test);
-	return err_cnt;
-}
-
-int main(int argc, char **argv)
-{
-	int err_cnt = 0;
-	Z_die_if(equivalence(), "");
-	Z_die_if(test_js_double_insert(), "");
 
 	FILE *txt;
 	Z_die_if(!(
-		txt = fopen(argv[1], "r")
-		), "failed to open '%s'", argv[1]);
+		txt = fopen(test_file, "r")
+		), "failed to open '%s'", test_file);
 	size_t line_sz = 256;
 	char *lineptr = malloc(line_sz);
 
@@ -126,6 +117,64 @@ int main(int argc, char **argv)
 
 	Z_inf(0, "%ld lines. MD5 coll %ld; FNV64 coll %ld; FNV32 coll %ld", 
 			i, md5_coll, fnv_coll, fnv32_coll);
+
+out:
+	return err_cnt;
+}
+#endif
+
+/**	correctness()
+@brief
+Tests correctness of computed values against known good results
+*/
+int correctness()
+{
+	int err_cnt = 0;
+
+	const uint64_t out_l[phrase_cnt] = {
+		0x4fb124b03ec8f8f8,
+		0x7814fb571359f23e,
+		0xa8d4c7c3b9738aef,
+		0xb47617d43071893b,
+		0x400b51cb52c3929d,
+		0x088a7d587bd339f3,
+		0x4b64e9abbc760b0d
+	};
+	const uint32_t out[phrase_cnt] = {
+		0x406d1fd8,
+		0x45d2df9e,
+		0x7e928eaf,
+		0xc83e6efb,
+		0x7b8e245d,
+		0x0d2b7f73,
+		0x6f93f02d
+	};
+
+	for (int i = 0; i < phrase_cnt; i++) {
+		/* 64-bit */
+		uint64_t res_l = fnv_hash_l(NULL, phrases[i], strlen(phrases[i]));
+		Z_die_if(res_l != out_l[i], "i=%d; 0x%lx != 0x%lx", i, res_l, out_l[i]);
+		/* 32-bit */
+		uint32_t res = fnv_hash(NULL, phrases[i], strlen(phrases[i]));
+		Z_die_if(res != out[i], "i=%d 0x%x != 0x%x", i, res, out[i]);
+	}
+
+out:
+	return err_cnt;
+}
+
+/**	main()
+*/
+int main(int argc, char **argv)
+{
+	int err_cnt = 0;
+
+	Z_die_if(equivalence(), "");
+	Z_die_if(correctness(), "");
+#if 0	/**< don't want to have judyutil as a dependency */
+	Z_die_if(collision_test(argv[1]), "");
+#endif
+
 out:
 	return err_cnt;
 }
