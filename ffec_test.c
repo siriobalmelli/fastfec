@@ -1,3 +1,11 @@
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE	/* /dev/urandom; syscalls */
+#endif
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <linux/random.h>
+
+
 #include <unistd.h>
 
 /* open() */
@@ -14,58 +22,125 @@
 
 #define OWN_RAND
 
-void print_usage()
+/*	defaults:
+5MB region into 1280B symbols @ 10% FEC
+*/
+double fec_ratio = 1.1;
+size_t original_sz = 5000000;
+size_t sym_len = 1280;
+
+
+/*	matrix_compare()
+Compare 2 FEC matrices, cells and rows - which should be identical
+		(because their IDs are offsets, not absolute addresses ;)
+
+returns 0 if identical
+*/
+int matrix_compare(struct ffec_instance *enc, struct ffec_instance *dec, struct ffec_params *fp)
 {
-	printf("ffec_test expects 2 arguments:\r\n"
-		"- fec_ratio (-f) - a ratio expressed in type double\r\n"
-		"- original_sz (-o) - a size in Mb expressed as unsigned int\r\n"
-		"- example: ffec_test.exe -f 1.1 -o 503927\r\n");
+	if (memcmp(enc->cells, dec->cells, enc->cnt.n * FFEC_N1_DEGREE + enc->cnt.rows))
+		return 1;
+	/* print symbol addresses */
+	for (int i=0; i < enc->cnt.n; i++) {
+		Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, enc, i));
+		Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, dec, i));
+	}
+	for (int i=0; i < enc->cnt.p; i++)
+		Z_inf(0, "dst psum row %d @ 0x%lx",
+			i, (uint64_t)ffec_get_psum(fp, dec, i));
+
+	return 0;
 }
 
-int main(int argc, char **argv)
+
+/*	random_bytes()
+Fills a region with random bytes.
+Faster (and less secure) than reading them all from /dev/urandom.
+*/
+void random_bytes(void *region, size_t size)
 {
-	int err_cnt = 0;
+	/* get seeds from /dev/urandom */
+	uint64_t seeds[2] = { 0 };
+	while (syscall(SYS_getrandom, seeds, sizeof(seeds), 0) != sizeof(seeds))
+		usleep(100000);
+	/* setup rng */
+	struct pcg_rand_state rnd_state;
+	pcg_rand_seed(&rnd_state, seeds[0], seeds[1]);
 
-	/* We expect 2 args, fec_ratio and original_sz
-		fec_ratio will be passed with the -f flag
-		original_sz will be passed with the -o flag
-	*/
-	double fec_ratio = 0;
-	size_t original_sz = 0;
+	/* write data */
+	uint32_t *word = region;
+	for (unsigned int i=0; i < size / sizeof(uint32_t); i++)
+		*(word++) = pcg_rand(&rnd_state);
+	/* trailing bytes */
+	uint8_t *byte = (uint8_t *)word;
+	for (int i=0; i < size % sizeof(uint32_t); i++)
+		byte[i] = pcg_rand(&rnd_state);
+}
 
+
+/*	print_usage()
+*/
+void print_usage(char *pgm_name)
+{
+	printf(
+"usage:\n\
+%s	[-f <fec_ratio>] [-o <original_sz>] [-s <sym_len>] [-h]\n\
+\n\
+fec_ratio	:	a fractional ratio >1.0 && <2.0\n\
+		default: 1.1\n\
+original_sz	:	data size in B\n\
+		default: 5000000 (5MB)\n\
+sym_len		:	size of FEC symbols, in B. Must be a multiple of 256\n\
+		default: 1280",
+		pgm_name);
+}
+
+
+/*	parse_opts()
+*/
+void parse_opts(int argc, char **argv)
+{
 	int opt;
 	extern char* optarg; /* used by getopt to point to arg values given */
-	while ((opt = getopt(argc, argv, "f:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "f:o:s:h")) != -1) {
 		switch (opt) {
 			case 'f':
 				fec_ratio = atof(optarg);
-				printf("fec_ratio: %f\r\n", fec_ratio);
 				break;
-
 			case 'o':
 				original_sz = atol(optarg);
-				printf("original_sz: %ld\r\n", original_sz);
 				break;
-
+			case 's':
+				sym_len = atol(optarg);
+				break;
 			default:
-				print_usage();
-				return 0;
+				print_usage(argv[0]);
+				exit(1);
 		}
 	}
-	/* didn't get args? */
-	if (!fec_ratio || !original_sz) {
-		print_usage();
-		return 0;
-	}
+	printf("sym_len: %ld\r\n", sym_len);
+	printf("fec_ratio: %f\r\n", fec_ratio);
+	printf("original_sz: %ld\r\n", original_sz);
 
+}
+
+
+/*	main(0
+*/
+int main(int argc, char **argv)
+{
+	parse_opts(argc, argv);
+
+	int err_cnt = 0;
 	void *mem = NULL, *mem_dec = NULL;
 	uint32_t *next_esi = NULL;
+
 	/*
 		parameters, lengths
 	*/
 	struct ffec_params fp = {
 		.fec_ratio = fec_ratio, /* 10% FEC */
-		.sym_len = 1280 /* aka: packet size */
+		.sym_len = sym_len /* aka: packet size */
 	};
 	struct ffec_sizes fs;
 	Z_die_if(
@@ -78,43 +153,10 @@ int main(int argc, char **argv)
 	Z_die_if(!(
 		mem = calloc(1, fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
-	int fd;
-	/* fill with random data */
-	Z_die_if((
-		fd = open("/dev/urandom", O_RDONLY)
-		) < 1, "");
-#ifdef OWN_RAND
-	//init our own PRNG lib here with urandom as a seed,
-	//pass its results into temp.
-	size_t init = 0, temp;
-	uint64_t seeds[2];
-	struct pcg_rand_state rnd_state;
-	Z_die_if((
-		read(fd, seeds, sizeof(seeds))
-		) != sizeof(seeds), "");
-	Z_inf(0, "Seed1: 0x%lx", seeds[0]);
-	Z_inf(0, "Seed2: 0x%lx", seeds[1]);
-	//seed random number generator from dev/urandom seeds
-	pcg_rand_seed(&rnd_state, seeds[0], seeds[1]);
-#endif
-
-	while (init < fs.source_sz) {
-#ifdef OWN_RAND
-		((uint8_t*)mem)[init] = pcg_rand(&rnd_state);
-		init += sizeof(uint32_t);
-#else
-		Z_die_if((
-		          temp = read(fd, mem + init, fs.source_sz - init)
-			) < 0, "");
-                init += temp;
-#endif
-	}
-	close(fd);
-
+	random_bytes(mem, fs.source_sz + fs.parity_sz + fs.scratch_sz);
 	/* get a hash of the source */
 	uint8_t src_hash[16], hash_check[16];
-	struct iovec hash_iov = { .iov_len = fs.source_sz, .iov_base = mem };
-	MD5(hash_iov.iov_base, hash_iov.iov_len, src_hash);
+	MD5(mem, fs.source_sz, src_hash);
 
 	/*
 		istantiate FEC, encode
@@ -124,70 +166,48 @@ int main(int argc, char **argv)
 	Z_die_if(
 #ifdef FFEC_DEBUG
 		/* force random number sequence for debugging purposes */
-		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem,
+		ffec_init_contiguous(&fp, &fi, original_sz, mem,
 						encode, PCG_RAND_S1, PCG_RAND_S2)
 #else
-		ffec_init_instance_contiguous(&fp, &fi, original_sz, mem,
+		ffec_init_contiguous(&fp, &fi, original_sz, mem,
 						encode, 0, 0)
 #endif
 		, "");
 	ffec_encode(&fp, &fi);
 	clock_enc = clock() - clock_enc;
 	Z_inf(0, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
-	/* invariant: encode must NOT alter the source region */
-	MD5(hash_iov.iov_base, hash_iov.iov_len, hash_check);
 
+	/* invariant: encode must NOT alter the source region */
+	MD5(mem, fs.source_sz, hash_check);
 	Z_die_if(
 		memcmp(src_hash, hash_check, 16)
 		, "");
 
 	/*
-		malloc destination region.
-		make random array of symbols to be decoded.
+		set up decoding memory region
 	*/
 	Z_die_if(!(
 		mem_dec = calloc(1, fs.source_sz + fs.parity_sz + fs.scratch_sz)
 		), "");
-	/* make linear collection of symbols to be decoded */
-	next_esi = calloc(1, fi.cnt.cols * sizeof(uint32_t));
-	unsigned int i;
-	for (i=0; i < fi.cnt.cols; i++)
-		next_esi[i] = i;
-	/* seed a random number generator */
-	struct pcg_rand_state rnd;
-	pcg_rand_seed_static(&rnd);
-	/* swap random collection of ESIs */
-	uint32_t rand;
-	for (i=0; i < fi.cnt.cols -1; i++) {
-		temp = next_esi[i];
-		rand = next_esi[pcg_rand_bound(&rnd, fi.cnt.cols -i) + i];
-		next_esi[i] = next_esi[rand];
-		next_esi[rand] = temp;
-	}
+	/* create random order into which to "send"(decode) symbols */
+	next_esi = malloc(fi.cnt.n * sizeof(uint32_t));
+	ffec_esi_rand(&fi, next_esi);
+
 
 	/*
-		decode
+		instantiate FEC, decode
 	*/
 	clock_t clock_dec = clock();
 	struct ffec_instance fi_dec;
 	Z_die_if(
-		ffec_init_instance_contiguous(&fp, &fi_dec, original_sz, mem_dec,
-				decode, fi.seeds[0], fi.seeds[1])
+		ffec_init_contiguous(&fp, &fi_dec, original_sz, mem_dec,
+						decode, fi.seeds[0], fi.seeds[1])
 		, "");
+	uint32_t i;
 #ifdef FFEC_DEBUG
-	/* compare matrix cells and rows - which should be identical
-		(because their IDs are offsets, not absolute addresses ;)
-	*/
-	Z_die_if(memcmp(fi.cells, fi_dec.cells, fi.cnt.n * FFEC_N1_DEGREE + fi.cnt.rows), "bad");
-	/* print symbol addresses */
-	for (i=0; i < fi.cnt.n; i++) {
-		Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(&fp, &fi, i));
-		Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(&fp, &fi_dec, i));
-	}
-	for (i=0; i < fi.cnt.p; i++)
-		Z_inf(0, "dst psum row %d @ 0x%lx",
-			i, (uint64_t)ffec_get_psum(&fp, &fi_dec, i));
+	Z_die_if(matrix_compare(&fi, &fi_dec, &fp), "");
 #endif
+
 	/* iterate through randomly ordered ESIs and decode for each */
 	for (i=0; i < fi_dec.cnt.cols; i++) {
 #ifdef FFEC_DEBUG
@@ -205,15 +225,7 @@ int main(int argc, char **argv)
 		verify
 	decoded region must be bit-identical to source
 	*/
-#ifdef FFEC_DEBUG
-	for (i=0; i < fi.cnt.k; i++)
-		Z_warn_if(memcmp(ffec_get_sym(&fp, &fi, i), ffec_get_sym(&fp, &fi_dec, i), fp.sym_len),
-			"symbol %d differs", i);
-#endif
-
-	hash_iov.iov_base = mem_dec;
-	MD5(hash_iov.iov_base, hash_iov.iov_len, hash_check);
-
+	MD5(mem_dec, fs.source_sz, hash_check);
 	Z_die_if(
 		memcmp(src_hash, hash_check, 16)
 		, "");

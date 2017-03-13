@@ -36,8 +36,8 @@ enum ffec_direction {
 
 struct ffec_params {
 	double		fec_ratio;	/* MUST be >1.0, SHOULD be <1.3,
-						although it can be higher
-						b*/
+						although it can be higher.
+						*/
 	uint32_t	sym_len;	/* Must be multiple of FFEC_SYM_ALIGN */
 
 };
@@ -91,7 +91,7 @@ int		ffec_calc_lengths(const struct ffec_params	*fp,
 				struct ffec_sizes		*out,
 				enum ffec_direction		dir);
 
-int		ffec_init_instance(const struct ffec_params	*fp,
+int		ffec_init(	const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				size_t				src_len,
 				void				*source,
@@ -100,12 +100,12 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 				enum ffec_direction		dir,
 				uint64_t			seed1,
 				uint64_t			seed2);
-/*	ffec_init_instance_contiguous()
+/*	ffec_init_contiguous()
 Caller crosses his heart and swears that 'memory':
 	- begins with all the source symbols
 	- has enough space for repair symbols and the scratch region
 */
-Z_INL_FORCE int	ffec_init_instance_contiguous(
+Z_INL_FORCE int	ffec_init_contiguous(
 				const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				size_t				src_len,
@@ -114,7 +114,7 @@ Z_INL_FORCE int	ffec_init_instance_contiguous(
 				uint64_t			seed1,
 				uint64_t			seed2)
 {
-	return ffec_init_instance(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
+	return ffec_init(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
 }
 
 uint32_t	ffec_encode	(const struct ffec_params	*fp,
@@ -123,6 +123,8 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				void				*symbol,
 				uint32_t			esi);
+void		ffec_esi_rand	(const struct ffec_instance	*fi,
+				uint32_t			*esi_seq);
 
 
 /* symbol locations */

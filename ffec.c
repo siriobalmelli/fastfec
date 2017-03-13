@@ -71,10 +71,13 @@ TODO:
 2016: Sirio Balmelli and Anthony Soenen
 */
 
-/* /dev/urandom */
 #ifndef _GNU_SOURCE
-	#define _GNU_SOURCE
+	#define _GNU_SOURCE	/* /dev/urandom; syscalls */
 #endif
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <linux/random.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -84,12 +87,13 @@ TODO:
 #include "ffec_int.h"
 #include "judyutil_L.h"
 
+
 /*	ffec_calc_lengths()
 Calculate the needed memory lengths which the caller must
 	allocate so FEC can operate.
 returns 0 if parameters seem copacetic.
 
-NOTE: ffec_init_instance() will NOT perform these safety checks,
+NOTE: ffec_init() will NOT perform these safety checks,
 	as it assumes the caller has called ffec_calc_lengths() first
 	AND CHECKED THE RESULT.
 */
@@ -121,13 +125,14 @@ out:
 	return err_cnt;
 }
 
-/*	ffec_init_instance()
+
+/*	ffec_init()
 Requires a pointer to a struct fec_instance rather than allocating it.
 This is to allow caller to decide its location.
 Corollary: we must not assume 'fi' has been zeroed: we must set
 	EVERY variable.
 */
-int		ffec_init_instance(const struct ffec_params	*fp,
+int		ffec_init(	const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				size_t				src_len,
 				void				*source,
@@ -184,9 +189,9 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 
 	/* if no seed proposed, fish from /dev/urandom */
 	if (!seed1 || !seed2) {
-#if 0
-	/* won't work until we update Ubuntu versions and move away from EGLIBC :O */
-		while (syscall(SYS_getrandom, &seed, sizeof(seed), 0))
+#if 1
+		/* requires Ubuntu 16.04, which eschews EGLIBC */
+		while (syscall(SYS_getrandom, fi->seeds, sizeof(fi->seeds), 0) != sizeof(fi->seeds))
 			usleep(100000);
 #else
 		int fd = 0;
@@ -216,6 +221,7 @@ int		ffec_init_instance(const struct ffec_params	*fp,
 out:
 	return err_cnt;
 }
+
 
 /*	ffec_encode()
 Go through an entire block and generate its repair symbols.
@@ -269,6 +275,7 @@ out:
 	return err_cnt;
 }
 
+
 /* this is because I need all relavant "recursion" state represented in 64b */
 typedef struct {
 	union {
@@ -297,6 +304,8 @@ This function, if simply calling itself, can (with large blocks) recurse
 	to a point where it stack overflows.
 The solution is to allocate a j_array when entering the function,
 	and then simulate recursion with a jump.
+
+TODO: (possible change) if 'symbol' is NULL, read it directly from ffec_get_sym(esi) ?
 */
 uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
@@ -411,4 +420,42 @@ out:
 	if (err_cnt)
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;
+}
+
+
+/*	ffec_esi_rand()
+
+Populate memory at 'esi_seq' with a randomly shuffled array of all the ESIs
+	in 'fi'.
+Uses Knuth-Fisher-Yates.
+
+NOTE: 'esi_seq' should have been allocated by the caller and should be
+	>= 'fi->cnt.n * sizeof(uint32_t)' large.
+
+This function is used e.g.: in determining the order in which to send symbols over the wire.
+*/
+void		ffec_esi_rand	(const struct ffec_instance	*fi,
+				uint32_t			*esi_seq)
+{
+	/* derive seeds from existing instance */
+	uint64_t seeds[2] = {
+		(fi->seeds[1] >> 1) +1,
+		(fi->seeds[0] << 1) +1
+	};
+	/* setup rng */
+	struct pcg_rand_state rnd;
+	pcg_rand_seed(&rnd, seeds[0], seeds[1]);
+
+	/* write IDs sequentially */
+	for (uint32_t i=0; i < fi->cnt.n; i++)
+		esi_seq[i] = i;
+
+	/* Iterate and swap using XOR */
+	uint32_t rand;
+	for (uint32_t i=0; i < fi->cnt.n -1; i++) {
+		rand = pcg_rand_bound(&rnd, fi->cnt.n -i) + i;
+		esi_seq[i] ^= esi_seq[rand];
+		esi_seq[rand] ^= esi_seq[i];
+		esi_seq[i] ^= esi_seq[rand];
+	}
 }

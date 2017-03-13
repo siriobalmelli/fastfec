@@ -12,7 +12,7 @@ See the inline ffec_get_col_first().
 */
 struct ffec_cell {
 	/* linked-list stuff: must be at top of struct.
-	An "unset" cell is (id_prev == id_next && id_next == col_id)
+	An "unset" cell is (c_prev == c_next && c_next == c_me)
 	*/
 	uint32_t		c_prev;
 	uint32_t		c_next;

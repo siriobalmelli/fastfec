@@ -5,7 +5,6 @@
 
 /* ffec_math.h */
 void		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len);
-uint64_t	div_ceil		(uint64_t a, uint64_t b);
 int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 					size_t			src_len,
 					struct ffec_counts	*fc);

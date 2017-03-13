@@ -109,8 +109,6 @@ void		ffec_matrix_row_prn(struct ffec_row		*row,
 
 /*	ffec_matrix_row_link()
 Add cell 'c_new' into the linked list of 'row'.
-
-The key to the deceptive simplicity of this is that 
 */
 void		ffec_matrix_row_link(	struct ffec_row		*row,
 					struct ffec_cell	*c_new,

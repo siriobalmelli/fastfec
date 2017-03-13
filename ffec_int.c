@@ -22,11 +22,8 @@ void		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
 		i_to[i] ^= i_fr[i];
 }
 #else
-#include "immintrin.h"
 /*	ffec_xor_symbols()
 XOR 2 symbols.
-Note that inner loop is to allow the compiler to unroll into XOR instructions using
-	parallel YMM registers.
 */
 void __attribute__((hot)) __attribute__((optimize("O3")))
 		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
@@ -247,7 +244,8 @@ retry:
 			j++, cell_b--)
 		{
 			if (cell->row_id == cell_b->row_id
-				&& retry_cnt++ > FFEC_COLLISION_RETRY) {
+				&& retry_cnt++ > FFEC_COLLISION_RETRY)
+			{
 				goto retry;
 			}
 			retry_cnt=0;
@@ -298,6 +296,7 @@ int		ffec_calc_lengths_int(const struct ffec_params	*fp,
 out:
 	return err_cnt;
 }
+
 
 #undef Z_BLK_LVL
 #define Z_BLK_LVL 0
