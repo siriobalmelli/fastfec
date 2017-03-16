@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 #ifdef FFEC_DEBUG
 		Z_inf(0, "submit ESI %d", next_esi[i]);
 #endif
-#if 0
+#if 1
 		/* stop decoding when decoder reports 0 symbols left to decode */
 		if (!ffec_decode_sym(&fp, &fi_dec,
 				ffec_get_sym(&fp, &fi, next_esi[i]),

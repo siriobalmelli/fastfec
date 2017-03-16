@@ -211,6 +211,10 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
 	{
+/* TODO: evaluate ACTUAL loss of inefficiency if we don't give a fuck about duplicate ESIs
+	(not giving a fuck is universally faster for all algorithms)
+ */
+#if 0
 		/*
 		Select a cell to swap with.
 		Make sure no other cells in this column contain the same row ID,
@@ -243,6 +247,9 @@ retry:
 				goto retry;
 			}
 		}
+#else
+		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
+#endif
 		/* Use a temp variable instead of triple-XOR so that
 			we don't worry about XORing a cell with itself.
 		 */

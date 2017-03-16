@@ -127,6 +127,7 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 				uint32_t			*esi_seq);
 
 
+/* TODO: untested */
 Z_INL_FORCE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
 					const struct ffec_instance	*fi,
 					void				*symbol)
