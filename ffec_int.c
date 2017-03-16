@@ -206,54 +206,53 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	The algorithm used is 'Knuth-Fisher-Yates'.
 	*/
 	struct ffec_cell *cell_b;
-	uint32_t retry_cnt = 0;
+	uint32_t retry_cnt, temp;
 	for (i=0, cell = fi->cells, cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
 	{
-retry:
-		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
-		/* To swap, use an XOR trick rather than a temp variable. */
-		cell->row_id ^= cell_b->row_id;
-		cell_b->row_id ^= cell->row_id;
-		cell->row_id ^= cell_b->row_id;
 		/*
-		This added complexity lies in making sure no other cells
-			in this column contain the same row ID.
-		This is to preclude multiple cells in the same column being
+		Select a cell to swap with.
+		Make sure no other cells in this column contain the same row ID,
+			so as to preclude multiple cells in the same column being
 			part of the same equation - they would XOR to 0
 			and likely affect alignment of universal dark matter,
 			leading to Lorenz-Fitzgerald-Einstein disturbances
 			and tempting the gods to anger.
-		Simply go back through any previous cells in this column
-			and compare, re-executing the swap if equal.
-		I'm sure this violates the absolute "randomness" of the
-			algorithm, but no better alternative is in sight.
 
-		Also, there IS a small chance that we are stuck at the end
-			and no amount of retries will get us a column without
-			a double cell, so use "retry_cnt" to avoid infinite
-			loops.
+		The approach is to pick a random cell for swap and then
+			go back through any previous cells in this column
+			to verify it is different.
+		Avoid infinite loops (like being in the last column with a double row_id)
+			by using 'retry_cnt'.
+		I'm sure this violates the absolute "randomness" of the
+			algorithm, but no reasonable alternative is in sight.
+
 		To be fair, the algorithm DOES still work with double
 			XOR of a symbol into the same column, but for obvious
 			reasons it subtracts its own entropy and reduces
-			our efficiency ... but OH F'ING WELL we TRIED.
+			our efficiency ... OH F'ING WELL we TRIED.
 		*/
-		for (j=0, cell_b = cell-1;
-			j < i % FFEC_N1_DEGREE;
-			j++, cell_b--)
-		{
-			if (cell->row_id == cell_b->row_id
-				&& retry_cnt++ > FFEC_COLLISION_RETRY)
+		retry_cnt = 0;
+retry:
+		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
+		for (j = (i % FFEC_N1_DEGREE); j < i; j++) {
+			if ( fi->cells[j].row_id == cell_b->row_id
+				&& retry_cnt++ < FFEC_COLLISION_RETRY)
 			{
 				goto retry;
 			}
-			retry_cnt=0;
 		}
-		/* successful swap! Link into row. */
+		/* Use a temp variable instead of triple-XOR so that
+			we don't worry about XORing a cell with itself.
+		 */
+		temp = cell_b->row_id;
+		cell_b->row_id = cell->row_id;
+		cell->row_id = temp;
+		/* Link into row. */
 		ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
 	}
-	/* set last cell.
+	/* Set last cell.
 	It is recognized that the last cell COULD be a duplicate of any of the
 		FFEC_N1_DEGREE cells before it, but no SIMPLE solution
 		presents itself at this time.

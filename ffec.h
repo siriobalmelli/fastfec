@@ -127,6 +127,12 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 				uint32_t			*esi_seq);
 
 
+Z_INL_FORCE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
+					const struct ffec_instance	*fi,
+					void				*symbol)
+{
+	return (uint64_t)(symbol - fi->source) / fp->sym_len;
+}
 /* symbol locations */
 Z_INL_FORCE void	*ffec_get_sym_k(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
@@ -167,4 +173,5 @@ Z_INL_FORCE size_t	ffec_len_rows	(const struct ffec_counts *fc)
 {
 	return sizeof(struct ffec_row) * fc->rows;
 }
+					
 #endif /* ffec_h_ */

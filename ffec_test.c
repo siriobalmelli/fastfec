@@ -20,8 +20,6 @@
 
 #include "ffec.h"
 
-#define OWN_RAND
-
 /*	defaults:
 5MB region into 1280B symbols @ 10% FEC
 */
@@ -38,17 +36,17 @@ returns 0 if identical
 */
 int matrix_compare(struct ffec_instance *enc, struct ffec_instance *dec, struct ffec_params *fp)
 {
-	if (memcmp(enc->cells, dec->cells, enc->cnt.n * FFEC_N1_DEGREE + enc->cnt.rows))
+	if (memcmp(enc->cells, dec->cells, enc->cnt.n * FFEC_N1_DEGREE + enc->cnt.rows)) {
+		/* print symbol addresses */
+		for (int i=0; i < enc->cnt.n; i++) {
+			Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, enc, i));
+			Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, dec, i));
+		}
+		for (int i=0; i < enc->cnt.p; i++)
+			Z_inf(0, "dst psum row %d @ 0x%lx",
+				i, (uint64_t)ffec_get_psum(fp, dec, i));
 		return 1;
-	/* print symbol addresses */
-	for (int i=0; i < enc->cnt.n; i++) {
-		Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, enc, i));
-		Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, dec, i));
 	}
-	for (int i=0; i < enc->cnt.p; i++)
-		Z_inf(0, "dst psum row %d @ 0x%lx",
-			i, (uint64_t)ffec_get_psum(fp, dec, i));
-
 	return 0;
 }
 
@@ -213,11 +211,22 @@ int main(int argc, char **argv)
 #ifdef FFEC_DEBUG
 		Z_inf(0, "submit ESI %d", next_esi[i]);
 #endif
+#if 0
 		/* stop decoding when decoder reports 0 symbols left to decode */
 		if (!ffec_decode_sym(&fp, &fi_dec,
 				ffec_get_sym(&fp, &fi, next_esi[i]),
 				next_esi[i]))
 			break;
+#else
+		/* copy symbol into matrix manually, give only ESI */
+		memcpy(ffec_get_sym(&fp, &fi_dec, next_esi[i]),
+				ffec_get_sym(&fp, &fi, next_esi[i]), 
+				fp.sym_len);
+		if (!ffec_decode_sym(&fp, &fi_dec,
+				NULL,
+				next_esi[i]))
+			break;
+#endif
 	}
 	clock_dec = clock() - clock_dec;
 

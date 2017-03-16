@@ -305,7 +305,8 @@ This function, if simply calling itself, can (with large blocks) recurse
 The solution is to allocate a j_array when entering the function,
 	and then simulate recursion with a jump.
 
-TODO: (possible change) if 'symbol' is NULL, read it directly from ffec_get_sym(esi) ?
+WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix memory
+	and read it directly from ffec_get_sym(esi)
 */
 uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
@@ -319,9 +320,9 @@ uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 
 	/* set up only only once */
 	err_cnt = 0;
-	Z_die_if(!fp || !fi || !symbol, "args");
+	Z_die_if(!fp || !fi, "args");
 	struct ffec_cell *cell = NULL;
-	void *stack_sym = alloca(fp->sym_len);
+	void *curr_sym = NULL;
 
 recurse:
 
@@ -335,15 +336,18 @@ recurse:
 	if (ffec_cell_test(cell))
 		goto check_recurse;
 
-	/* pull symbol onto stack */
-	memcpy(stack_sym, symbol, fp->sym_len);
-	/* push it to its destination */
-	memcpy(ffec_get_sym(fp, fi, esi), stack_sym, fp->sym_len);
+	/* point to symbol in matrix */
+	curr_sym = ffec_get_sym(fp, fi, esi);
+	/* if given a pointer, copy symbol from there into matrix */
+	if (symbol)
+		memcpy(curr_sym, symbol, fp->sym_len);
+	/* ... otherwise assume it's already there */
+
 #ifdef FFEC_DEBUG
+	Z_inf(0, "decode (esi %d) @0x%lx",
+		esi, (uint64_t)curr_sym);
 	Z_inf(0, "pull <-(esi %d) @0x%lx",
 		esi, (uint64_t)symbol);
-	Z_inf(0, "push ->(esi %d) @0x%lx",
-		esi, (uint64_t)ffec_get_sym(fp, fi, esi));
 #endif
 
 	/* If it's a source symbol, log it. */
@@ -372,7 +376,7 @@ recurse:
 			decoding that row.
 		*/
 		if (n_rows[j]->cnt > 1) {
-			ffec_xor_into_symbol(stack_sym,
+			ffec_xor_into_symbol(curr_sym,
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
 #ifdef FFEC_DEBUG
@@ -454,8 +458,17 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 	uint32_t rand;
 	for (uint32_t i=0; i < fi->cnt.n -1; i++) {
 		rand = pcg_rand_bound(&rnd, fi->cnt.n -i) + i;
+		/* don't XOR with self */
+		if (rand == i)
+			continue;
 		esi_seq[i] ^= esi_seq[rand];
 		esi_seq[rand] ^= esi_seq[i];
 		esi_seq[i] ^= esi_seq[rand];
 	}
+#ifdef FFEC_DEBUG
+	printf("randomized ESI sequence:\n");
+	for (uint32_t i=0; i < fi->cnt.n; i++)
+		printf("%d, ", esi_seq[i]);
+	printf("\n");
+#endif
 }

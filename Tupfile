@@ -12,7 +12,7 @@ LIB_NAME = ffec
 : {libs} |> !lib |>
 
 # build test files
-EXE_LOCAL = ffec_test.c
+EXE_LOCAL = ffec_test.c ffec_multi.c
 : foreach $(EXE_LOCAL) |> !cc |> {exes}
 : foreach {exes} |> !exe |>
 

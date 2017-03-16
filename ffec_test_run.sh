@@ -58,6 +58,7 @@ for s in ${sizes[@]}; do
 			echo -n "$k, "
 			# get program output
 			OUT=$(./ffec_test.exe -f $r -o $(( $s * 1000 )))
+				poop=$?; if (( $poop )); then exit $poop; fi
 			# add to arrays of temporary values
 			INEF=( ${INEF[@]} $(echo "$OUT" | sed -rn 's/.*inefficiency=([0-9.]+).*/\1 /p') )
 			ENC=( ${ENC[@]} $(echo "$OUT" | sed -rn 's/.*enc=([0-9]+)Mb.*/\1/p') )
