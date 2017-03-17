@@ -106,4 +106,23 @@ Z_INL_FORCE void	pcg_rand_seed_static(struct pcg_rand_state *rng)
 {
 	pcg_rand_seed(rng, PCG_RAND_S1, PCG_RAND_S2);
 }
+
+/*	pcg_randset()
+Fill an area of memory with random bytes.
+*/
+Z_INL_FORCE void	pcg_randset(void *mem, size_t len, uint64_t seed1, uint64_t seed2)
+{
+	/* setup rng */
+	struct pcg_rand_state rnd_state;
+	pcg_rand_seed(&rnd_state, seed1, seed2);
+	/* write data */
+	uint32_t *word = mem;
+	for (size_t i=0; i < len / sizeof(uint32_t); i++)
+		*(word++) = pcg_rand(&rnd_state);
+	/* trailing bytes */
+	uint8_t *byte = (uint8_t *)word;
+	for (int i=0; i < len % sizeof(uint32_t); i++)
+		byte[i] = pcg_rand(&rnd_state);
+}
+
 #endif /* pcg_rand_h_ */
