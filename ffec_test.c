@@ -61,18 +61,7 @@ void random_bytes(void *region, size_t size)
 	uint64_t seeds[2] = { 0 };
 	while (syscall(SYS_getrandom, seeds, sizeof(seeds), 0) != sizeof(seeds))
 		usleep(100000);
-	/* setup rng */
-	struct pcg_rand_state rnd_state;
-	pcg_rand_seed(&rnd_state, seeds[0], seeds[1]);
-
-	/* write data */
-	uint32_t *word = region;
-	for (unsigned int i=0; i < size / sizeof(uint32_t); i++)
-		*(word++) = pcg_rand(&rnd_state);
-	/* trailing bytes */
-	uint8_t *byte = (uint8_t *)word;
-	for (int i=0; i < size % sizeof(uint32_t); i++)
-		byte[i] = pcg_rand(&rnd_state);
+	pcg_randset(region, size, seeds[0], seeds[1]);
 }
 
 
@@ -123,7 +112,19 @@ void parse_opts(int argc, char **argv)
 }
 
 
-/*	main(0
+/*	callback_test()
+Test callback from symbol decode function.
+*/
+void callback_test(uint32_t esi, void *context)
+{
+	Z_die_if((uint64_t)context != 42, "bad things")
+	Z_inf(0, "esi %08d", esi);
+out:
+	return;
+}
+
+
+/*	main()
 */
 int main(int argc, char **argv)
 {
@@ -137,8 +138,8 @@ int main(int argc, char **argv)
 		parameters, lengths
 	*/
 	struct ffec_params fp = {
-		.fec_ratio = fec_ratio, /* 10% FEC */
-		.sym_len = sym_len /* aka: packet size */
+		.fec_ratio = fec_ratio,	/* 10% FEC */
+		.sym_len = sym_len	/* aka: packet size */
 	};
 	struct ffec_sizes fs;
 	Z_die_if(
@@ -211,13 +212,15 @@ int main(int argc, char **argv)
 #ifdef FFEC_DEBUG
 		Z_inf(0, "submit ESI %d", next_esi[i]);
 #endif
+
+// TODO: clean this up somehow
 #if 1
 		/* stop decoding when decoder reports 0 symbols left to decode */
 		if (!ffec_decode_sym(&fp, &fi_dec,
 				ffec_get_sym(&fp, &fi, next_esi[i]),
 				next_esi[i]))
 			break;
-#else
+#elif 0
 		/* copy symbol into matrix manually, give only ESI */
 		memcpy(ffec_get_sym(&fp, &fi_dec, next_esi[i]),
 				ffec_get_sym(&fp, &fi, next_esi[i]), 
@@ -226,6 +229,13 @@ int main(int argc, char **argv)
 				NULL,
 				next_esi[i]))
 			break;
+#else
+		if (!ffec_decode_sym_cb(&fp, &fi_dec,
+				ffec_get_sym(&fp, &fi, next_esi[i]),
+				next_esi[i],
+				callback_test, (void*)42))
+			break;
+		
 #endif
 	}
 	clock_dec = clock() - clock_dec;
