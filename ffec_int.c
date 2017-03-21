@@ -89,13 +89,18 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 Calculate the symbol counts for a given source length and FEC params.
 Populates them into 'fc', which must be allocated by the caller.
 
-returns 0 if counts are valid (aka: will not overflow internal math).
+returns:
+	0 if counts are valid 
+	>0 if symbol math required some adjustment to values:
+		caller is strongly advised to double-check sizes (including src_len!)
+	<0 on failure (aka: will overflow internal math, cannot proceed)
 */
 int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 					size_t			src_len,
 					struct ffec_counts	*fc)
 {
 	int err_cnt = 0;
+	int wrn_cnt = 0;
 	Z_die_if(!fp || !src_len || !fc, "args");
 	/* temp 64-bit counters, to test for overflow */
 	uint64_t t_k, t_n, t_p;
@@ -106,6 +111,9 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 			t_k, FFEC_MIN_K, src_len, fp->sym_len);
 		t_k = FFEC_MIN_K;
 	}
+	Z_warn_if(t_k * fp->sym_len > src_len,
+		"symbol math requires larger source region: %ld > %ld (specified)",
+		t_k * fp->sym_len, src_len);
 
 	t_n = ceill(t_k * fp->fec_ratio);
 
@@ -129,7 +137,9 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 	fc->k_decoded = 0; /* because common sense */
 
 out:
-	return err_cnt;
+	if (err_cnt)
+		return 0 - err_cnt;
+	return wrn_cnt;
 }
 
 

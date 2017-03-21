@@ -112,18 +112,6 @@ void parse_opts(int argc, char **argv)
 }
 
 
-/*	callback_test()
-Test callback from symbol decode function.
-*/
-void callback_test(uint32_t esi, void *context)
-{
-	Z_die_if((uint64_t)context != 42, "bad things")
-	Z_inf(0, "esi %08d", esi);
-out:
-	return;
-}
-
-
 /*	main()
 */
 int main(int argc, char **argv)
@@ -220,7 +208,7 @@ int main(int argc, char **argv)
 				ffec_get_sym(&fp, &fi, next_esi[i]),
 				next_esi[i]))
 			break;
-#elif 0
+#else
 		/* copy symbol into matrix manually, give only ESI */
 		memcpy(ffec_get_sym(&fp, &fi_dec, next_esi[i]),
 				ffec_get_sym(&fp, &fi, next_esi[i]), 
@@ -229,13 +217,6 @@ int main(int argc, char **argv)
 				NULL,
 				next_esi[i]))
 			break;
-#else
-		if (!ffec_decode_sym_cb(&fp, &fi_dec,
-				ffec_get_sym(&fp, &fi, next_esi[i]),
-				next_esi[i],
-				callback_test, (void*)42))
-			break;
-		
 #endif
 	}
 	clock_dec = clock() - clock_dec;

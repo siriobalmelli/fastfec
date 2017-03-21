@@ -117,24 +117,46 @@ Z_INL_FORCE int	ffec_init_contiguous(
 	return ffec_init(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
 }
 
-uint32_t	ffec_encode	(const struct ffec_params	*fp,
-				struct ffec_instance		*fi);
-uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
-				struct ffec_instance		*fi,
-				void				*symbol,
-				uint32_t			esi);
+uint32_t	ffec_encode		(const struct ffec_params	*fp,
+					struct ffec_instance		*fi);
+uint32_t	ffec_decode_sym_	(const struct ffec_params	*fp,
+					struct ffec_instance		*fi,
+					void				*symbol,
+					uint32_t			esi,
+					void				**j1_src_decoded);
+Z_INL_FORCE uint32_t ffec_decode_sym	(const struct ffec_params	*fp,
+					struct ffec_instance		*fi,
+					void				*symbol,
+					uint32_t			esi)
+{
+	return ffec_decode_sym_(fp, fi, symbol, esi, NULL);
+}
+
 void		ffec_esi_rand	(const struct ffec_instance	*fi,
 				uint32_t			*esi_seq);
 
+int		ffec_test_esi	(const struct ffec_instance	*fi,
+				uint32_t			esi);
 
-/* TODO: untested */
+/*	ffec_get_esi()
+Given the address of a SOURCE symbol, calculate its ESI.
+
+returns 'esi' or -1 on error.
+*/
 Z_INL_FORCE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
 					const struct ffec_instance	*fi,
 					void				*symbol)
 {
-	return (uint64_t)(symbol - fi->source) / fp->sym_len;
+	uint32_t ret = (uint64_t)(symbol - fi->source) / fp->sym_len;
+	if (ret > fi->cnt.k)
+		ret = -1;
+	return ret;
 }
-/* symbol locations */
+
+/*	memory location inlines:	esi -> symbol*
+
+NOTE that source and parity regions are not necessarily contiguous.
+*/
 Z_INL_FORCE void	*ffec_get_sym_k(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			k)

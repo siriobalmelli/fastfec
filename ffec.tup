@@ -19,4 +19,5 @@ FFEC_=1
 
 	include ../bits/bits.tup
 	include ../judyutil/judyutil.tup
+	include ../sbfu/sbfu.tup
 endif

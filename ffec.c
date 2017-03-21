@@ -286,7 +286,7 @@ typedef struct {
 	};
 	};
 } __attribute__ ((packed)) ffec_esi_row_t;
-/*	ffec_decode_sym()
+/*	ffec_decode_sym_()
 Decode a symbol:
 a. XOR it into the PartialSum for all of its rows.
 b. Copy it into its final location in either "source" or "repair" regions.
@@ -299,7 +299,7 @@ Returns number of source symbols yet to receive/decode.
 A return of '0' means "all source symbols decoded".
 Returns '-1' on error.
 
-Note on recursion:
+NOTE on recursion:
 This function, if simply calling itself, can (with large blocks) recurse
 	to a point where it stack overflows.
 The solution is to allocate a j_array when entering the function,
@@ -307,11 +307,15 @@ The solution is to allocate a j_array when entering the function,
 
 WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix memory
 	and read it directly from ffec_get_sym(esi)
+
+If 'j1_src_decoded' points somewhere, will append to a J1 array the ESI of all
+	SOURCE symbols decoded (specifically: INCLUDING the symbol we were called to decode).
 */
-uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
-				struct ffec_instance		*fi,
-				void				*symbol,
-				uint32_t			esi)
+uint32_t	ffec_decode_sym_	(const struct ffec_params	*fp,
+					struct ffec_instance		*fi,
+					void				*symbol,
+					uint32_t			esi,
+					void				**j1_src_decoded)
 {
 	/* state for "recursion" */
 	struct j_array state;
@@ -352,6 +356,10 @@ recurse:
 
 	/* If it's a source symbol, log it. */
 	if (esi < fi->cnt.k) {
+		if (j1_src_decoded) {
+			int rc;
+			J1S(rc, *j1_src_decoded, esi);
+		}
 		/* We may have just finished.
 		Avoid extra work.
 		*/
@@ -471,4 +479,14 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 		printf("%d, ", esi_seq[i]);
 	printf("\n");
 #endif
+}
+
+/*	ffec_test_esi()
+Returns 1 if 'esi' is already decoded, 0 otherwise.
+*/
+int		ffec_test_esi	(const struct ffec_instance	*fi,
+				uint32_t			esi)
+{
+	/* if this cell has been unlinked, unwind the recursion stack */
+	return ffec_cell_test(ffec_get_col_first(fi->cells, esi));
 }
