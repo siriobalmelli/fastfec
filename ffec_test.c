@@ -28,29 +28,6 @@ size_t original_sz = 5000000;
 size_t sym_len = 1280;
 
 
-/*	matrix_compare()
-Compare 2 FEC matrices, cells and rows - which should be identical
-		(because their IDs are offsets, not absolute addresses ;)
-
-returns 0 if identical
-*/
-int matrix_compare(struct ffec_instance *enc, struct ffec_instance *dec, struct ffec_params *fp)
-{
-	if (memcmp(enc->cells, dec->cells, enc->cnt.n * FFEC_N1_DEGREE + enc->cnt.rows)) {
-		/* print symbol addresses */
-		for (int i=0; i < enc->cnt.n; i++) {
-			Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, enc, i));
-			Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, dec, i));
-		}
-		for (int i=0; i < enc->cnt.p; i++)
-			Z_inf(0, "dst psum row %d @ 0x%lx",
-				i, (uint64_t)ffec_get_psum(fp, dec, i));
-		return 1;
-	}
-	return 0;
-}
-
-
 /*	random_bytes()
 Fills a region with random bytes.
 Faster (and less secure) than reading them all from /dev/urandom.
@@ -178,7 +155,7 @@ int main(int argc, char **argv)
 		), "");
 	/* create random order into which to "send"(decode) symbols */
 	next_esi = malloc(fi.cnt.n * sizeof(uint32_t));
-	ffec_esi_rand(&fi, next_esi);
+	ffec_esi_rand(&fi, next_esi, 0);
 
 
 	/*
@@ -192,7 +169,7 @@ int main(int argc, char **argv)
 		, "");
 	uint32_t i;
 #ifdef FFEC_DEBUG
-	Z_die_if(matrix_compare(&fi, &fi_dec, &fp), "");
+	Z_die_if(ffec_mtx_cmp(&fi, &fi_dec, &fp), "");
 #endif
 
 	/* iterate through randomly ordered ESIs and decode for each */

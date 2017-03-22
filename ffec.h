@@ -133,10 +133,15 @@ Z_INL_FORCE uint32_t ffec_decode_sym	(const struct ffec_params	*fp,
 }
 
 void		ffec_esi_rand	(const struct ffec_instance	*fi,
-				uint32_t			*esi_seq);
+				uint32_t			*esi_seq,
+				uint32_t			esi_start);
 
 int		ffec_test_esi	(const struct ffec_instance	*fi,
 				uint32_t			esi);
+
+int		ffec_mtx_cmp	(struct ffec_instance		*enc,
+				struct ffec_instance		*dec,
+				struct ffec_params		*fp);
 
 /*	ffec_get_esi()
 Given the address of a SOURCE symbol, calculate its ESI.

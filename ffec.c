@@ -227,6 +227,8 @@ out:
 Go through an entire block and generate its repair symbols.
 The main emphasis is on SEQUENTIALLY accessing source symbols,
 	limiting the pattern of random memory access to the repair symbols.
+
+return 0 on success
 */
 uint32_t	ffec_encode	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi)
@@ -438,16 +440,17 @@ out:
 /*	ffec_esi_rand()
 
 Populate memory at 'esi_seq' with a randomly shuffled array of all the ESIs
-	in 'fi'.
+	in 'fi' starting from 'esi_start' (set it to 0 to obtain all symbols).
 Uses Knuth-Fisher-Yates.
 
 NOTE: 'esi_seq' should have been allocated by the caller and should be
-	>= 'fi->cnt.n * sizeof(uint32_t)' large.
+	of size >= '(fi->cnt.n - esi_start) * sizeof(uint32_t)'
 
 This function is used e.g.: in determining the order in which to send symbols over the wire.
 */
 void		ffec_esi_rand	(const struct ffec_instance	*fi,
-				uint32_t			*esi_seq)
+				uint32_t			*esi_seq,
+				uint32_t			esi_start)
 {
 	/* derive seeds from existing instance */
 	uint64_t seeds[2] = {
@@ -459,19 +462,19 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 	pcg_rand_seed(&rnd, seeds[0], seeds[1]);
 
 	/* write IDs sequentially */
-	for (uint32_t i=0; i < fi->cnt.n; i++)
-		esi_seq[i] = i;
+	uint32_t limit = fi->cnt.n - esi_start;
+	for (uint32_t i=0; i < limit; i++)
+		esi_seq[i] = i + esi_start;
 
 	/* Iterate and swap using XOR */
 	uint32_t rand;
-	for (uint32_t i=0; i < fi->cnt.n -1; i++) {
-		rand = pcg_rand_bound(&rnd, fi->cnt.n -i) + i;
-		/* don't XOR with self */
-		if (rand == i)
-			continue;
-		esi_seq[i] ^= esi_seq[rand];
-		esi_seq[rand] ^= esi_seq[i];
-		esi_seq[i] ^= esi_seq[rand];
+	uint32_t temp;
+	for (uint32_t i=0; i < limit -1; i++) {
+		rand = pcg_rand_bound(&rnd, limit -i) + i;
+		/* use temp var and not triple-XOR so as to avoid XORing a cell with itself */
+		temp = esi_seq[i];
+		esi_seq[i] = esi_seq[rand];
+		esi_seq[rand] = temp;
 	}
 #ifdef FFEC_DEBUG
 	printf("randomized ESI sequence:\n");
@@ -490,3 +493,35 @@ int		ffec_test_esi	(const struct ffec_instance	*fi,
 	/* if this cell has been unlinked, unwind the recursion stack */
 	return ffec_cell_test(ffec_get_col_first(fi->cells, esi));
 }
+
+
+/*	ffec_mtx_cmp()
+Compare 2 FEC matrices, cells and rows - which should be identical
+		(because their IDs are offsets, not absolute addresses ;)
+
+returns 0 if identical
+*/
+int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ffec_params *fp)
+{
+	if (memcmp(enc->cells, dec->cells, enc->cnt.n * FFEC_N1_DEGREE + enc->cnt.rows)) {
+		/* print symbol addresses */
+		for (int i=0; i < enc->cnt.n; i++) {
+			Z_warn_if(
+				memcmp(ffec_get_sym(fp, enc, i), ffec_get_sym(fp, dec, i), fp->sym_len),
+				"esi %d mismatch", i);
+			/*
+			Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, enc, i));
+			Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, dec, i));
+			*/
+		}
+		/*
+		for (int i=0; i < enc->cnt.p; i++)
+			Z_inf(0, "dst psum row %d @ 0x%lx",
+				i, (uint64_t)ffec_get_psum(fp, dec, i));
+		*/
+		return 1;
+	}
+	return 0;
+}
+
+
