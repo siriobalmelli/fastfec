@@ -345,7 +345,7 @@ recurse:
 	/* point to symbol in matrix */
 	curr_sym = ffec_get_sym(fp, fi, esi);
 	/* if given a pointer, copy symbol from there into matrix */
-	if (symbol)
+	if (symbol && symbol != curr_sym)
 		memcpy(curr_sym, symbol, fp->sym_len);
 	/* ... otherwise assume it's already there */
 
@@ -503,25 +503,47 @@ returns 0 if identical
 */
 int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ffec_params *fp)
 {
-	if (memcmp(enc->cells, dec->cells, enc->cnt.n * FFEC_N1_DEGREE + enc->cnt.rows)) {
-		/* print symbol addresses */
-		for (int i=0; i < enc->cnt.n; i++) {
-			Z_warn_if(
-				memcmp(ffec_get_sym(fp, enc, i), ffec_get_sym(fp, dec, i), fp->sym_len),
-				"esi %d mismatch", i);
+	int err_cnt = 0;
+	/* verify seeds */
+	Z_err_if(memcmp(enc->seeds, dec->seeds, sizeof(enc->seeds)),
+		"FEC seeds mismatched: enc(0x%lx, 0x%lx) != dec(0x%lx, 0x%lx)",
+		enc->seeds[0], enc->seeds[1], dec->seeds[0], dec->seeds[1]);
+
+	/* verify matrix cells */
+	if (memcmp(enc->cells, dec->cells, sizeof(struct ffec_cell) * enc->cnt.k * FFEC_N1_DEGREE))
+	{
+		Z_err("FEC matrices mismatched");
+		uint32_t mismatch_cnt=0;
+		for (uint32_t i=0; i < enc->cnt.k * FFEC_N1_DEGREE; i++) {
+			if (memcmp(&enc->cells[i], &dec->cells[i], sizeof(enc->cells[0])))
+				mismatch_cnt++;
+			//printf("%d, ", i);
 			/*
-			Z_inf(0, "src: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, enc, i));
-			Z_inf(0, "dst: esi %d @ 0x%lx", i, (uint64_t)ffec_get_sym(fp, dec, i));
+			printf("%d:(%d, %d, %d, %d)!=(%d, %d, %d, %d)\n", i,
+				enc->cells[i].row_id,enc->cells[i].c_me,
+					enc->cells[i].c_prev,enc->cells[i].c_next,
+				dec->cells[i].row_id,dec->cells[i].c_me,
+					dec->cells[i].c_prev,dec->cells[i].c_next);
 			*/
 		}
-		/*
-		for (int i=0; i < enc->cnt.p; i++)
-			Z_inf(0, "dst psum row %d @ 0x%lx",
-				i, (uint64_t)ffec_get_psum(fp, dec, i));
-		*/
-		return 1;
+		printf("\nmismatch %d <= %d cells\n\n", mismatch_cnt, enc->cnt.n * FFEC_N1_DEGREE);
 	}
-	return 0;
+
+	/* verify source symbols */
+	if (memcmp(enc->source, dec->source, fp->sym_len * enc->cnt.k)) {
+		Z_err("symbols mismatched");
+		uint32_t mismatch_cnt=0;
+		/* print offending symbol addresses */
+		for (uint32_t i=0; i < enc->cnt.n; i++) {
+			if (memcmp(ffec_get_sym(fp, enc, i), ffec_get_sym(fp, dec, i), fp->sym_len)) {
+				mismatch_cnt++;
+				printf("%d, ", i);
+			}
+		}
+		printf("\nmismatch %d <= %d symbols\n\n", mismatch_cnt, enc->cnt.n);
+	}
+out:
+	return err_cnt;
 }
 
 
