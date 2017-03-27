@@ -55,7 +55,7 @@ fec_ratio	:	a fractional ratio >1.0 && <2.0\n\
 original_sz	:	data size in B\n\
 		default: 5000000 (5MB)\n\
 sym_len		:	size of FEC symbols, in B. Must be a multiple of 256\n\
-		default: 1280",
+		default: 1280\n",
 		pgm_name);
 }
 
