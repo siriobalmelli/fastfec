@@ -7,6 +7,7 @@ FFEC_=1
 	LINK_LIBS += -lm -lcrypto
 	ifeq (@(DEBUG),y)
 		CFLAGS += -DFFEC_DEBUG
+#		CFLAGS += -DFFEC_MATRIX_DEBUG
 	endif
 
 	# unicorns, rainbows, kittens! (no touching)

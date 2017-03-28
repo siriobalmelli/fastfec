@@ -70,7 +70,7 @@ idx=2	r3	0	0	1	0	0	0	1	psum=s1^p2
 #include "ffec_matrix.h"
 
 
-#ifdef FFEC_DEBUG
+#ifdef FFEC_MATRIX_DEBUG
 #include <signal.h> /* raise() */
 #include <stdlib.h> /* malloc() */
 /* self-test code */
@@ -126,7 +126,7 @@ void		ffec_matrix_row_link(	struct ffec_row		*row,
 	/* increment row (aka: "head") counter */
 	row->cnt++;
 
-#ifdef FFEC_DEBUG
+#ifdef FFEC_MATRIX_DEBUG
 	ffec_matrix_row_prn(row, base);
 #endif
 }
@@ -145,7 +145,7 @@ void		ffec_matrix_row_unlink(	struct ffec_row		*row,
 	/* we count */
 	row->cnt--;
 
-#ifdef FFEC_DEBUG
+#ifdef FFEC_MATRIX_DEBUG
 	ffec_matrix_row_prn(row, base);
 #endif
 }

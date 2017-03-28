@@ -55,7 +55,7 @@ fec_ratio	:	a fractional ratio >1.0 && <2.0\n\
 original_sz	:	data size in B\n\
 		default: 5000000 (5MB)\n\
 sym_len		:	size of FEC symbols, in B. Must be a multiple of 256\n\
-		default: 1280\n",
+		default: 1280",
 		pgm_name);
 }
 
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 		, "");
 	uint32_t i;
 #ifdef FFEC_DEBUG
-	Z_die_if(ffec_mtx_cmp(&fi, &fi_dec, &fp), "");
+      Z_die_if(ffec_mtx_cmp(&fi, &fi_dec, &fp), "");
 #endif
 
 	/* iterate through randomly ordered ESIs and decode for each */
@@ -214,14 +214,16 @@ int main(int argc, char **argv)
 	Z_inf(0, "decoded with k=%d < i=%d < n=%d;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
 \tsource size=%.4lf MB, bitrates: enc=%ldMb/s, dec=%ldMb/s",
-		fi_dec.cnt.k, i, fi_dec.cnt.n,
-		(double)i / (double)fi_dec.cnt.k,
-		((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100,
-		(fp.fec_ratio -1) * 100,
-		(double)fs.source_sz / (1024 * 1024),
-		(uint64_t)((double)fs.source_sz / ((double)clock_enc / CLOCKS_PER_SEC)
+		/*k*/fi_dec.cnt.k, /*i*/i, /*n*/fi_dec.cnt.n,
+		/*inefficiency*/(double)i / (double)fi_dec.cnt.k,
+		/*loss tolerance*/((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100,
+		/*FEC*/(fp.fec_ratio -1) * 100,
+		/*source size*/(double)fs.source_sz / (1024 * 1024),
+		/*enc bitrate*/(uint64_t)((double)fs.source_sz
+			/ ((double)clock_enc / CLOCKS_PER_SEC)
 			/ (1024 * 1024) * 8),
-		(uint64_t)((double)fs.source_sz / ((double)clock_dec / CLOCKS_PER_SEC)
+		/*dec bitrate*/(uint64_t)((double)fs.source_sz
+			/ ((double)clock_dec / CLOCKS_PER_SEC)
 			/ (1024 * 1024) * 8));
 
 out:

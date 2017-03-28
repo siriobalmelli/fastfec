@@ -345,15 +345,18 @@ recurse:
 	/* point to symbol in matrix */
 	curr_sym = ffec_get_sym(fp, fi, esi);
 	/* if given a pointer, copy symbol from there into matrix */
-	if (symbol && symbol != curr_sym)
+	if (symbol && symbol != curr_sym) {
+#ifdef FFEC_DEBUG
+		Z_inf(0, "pull <-(esi %d) @0x%lx",
+			esi, (uint64_t)symbol);
+#endif
 		memcpy(curr_sym, symbol, fp->sym_len);
+	}
 	/* ... otherwise assume it's already there */
 
 #ifdef FFEC_DEBUG
 	Z_inf(0, "decode (esi %d) @0x%lx",
 		esi, (uint64_t)curr_sym);
-	Z_inf(0, "pull <-(esi %d) @0x%lx",
-		esi, (uint64_t)symbol);
 #endif
 
 	/* If it's a source symbol, log it. */
@@ -499,6 +502,9 @@ int		ffec_test_esi	(const struct ffec_instance	*fi,
 Compare 2 FEC matrices, cells and rows - which should be identical
 		(because their IDs are offsets, not absolute addresses ;)
 
+NOTE that matrices are NO LONGER identical after decode has started,
+	because decoding will remove cells from the rows.
+
 returns 0 if identical
 */
 int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ffec_params *fp)
@@ -517,31 +523,10 @@ int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ff
 		for (uint32_t i=0; i < enc->cnt.k * FFEC_N1_DEGREE; i++) {
 			if (memcmp(&enc->cells[i], &dec->cells[i], sizeof(enc->cells[0])))
 				mismatch_cnt++;
-			//printf("%d, ", i);
-			/*
-			printf("%d:(%d, %d, %d, %d)!=(%d, %d, %d, %d)\n", i,
-				enc->cells[i].row_id,enc->cells[i].c_me,
-					enc->cells[i].c_prev,enc->cells[i].c_next,
-				dec->cells[i].row_id,dec->cells[i].c_me,
-					dec->cells[i].c_prev,dec->cells[i].c_next);
-			*/
 		}
 		printf("\nmismatch %d <= %d cells\n\n", mismatch_cnt, enc->cnt.n * FFEC_N1_DEGREE);
 	}
 
-	/* verify source symbols */
-	if (memcmp(enc->source, dec->source, fp->sym_len * enc->cnt.k)) {
-		Z_err("symbols mismatched");
-		uint32_t mismatch_cnt=0;
-		/* print offending symbol addresses */
-		for (uint32_t i=0; i < enc->cnt.n; i++) {
-			if (memcmp(ffec_get_sym(fp, enc, i), ffec_get_sym(fp, dec, i), fp->sym_len)) {
-				mismatch_cnt++;
-				printf("%d, ", i);
-			}
-		}
-		printf("\nmismatch %d <= %d symbols\n\n", mismatch_cnt, enc->cnt.n);
-	}
 out:
 	return err_cnt;
 }
