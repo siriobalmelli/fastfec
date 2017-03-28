@@ -46,6 +46,10 @@
 	8 = judy
 	9 = [satan?]
 TODO: this scheme needs to change into a bitmask-based idea, rather than sequential ;)
+... something like:
+	// at top of file
+	#define MTX
+	Z_inf(MTX | SIG, "message");
  */
 
 
