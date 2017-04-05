@@ -445,6 +445,9 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 	hp->the_one_ring.iov_len = next_mult64((hp->fs.source_sz + hp->fs.parity_sz + hp->fs.scratch_sz)
 							* (uint64_t)hp->span,
 						pgsz);
+	/* TODO: try mapping a file as "private" instead of "shared" ...
+		and see if disk writes go away.
+	*/
 	Z_die_if((
 		hp->ring_fd = sbfu_tmp_map(&hp->the_one_ring, "./")
 		) < 1, "");
