@@ -102,6 +102,16 @@ out:
 	return err_cnt;
 }
 
+/*	test_circular()
+Test multiple single page encode->decode cycles,
+	so as to verify circular buffer mechanics,
+	and show decode efficiency as it evolves with time (should stay the same).
+*/
+int test_circular()
+{
+	// TODO:
+}
+
 /*	test_multi()
 Test 'width' encode->decode simultaneously
 */
@@ -192,6 +202,21 @@ out:
 	mfec_hp_clean(&TX);
 	mfec_hp_clean(&RX);
 	return err_cnt;
+}
+
+/*	test_multi_seq_drop()
+Decode backwards from the last book, in sequence - to simulate loss of contiguous pages.
+Show how early the first pages can be decoded.
+
+"how early can we decode 0 and 1?"
+0	1	2
+	1	2	3
+		2	3	4
+
+*/
+int test_multi_seq_drop()
+{
+	// TODO:
 }
 
 
