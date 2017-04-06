@@ -101,10 +101,6 @@ Populates 'last_offt' with the offset (in the underlying ringbuffer, not the
 	which callers may wish to splice() into.
 TODO: can we splice into this assembled region using the FD of the underlying
 	ringbuffer?
-
-TODO: in cases of single-shot (contiguous) regions of the underlying ring,
-	return an address in the ring itself (save TLB trashing);
-	but then make sure it doesn't get unmapped on inval.
 */
 void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 {
@@ -113,21 +109,10 @@ void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 	int map_len = hp->span - page_idx;
 
 	/* can mmap all in one shot */
-	// TODO: why map at all - how about returning an underlying pointer?
 	if (map_len >= hp->width) {
-/*
-		Z_die_if((
-			ret = mmap(NULL, hp->width * mfec_pg(hp),
-					PROT_READ | PROT_WRITE,
-					MAP_SHARED,
-					hp->ring_fd,
-					page_idx * mfec_pg(hp))
-			) == MAP_FAILED, "");
-*/
 		if (last_offt)
 			*last_offt = (page_idx + hp->width -1) * mfec_pg(hp);
-
-		/* Point ret to ring base + the given offset into that ring */
+		/* save TLB thrashing by returning an address in the underlying ring */
 		ret = hp->the_one_ring.iov_base + (page_idx * mfec_pg(hp));
 	/* must split map into 2 operations to roll around end of ring */
 	} else {
@@ -167,11 +152,14 @@ Free memory mapped by mfec_source_map().
 void		mfec_bk_inval	(struct mfec_bk *bk)
 {
 	bk->seq_no = -1;
-	// TODO: must not unmap if address is in the_one_ring
-	if (bk->fi.source) {
+	/* must not unmap if address is in the underlying ring */
+	struct iovec *rg = &bk->hp->the_one_ring;
+	if (bk->fi.source && (bk->fi.source < rg->iov_base || bk->fi.source > rg->iov_base + rg->iov_len)) {
 		munmap(bk->fi.source, mfec_pg(bk->hp) * bk->hp->width);
 		bk->fi.source = NULL;
 	}
+
+	/* free j1 arrays of done symbols */
 	int rc;
 	if (bk->j1_done)
 		J1FA(rc, bk->j1_done);
