@@ -286,7 +286,7 @@ uint64_t	mfec_sym_propagate(struct mfec_bk *bk, uint32_t	esi)
 	struct mfec_hp *hp = bk->hp; /* legibility */
 	
 	/* walk possible range of adjacent books */
-	for (int64_t walk = 1L - (int64_t)hp->width; walk < hp->width; walk++) {
+	for (int64_t walk = 1L - (int64_t)hp->width; walk < (int64_t)hp->width; walk++) {
 		/* ... skipping self */
 		if (!walk)
 			continue;
@@ -342,7 +342,7 @@ uint32_t	mfec_decode	(struct mfec_bk	*bk, void *symbol, uint32_t esi)
 	/* if 'esi' already decoded, return status */
 	if (ffec_test_esi(&bk->fi, esi))
 		return bk->fi.cnt.k - bk->fi.cnt.k_decoded;
-	Z_inf(3, "dec");
+	Z_inf(3, "dec esi %d", esi);
 
 	struct mfec_hp *hp = bk->hp; /* legibility */
 
@@ -360,7 +360,7 @@ uint32_t	mfec_decode	(struct mfec_bk	*bk, void *symbol, uint32_t esi)
 	do {
 		dirty = 0;
 
-		for (int64_t walk = 1L - (int64_t)hp->width; walk < hp->width; walk++) {
+		for (int64_t walk = 1L - (int64_t)hp->width; walk < (int64_t)hp->width; walk++) {
 			/* skip invalid books */
 			struct mfec_bk *cur = mfec_bk_get(hp, bk->seq_no + walk);	
 			if (!cur)
