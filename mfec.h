@@ -11,6 +11,8 @@
 
 #include <Judy.h>
 
+#include <stdlib.h> /* mkostemp() */
+
 /*
 	a single book
 */

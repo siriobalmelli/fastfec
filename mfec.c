@@ -106,7 +106,7 @@ void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 {
 	void *ret = NULL;
 
-	int map_len = hp->span - page_idx;
+	int64_t map_len = (int64_t)hp->span - page_idx;
 
 	/* can mmap all in one shot */
 	if (map_len >= hp->width) {
@@ -428,22 +428,41 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 	Z_die_if(syms_page < 1024, "");
 
 	/* one mmap to rule them all ... and at process end unmap them
-	Physical layout:
+	Physical layout (note that pages overlap in source regions):
 		N = width * 2 -2
-		src0	...	srcN	par0	...	parN	scr0	...	scrN
+		pg0	pg1	...	pgN	par0	...	parN	scr0	...	scrN
+		src0
+			src1
+				...
+					srcN
 	oh, and make that map a multiple of the system pagesize
 	 */
 	hp->the_one_ring.iov_base = 0;
-	hp->the_one_ring.iov_len = next_mult64((hp->fs.source_sz + hp->fs.parity_sz + hp->fs.scratch_sz)
+	hp->the_one_ring.iov_len = next_mult64((mfec_pg(hp) + hp->fs.parity_sz + hp->fs.scratch_sz)
 							* (uint64_t)hp->span,
 						pgsz);
-	/* TODO: try mapping a file as "private" instead of "shared" ...
-		and see if disk writes go away.
-	*/
+#if 0
 	Z_die_if((
 		hp->ring_fd = sbfu_tmp_map(&hp->the_one_ring, "./")
 		) < 1, "");
 	Z_inf(2, "map ring @ 0x%lx", (uint64_t)hp->the_one_ring.iov_base);
+#else
+	/* make tempfile */
+	char file_path[] = ".sbfu_tmp_XXXXXX";
+	Z_die_if((
+		hp->ring_fd = mkostemp(file_path, O_ASYNC)
+		) < 1, "create temp file '%s'", file_path);
+	unlink(file_path);
+	/* map */
+	struct iovec *rg = &hp->the_one_ring;
+	Z_die_if(ftruncate(hp->ring_fd, rg->iov_len), ""); /* force file size */
+	Z_die_if((
+		rg->iov_base = mmap(NULL, rg->iov_len, 
+				(PROT_READ | PROT_WRITE), MAP_PRIVATE,
+				hp->ring_fd, 0)
+		) == MAP_FAILED, "len=%ld", rg->iov_len);
+	// TODO: verify if faster with SHARED mapping ?
+#endif
 		
 	/* Allocate and invalidate book structs */
 	hp->books = calloc(hp->span, sizeof(struct mfec_bk));
@@ -453,7 +472,7 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 	/* Parity and scratch regions are immutable,
 		set the first pointer and then cycle through successive ones to increment.
 	 */
-	hp->books[0].fi.parity = hp->the_one_ring.iov_base + hp->fs.source_sz * hp->span;
+	hp->books[0].fi.parity = hp->the_one_ring.iov_base + mfec_pg(hp) * hp->span;
 	hp->books[0].fi.scratch = hp->books[0].fi.parity + hp->fs.parity_sz * hp->span;
 	for (int i = 1; i < hp->span; i++) {
 		hp->books[i].fi.parity = hp->books[i-1].fi.parity + hp->fs.parity_sz;
@@ -477,8 +496,10 @@ void		mfec_hp_clean	(struct mfec_hp *hp)
 		free(hp->books);
 	}
 
-	if (hp->ring_fd > 0)
+	if (hp->the_one_ring.iov_base && hp->the_one_ring.iov_base != MAP_FAILED)
 		sbfu_unmap(hp->ring_fd, &hp->the_one_ring);
+	if (hp->ring_fd > 0)
+		close(hp->ring_fd);
 	hp->ring_fd = 0;
 }
 
