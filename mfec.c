@@ -115,6 +115,7 @@ void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 	/* can mmap all in one shot */
 	// TODO: why map at all - how about returning an underlying pointer?
 	if (map_len >= hp->width) {
+/*
 		Z_die_if((
 			ret = mmap(NULL, hp->width * mfec_pg(hp),
 					PROT_READ | PROT_WRITE,
@@ -122,9 +123,12 @@ void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 					hp->ring_fd,
 					page_idx * mfec_pg(hp))
 			) == MAP_FAILED, "");
+*/
 		if (last_offt)
 			*last_offt = (page_idx + hp->width -1) * mfec_pg(hp);
 
+		/* Point ret to ring base + the given offset into that ring */
+		ret = hp->the_one_ring.iov_base + (page_idx * mfec_pg(hp));
 	/* must split map into 2 operations to roll around end of ring */
 	} else {
 		Z_die_if((
