@@ -131,45 +131,52 @@ int test_circular()
 				0)
 			, "");
 
-		for (int w = 0; w < width; w++) {
-			/* set up TX book and encode */
-			Z_die_if(!(
-				bk_tx = mfec_bk_next(&TX)		/* new book @ TX (seeded automatically) */
-				), "");
-			page_rand(mfec_bk_data(bk_tx), mfec_pg(&TX));	/* generate data block */
-			Z_die_if(!(
-				esi_seq = mfec_encode(bk_tx, NULL)	/* encode, get randomized ESI sequence */
-				), "");
+		/* set up TX book and encode */
+		Z_die_if(!(
+			bk_tx = mfec_bk_next(&TX)		/* new book @ TX (seeded automatically) */
+			), "");
+		page_rand(mfec_bk_data(bk_tx), mfec_pg(&TX));	/* generate data block */
+		Z_die_if(!(
+			esi_seq = mfec_encode(bk_tx, NULL)	/* encode, get randomized ESI sequence */
+			), "");
 
 
-			/* set up RX book */
-			Z_die_if(!(
-				bk_rx = mfec_bk_next(&RX)		/* new book @ RX */
-				), "");
-			/* decode symbols until done */
-			uint32_t i;
-			for (i=0; i < mfec_bk_txesi_cnt(bk_tx); i++) {
-				if (!mfec_decode(bk_rx,
-						ffec_get_sym(&bk_tx->hp->fp, &bk_tx->fi, esi_seq[i]),
-						esi_seq[i]))
-					break;
-			}
-
-			/* verify memory is identical */
-			Z_die_if(
-				memcmp(bk_tx->fi.source, bk_rx->fi.source, bk_tx->hp->fs.source_sz)
-				, "");
-
-			/* print efficiency */
-			Z_inf(0, "decoded with pg=%d < i=%d < (pg+p)=%d;\n\
-				\tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
-				/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
-				/*inefficiency*/(double)i / (double)TX.syms_page,
-				/*loss tolerance*/((double)(TX.syms_page + bk_tx->fi.cnt.p - i)
-					/ ((double)TX.syms_page + bk_tx->fi.cnt.p)) * 100,
-				/*FEC*/(bk_tx->hp->fp.fec_ratio -1) * 100 * TX.width);
+		/* set up RX book */
+		Z_die_if(!(
+			bk_rx = mfec_bk_next(&RX)		/* new book @ RX */
+			), "");
+		/* decode symbols until done */
+		uint32_t i;
+		for (i=0; i < mfec_bk_txesi_cnt(bk_tx); i++) {
+			if (!mfec_decode(bk_rx,
+					ffec_get_sym(&bk_tx->hp->fp, &bk_tx->fi, esi_seq[i]),
+					esi_seq[i]))
+				break;
 		}
+
+		/* verify memory is identical */
+		Z_die_if(
+			memcmp(bk_tx->fi.source, bk_rx->fi.source, bk_tx->hp->fs.source_sz)
+			, "");
+
+		/* print efficiency */
+		Z_inf(0, "decoded with pg=%d < i=%d < (pg+p)=%d;\n\
+			\tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
+			/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
+			/*inefficiency*/(double)i / (double)TX.syms_page,
+			/*loss tolerance*/((double)(TX.syms_page + bk_tx->fi.cnt.p - i)
+				/ ((double)TX.syms_page + bk_tx->fi.cnt.p)) * 100,
+			/*FEC*/(bk_tx->hp->fp.fec_ratio -1) * 100 * TX.width);
+
+		/* Clean up after each iteration */
+		if (esi_seq)
+			free(esi_seq);
+		mfec_hp_clean(&TX);
+		mfec_hp_clean(&RX);
 	}
+	return err_cnt;
+
+/* Clean up only if there was an error.*/
 out:
 	if (esi_seq)
 		free(esi_seq);
@@ -438,13 +445,12 @@ int main(int argc, char **argv)
 	err_cnt += test_single();
 
 	Z_inf(0, "---- single-circular matrix test ----");
-	//err_cnt += test_circular(); // TODO: TONY Y U LEAK
+	err_cnt += test_circular();
 
 	Z_inf(0, "---- multi test ----");
 	err_cnt += test_multi();
 
 	Z_inf(0, "---- multi seq drop test ----");
-	//test_multi_seq_drop(); // TODO: TONY Y U LEAK
-
+	err_cnt += test_multi_seq_drop();
 	return err_cnt;
 }
