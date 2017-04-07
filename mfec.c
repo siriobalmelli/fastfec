@@ -496,11 +496,11 @@ void		mfec_hp_clean	(struct mfec_hp *hp)
 		free(hp->books);
 	}
 
-	if (hp->the_one_ring.iov_base && hp->the_one_ring.iov_base != MAP_FAILED)
-		sbfu_unmap(hp->ring_fd, &hp->the_one_ring);
 	if (hp->ring_fd > 0)
 		close(hp->ring_fd);
 	hp->ring_fd = 0;
+	if (hp->the_one_ring.iov_base && hp->the_one_ring.iov_base != MAP_FAILED)
+		sbfu_unmap(hp->ring_fd, &hp->the_one_ring);
 }
 
 #undef Z_BLK_LVL

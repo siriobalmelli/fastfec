@@ -72,7 +72,7 @@ int test_single()
 		bk_rx = mfec_bk_next(&RX)		/* new book @ RX */
 		), "");
 	/* decode symbols until done */
-	uint32_t i;
+	uint64_t i;
 	for (i=0; i < mfec_bk_txesi_cnt(bk_tx); i++) {
 		if (!mfec_decode(bk_rx,
 				ffec_get_sym(&bk_tx->hp->fp, &bk_tx->fi, esi_seq[i]),
@@ -86,7 +86,7 @@ int test_single()
 		, "");
 
 	/* print efficiency */
-	Z_inf(0, "decoded with pg=%d < i=%d < (pg+p)=%d;\n\
+	Z_inf(0, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
 		/*inefficiency*/(double)i / (double)TX.syms_page,
@@ -117,19 +117,24 @@ int test_circular()
 	struct mfec_bk *bk_tx, *bk_rx;
 	uint32_t *esi_seq = NULL;
 
+	/* Instantiate a single instance of TX and RX;
+		we will use single pages from these over and over to
+		verify circular buffer mechanics.
+	*/
+	Z_die_if(
+		mfec_hp_init(&TX, width, syms_page, encode,
+			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
+			0)
+		, "");
+	Z_die_if(
+		mfec_hp_init(&RX, width, syms_page, decode,
+			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
+			0)
+		, "");
+
 	/* Loop for 'span' pages, each span being 'width' wide
 		 and execute encode/decode cycle */
-	for (int s = 0; s < (width * 2 - 1); s++) {
-		Z_die_if(
-			mfec_hp_init(&TX, width, syms_page, encode,
-				(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
-				0)
-			, "");
-		Z_die_if(
-			mfec_hp_init(&RX, width, syms_page, decode,
-				(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
-				0)
-			, "");
+	for (int s = 0; s < TX.span * 2; s++) {
 
 		/* set up TX book and encode */
 		Z_die_if(!(
@@ -146,7 +151,7 @@ int test_circular()
 			bk_rx = mfec_bk_next(&RX)		/* new book @ RX */
 			), "");
 		/* decode symbols until done */
-		uint32_t i;
+		uint64_t i;
 		for (i=0; i < mfec_bk_txesi_cnt(bk_tx); i++) {
 			if (!mfec_decode(bk_rx,
 					ffec_get_sym(&bk_tx->hp->fp, &bk_tx->fi, esi_seq[i]),
@@ -157,24 +162,23 @@ int test_circular()
 		/* verify memory is identical */
 		Z_die_if(
 			memcmp(bk_tx->fi.source, bk_rx->fi.source, bk_tx->hp->fs.source_sz)
-			, "");
+			, "s=%d", s);
 
+#if 0
 		/* print efficiency */
-		Z_inf(0, "decoded with pg=%d < i=%d < (pg+p)=%d;\n\
+		Z_inf(0, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
 			\tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 			/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
 			/*inefficiency*/(double)i / (double)TX.syms_page,
 			/*loss tolerance*/((double)(TX.syms_page + bk_tx->fi.cnt.p - i)
 				/ ((double)TX.syms_page + bk_tx->fi.cnt.p)) * 100,
 			/*FEC*/(bk_tx->hp->fp.fec_ratio -1) * 100 * TX.width);
+#endif
 
 		/* Clean up after each iteration */
 		if (esi_seq)
 			free(esi_seq);
-		mfec_hp_clean(&TX);
-		mfec_hp_clean(&RX);
 	}
-	return err_cnt;
 
 /* Clean up only if there was an error.*/
 out:
@@ -235,7 +239,7 @@ int test_multi()
 	}
 
 	/* decode symbols round-robin across all books until done */
-	uint32_t i;
+	uint64_t i;
 	for (i=0; i < mfec_bk_txesi_cnt(bk_tx[0]); i++) {
 		int done_cnt=0;
 		for (int j=0; j < width; j++) {
@@ -259,7 +263,7 @@ int test_multi()
 	}
 
 	/* print efficiency */
-	Z_inf(0, "decoded (average over %d width) pg=%d < i=%d < (pg+p)=%d;\n\
+	Z_inf(0, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*width*/width,
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_rx[0]->fi.cnt.p,
@@ -334,7 +338,7 @@ int test_multi_seq_drop()
 	}
 
 	/* decode symbols round-robin across all books until done */
-	uint32_t i;
+	uint64_t i;
 	for (i=mfec_bk_txesi_cnt(bk_tx[0]); i > 0; i--) {
 		int done_cnt=0;
 		for (int j=width-1; j == 0; j--) {
@@ -358,7 +362,7 @@ int test_multi_seq_drop()
 	}
 
 	/* print efficiency */
-	Z_inf(0, "decoded (average over %d width) pg=%d < i=%d < (pg+p)=%d;\n\
+	Z_inf(0, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*width*/width,
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_rx[0]->fi.cnt.p,
