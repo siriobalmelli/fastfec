@@ -4,7 +4,7 @@ include ffec.tup
 # local build flags, not propagated to anyone else
 CFLAGS_LOCAL = 
 
-LIB_LOCAL = ffec.c ffec_int.c ffec_matrix.c mfec.c
+LIB_LOCAL = ffec.c ffec_int.c ffec_matrix.c mfec.c nfec.c
 LIB_NAME = ffec 
 # compile library objects
 : foreach $(LIB_LOCAL) |> !cc |> {libs}
