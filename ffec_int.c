@@ -186,7 +186,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 
 	/*
 		generate parity
-	
+
 	Go through each parity column.
 	Distribute FFEC_N1_DEGREE 1's in the column,
 		all of them in a staircase pattern.
