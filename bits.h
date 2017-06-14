@@ -74,7 +74,7 @@ Finally, call _kill() to:
 	- wait until all current operations have called _end().
 	- mark 'op' as "unsafe" and return.
 */
-typedef uint32_t bits_op;
+typedef int bits_op;
 #define bits_op_unsafe ((__typeof__(bits_op))-1)		/* ALL the bits are '1' if "unsafe" */
 #define bits_op_nostart (0x1 << (sizeof(bits_op) * 8 - 1))	/* MSb is '1' if "nostart " OR "unsafe" */
 #define bits_op_init ((__typeof__(bits_op))0)			/* No pending ops at init */
