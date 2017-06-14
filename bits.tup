@@ -1,0 +1,18 @@
+ifneq ($(BITS_),1)
+BITS_=1
+	include_rules
+
+	LINK_LIBS += -lbits -mmovbe -lcrypto
+	CFLAGS +=
+
+	# unicorns, rainbows, kittens! (no touching)
+	I_DIRS += -I$(TUP_CWD)
+	LINK_DIRS += -L$(TUP_CWD)
+	# NOTE the use of '$ORIGIN' to tell the linker these rpaths are relative
+	RPATH += -Wl,-rpath='$ORIGIN/$(TUP_CWD)'
+	# auto-generator inputs, for dependency only
+	JSONZ += $(TUP_CWD)/*.json
+	
+	# judyutil include removed, but can no longer do collision test
+	#include ../judyutil/judyutil.tup
+endif
