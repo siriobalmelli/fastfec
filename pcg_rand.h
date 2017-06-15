@@ -1,8 +1,7 @@
 #ifndef pcg_rand_h_
 #define	pcg_rand_h_
 
-/* pcg_rand.c
-RNG for the ffec library.
+/* pcg_rand.h	RNG library
 
 This code is taken directly from the PCG library,
 Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>.
@@ -20,14 +19,16 @@ In case this software is redistributed, it is done so under APACHE 2.0 and
 Seriously, it might be malicious code. Use it at your own risk.
 If you can't read and understand it, just don't use it ;)
 
-Sirio Balmelli, 2016
+(c) 2016 Sirio Balmelli, https://b-ad.ch
 */
 
 #include <stdint.h> /* uint{x}_t */
 #include "zed_dbg.h"
 
+
+
 /* Internals are opaque (private). Don't access directly. */
-struct pcg_rand_state {
+struct pcg_state {
 	uint64_t state;		/* RNG state. All values are possible. */
 	uint64_t inc;		/* Controls which RNG sequence (stream) is
 					selected.
@@ -35,7 +36,15 @@ struct pcg_rand_state {
 				*/
 }__attribute__ ((packed));
 
-Z_INL_FORCE uint32_t	pcg_rand(struct pcg_rand_state *rng)
+
+
+/*	pcg_rand()
+Returns the next value in the sequence which state is stored in 'rng'
+	(updating 'rng' in the process).
+
+NOTE that 'rng' MUST be initialized before calling this function.
+*/
+Z_INL_FORCE uint32_t	pcg_rand(struct pcg_state *rng)
 {
 	uint64_t oldstate = rng->state;
 	/* Advance internal state */
@@ -46,7 +55,11 @@ Z_INL_FORCE uint32_t	pcg_rand(struct pcg_rand_state *rng)
 	return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-Z_INL_FORCE uint32_t	pcg_rand_bound(struct pcg_rand_state	*rng,
+/*	pcg_rand_bound()
+Returns a random number below 'bound', which is *unbiased* -
+	don't just modulo the result of pcg_rand()!.
+*/
+Z_INL_FORCE uint32_t	pcg_rand_bound(struct pcg_state		*rng,
 					uint32_t		bound)
 {
 	/* [sirio: dark magic goes here]:
@@ -78,13 +91,13 @@ Z_INL_FORCE uint32_t	pcg_rand_bound(struct pcg_rand_state	*rng,
 	return r % bound;
 }
 
-/*	pcg_rand_seed()
+/*	pcg_seed()
 Seed a random number generator.
 In actual fact, 'seed1' is the "init state" and 'seed2' the "init sequence",
 	but to highlight usage, they are just "seeds".
 For reproducible sequences, use the same pair of seeds across initializations.
 */
-Z_INL_FORCE void	pcg_rand_seed(	struct pcg_rand_state	*rng,
+Z_INL_FORCE void	pcg_seed(	struct pcg_state	*rng,
 					uint64_t		seed1,
 					uint64_t		seed2)
 {
@@ -99,12 +112,12 @@ Z_INL_FORCE void	pcg_rand_seed(	struct pcg_rand_state	*rng,
 #define PCG_RAND_S1 0x853c49e6748fea9bULL
 #define PCG_RAND_S2 0xda3e39cb94b95bdbULL
 
-/*	pcg_rand_seed_static()
+/*	pcg_seed_static()
 Seeds an rng with the recommended static constants.
 */
-Z_INL_FORCE void	pcg_rand_seed_static(struct pcg_rand_state *rng)
+Z_INL_FORCE void	pcg_seed_static(struct pcg_state *rng)
 {
-	pcg_rand_seed(rng, PCG_RAND_S1, PCG_RAND_S2);
+	pcg_seed(rng, PCG_RAND_S1, PCG_RAND_S2);
 }
 
 /*	pcg_randset()
@@ -113,16 +126,18 @@ Fill an area of memory with random bytes.
 Z_INL_FORCE void	pcg_randset(void *mem, size_t len, uint64_t seed1, uint64_t seed2)
 {
 	/* setup rng */
-	struct pcg_rand_state rnd_state;
-	pcg_rand_seed(&rnd_state, seed1, seed2);
-	/* write data */
+	struct pcg_state rnd_state;
+	pcg_seed(&rnd_state, seed1, seed2);
+	/* write 32-bit words */
 	uint32_t *word = mem;
-	for (size_t i=0; i < len / sizeof(uint32_t); i++)
+	mem += (len / sizeof(uint32_t) * sizeof(uint32_t));
+	while (word < mem)
 		*(word++) = pcg_rand(&rnd_state);
 	/* trailing bytes */
 	uint8_t *byte = (uint8_t *)word;
-	for (int i=0; i < len % sizeof(uint32_t); i++)
-		byte[i] = pcg_rand(&rnd_state);
+	mem += (len % sizeof(uint32_t));
+	while (byte < mem)
+		*(byte++) = pcg_rand(&rnd_state);
 }
 
 #endif /* pcg_rand_h_ */

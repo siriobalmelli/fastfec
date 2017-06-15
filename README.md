@@ -11,14 +11,21 @@ A few notes:
 -	when allocating, return a pointer; NULL == fail
 -	when calling libc, probably best to return an FD; <1 == fail
 -	all hail the Linux Kernel Style guide
--	```/*	A proper comment:
+-	```
+	/* A proper comment block:
 	Lines start on the tab.
-	Long lines are split and indented
-		like code.
-	*/```
+	Long lines are split
+		and indented like code.
+	*/
+	```
 -	Believe in the 80-character margin. Ignore it when it makes the code clearer.
+-	Eschew the '_l' suffix convention.
+	Rather, explicitly suffix functions with '32' or '64' when multiple word
+		lengths are being used.
+-	`.c` files only #include their related `.h` file, which includes anything else.
+	
 
 ## TODO
 -	nitpick coding style
 -	turn the notes list into brief snippets
--	document each of the utilities separately
+-	include docs from each of the utilities separately?

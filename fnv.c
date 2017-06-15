@@ -1,4 +1,4 @@
-#include "fnv1a.h"
+#include "fnv.h"
 
 /*	fnv_hash_l()
 Perform, or continue, a 64-bit FNV1A hash.
