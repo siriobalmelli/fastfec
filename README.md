@@ -7,7 +7,8 @@ The functions in this library solve or alleviate a bunch of commonplace
 	problems/annoyances related to writing programs in C.
 
 This is stuff not addressed in `libc` or `GLib`
-	(or for which code therein is disliked by the author).
+	(or for which code therein is disliked by the author;
+	or for which they might be overkill).
 
 The focus is on solving problems with a healthy dose of minimalism
 	and performance (rarely orthogonal qualities, as it were).
