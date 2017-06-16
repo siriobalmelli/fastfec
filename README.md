@@ -41,11 +41,12 @@ Brilliant. \
 Now run: `cd build-release && ninja all && sudo ninja install` \
 You should now get useful output from: `pkg-config --modversion nonlibc`.
 
-Et voilà - use pkg-config to configure inclusion and linkage in your
-	build system du jour.
+Et voilà - now use [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
+	to configure inclusion and linkage in your build system du jour.
 
+If you happen to be using Meson, things are even simpler, just use TODO
 
-## I want to include this library in my project
+## I want to statically include this library in my build
 I'm flattered.
 
 TODO
