@@ -1,4 +1,4 @@
-/*	fnv1a_test.c
+/*	fnv_test.c
 Designed to test the performance of FNV1A (both 32-bit and 64-bit) 
 	vs MD5 as an absolute.
 
@@ -8,8 +8,8 @@ NOTE that while it would be nice to see a CRC32 comparison in here
 	and/or link against mhash, so MEH!
 */
 
-#include "fnv1a.h"
-#include "bits.h"
+#include "fnv.h"
+//#include "bits.h"
 
 #include<sys/uio.h> /* struct iovec */
 #include<openssl/md5.h>
@@ -41,12 +41,12 @@ int equivalence()
 	uint64_t i, j, line_len, hash_a, hash_b;
 	for (i=0; i < phrase_cnt; i++) {
 		line_len = strlen(phrases[i]);	
-		hash_a = fnv_hash_l(0, (uint8_t *)phrases[i], line_len);
+		hash_a = fnv_hash64(0, (uint8_t *)phrases[i], line_len);
 
 		j=0;
-		hash_b = fnv_hash_l(NULL, (uint8_t *)&phrases[i][j++], 1);
+		hash_b = fnv_hash64(NULL, (uint8_t *)&phrases[i][j++], 1);
 		while (j < line_len)
-			hash_b = fnv_hash_l(&hash_b, (uint8_t *)&phrases[i][j++], 1);
+			hash_b = fnv_hash64(&hash_b, (uint8_t *)&phrases[i][j++], 1);
 
 		Z_die_if(hash_a != hash_b, "operations not equivalent - i=%ld, j=%ld",
 				i, j);
@@ -94,12 +94,12 @@ int collision_test(char *test_file)
 	uint64_t i=0;
 	while ( (line_len = getline(&lineptr, &line_sz, txt)) != -1) {
 		/* hash this and try adding to j_array to see if there is a collision */
-		fnv = fnv_hash_l(NULL, (uint8_t *)lineptr, line_len); /* +1 because '\0' */
+		fnv = fnv_hash64(NULL, (uint8_t *)lineptr, line_len); /* +1 because '\0' */
 		if (j_add_(&j_fnv, fnv, line_len))
 			fnv_coll++;
 
 		/* FNV32 */
-		fnv32 = fnv_hash(NULL, (uint8_t *)lineptr, line_len);
+		fnv32 = fnv_hash32(NULL, (uint8_t *)lineptr, line_len);
 		if (j_add_(&j_fnv32, fnv32, line_len))
 			fnv32_coll++;
 
@@ -152,10 +152,10 @@ int correctness()
 
 	for (int i = 0; i < phrase_cnt; i++) {
 		/* 64-bit */
-		uint64_t res_l = fnv_hash_l(NULL, phrases[i], strlen(phrases[i]));
+		uint64_t res_l = fnv_hash64(NULL, phrases[i], strlen(phrases[i]));
 		Z_die_if(res_l != out_l[i], "i=%d; 0x%lx != 0x%lx", i, res_l, out_l[i]);
 		/* 32-bit */
-		uint32_t res = fnv_hash(NULL, phrases[i], strlen(phrases[i]));
+		uint32_t res = fnv_hash32(NULL, phrases[i], strlen(phrases[i]));
 		Z_die_if(res != out[i], "i=%d 0x%x != 0x%x", i, res, out[i]);
 	}
 

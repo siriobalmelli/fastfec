@@ -1,5 +1,6 @@
 # nonlibc
-Collection of standard-not-standard utilities for the discerning C programmer
+Collection of standard-not-standard utilities for the discerning C programmer.
+This is *not* a hodgepodge, nor is the code haphazard - the code here is quite reliable.
 
 A few notes:
 -	tabs!
@@ -23,9 +24,12 @@ A few notes:
 	Rather, explicitly suffix functions with '32' or '64' when multiple word
 		lengths are being used.
 -	`.c` files only #include their related `.h` file, which includes anything else.
+-	Visibility is important: <https://gcc.gnu.org/wiki/Visibility>
+-	unity builds? yes please
 	
 
 ## TODO
 -	nitpick coding style
 -	turn the notes list into brief snippets
 -	include docs from each of the utilities separately?
+-	evaluate licensing - is GPL2 least restrictive?

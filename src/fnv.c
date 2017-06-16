@@ -1,6 +1,6 @@
 #include "fnv.h"
 
-/*	fnv_hash_l()
+/*	fnv_hash64()
 Perform, or continue, a 64-bit FNV1A hash.
 
 If 'hash' is NULL, then begin the hash with 'basis' and move on from there.
@@ -12,7 +12,7 @@ The reason for a uint64_t* input as opposed to a straight integer is that
 
 If called with NO data to hash, simply returns the initializer ;)
 */
-uint64_t	fnv_hash_l(uint64_t *hash, const void *data, uint64_t data_len)
+uint64_t	fnv_hash64(uint64_t *hash, const void *data, uint64_t data_len)
 {
 	static const uint64_t prime = 1099511628211ul;
 
@@ -48,7 +48,7 @@ uint64_t	fnv_hash_l(uint64_t *hash, const void *data, uint64_t data_len)
 	return h;
 }
 
-uint32_t	fnv_hash(uint32_t *hash, const void *data, uint64_t data_len)
+uint32_t	fnv_hash32(uint32_t *hash, const void *data, uint64_t data_len)
 {
 	static const uint32_t prime = 16777619;
 
