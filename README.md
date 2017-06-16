@@ -1,8 +1,57 @@
 # nonlibc
 Collection of standard-not-standard utilities for the discerning C programmer.
-This is *not* a hodgepodge, nor is the code haphazard - the code here is quite reliable.
 
-A few notes:
+
+## Yeah, but what does it do?
+The functions in this library solve or alleviate a bunch of commonplace
+	problems/annoyances related to writing programs in C.
+
+This is stuff not addressed in `libc` or `GLib`
+	(or for which code therein is disliked by the author).
+
+The focus is on solving problems with a healthy dose of minimalism
+	and performance (rarely orthogonal qualities, as it were).
+
+This is *not* a hodgepodge - the code here is quite reliable
+	and being used in the real world.
+
+For usage examples, see the `.c` files in `test`.
+
+Communication is always welcome, feel free to send a pull request
+	or drop me a line at <https://github.com/siriobalmelli>.
+
+
+## I want to link against this library
+Fortunately this library uses the [Meson build system](http://mesonbuild.com/index.html),
+	so things will be quite straightforward.
+
+If you're on a POSIX, try running `./bootstrap.sh` - chances are things will work
+	automagically and you'll find yourself with a `build-release` directory.
+
+### I'm on Windows || It doesn't work
+Don't despair. Things should still be pretty straightforward:
+
+-	[install ninja](https://ninja-build.org/)
+-	[install meson](http://mesonbuild.com/Getting-meson.html)
+-	run: `meson --buildtype release build-release`
+
+### Ok, I have a `build-release` dir
+Brilliant. \
+Now run: `cd build-release && ninja all && sudo ninja install` \
+You should now get useful output from: `pkg-config --modversion nonlibc`.
+
+Et voilà - use pkg-config to configure inclusion and linkage in your
+	build system du jour.
+
+
+## I want to include this library in my project
+I'm flattered.
+
+TODO
+
+
+## Hacking Notes
+A few tips about this code:
 -	tabs!
 -	tabs are 8 spaces
 -	keep things clean by prefixing function groups with 4-letter faux-namespaces
@@ -26,10 +75,10 @@ A few notes:
 -	`.c` files only #include their related `.h` file, which includes anything else.
 -	Visibility is important: <https://gcc.gnu.org/wiki/Visibility>
 -	unity builds? yes please
+-	use test programs to show intended usage
 	
 
 ## TODO
 -	nitpick coding style
--	turn the notes list into brief snippets
--	include docs from each of the utilities separately?
--	evaluate licensing - is GPL2 least restrictive?
+-	turn the Hacking Notes list into brief snippets
+-	evaluate licensing - is GPL2 the least restrictive?
