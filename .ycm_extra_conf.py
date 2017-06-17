@@ -12,7 +12,7 @@ flags = []
 #
 # Most projects will NOT need to set this to anything; you can just change the
 # 'flags' list of compilation flags. Notice that YCM itself uses that approach.
-compilation_database_folder='./build'
+compilation_database_folder='./build-debug'
 
 if compilation_database_folder:
   database = ycm_core.CompilationDatabase( compilation_database_folder )
