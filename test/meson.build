@@ -7,3 +7,8 @@ hex2bin2hex_test = executable('hex2bin2hex_test', 'hex2bin2hex_test.c',
 			include_directories : inc,
 			link_with : nonlibc)
 test('hex2bin2hex test', hex2bin2hex_test)
+
+pcg_rand_test = executable('pcg_rand_test', 'pcg_rand_test.c',
+			include_directories : inc,
+			link_with : nonlibc)
+test('pcg_rand test', pcg_rand_test)

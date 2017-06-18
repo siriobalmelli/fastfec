@@ -101,8 +101,8 @@ int main()
 {
 	int err_cnt = 0;
 
-	Z_err_if(equivalence(), "");
-	Z_err_if(correctness(), "");
+	err_cnt += equivalence();
+	err_cnt += correctness();
 
 	return err_cnt;
 }

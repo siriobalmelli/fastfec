@@ -1,3 +1,12 @@
+/*	hex2bin2hex_test.c
+
+Test series for the hx2b hex-to-binary and b2hx binary-to-hex functions.
+These functions can be used to parse and generate hexadecimal strings,
+	such as hashes or configuration file values.
+
+(c) 2017 Sirio Balmelli; https://b-ad.ch
+*/
+
 #include <hx2b.h>
 #include <b2hx.h>
 #include "zed_dbg.h"
@@ -40,6 +49,7 @@ int test_union_behavior()
 /*	test_hx2b()
 
 Convert strings expressing hex values into unsigned integers.
+returns 0 on success
 */
 int test_hx2b()
 {
@@ -79,6 +89,7 @@ int test_hx2b()
 
 Convert unsigned integers and bytefields into hex value strings;
 	convert them back into binary and verify equivalence.
+returns 0 on success
 */
 int test_b2hx()
 {
@@ -120,15 +131,17 @@ int test_b2hx()
 
 
 /*	main()
+returns 0 on success
 */
 int main()
 {
 	int err_cnt = 0;
 
-	Z_err_if(test_union_behavior(),
+	Z_die_if(test_union_behavior(),
 		"Broken on this platform! Don't use!");
-	Z_err_if(test_hx2b(), "");
-	Z_err_if(test_b2hx(), "");
+	err_cnt += test_hx2b();
+	err_cnt += test_b2hx();
 
+out:
 	return err_cnt;
 }
