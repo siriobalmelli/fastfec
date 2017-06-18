@@ -22,9 +22,9 @@ If you can't read and understand it, just don't use it ;)
 (c) 2016 Sirio Balmelli, https://b-ad.ch
 */
 
+#include <stddef.h>
 #include <stdint.h> /* uint{x}_t */
-#include "zed_dbg.h"
-
+#include <nonlibc.h>
 
 
 /* Internals are opaque (private). Don't access directly. */
@@ -37,29 +37,15 @@ struct pcg_state {
 }__attribute__ ((packed));
 
 
+NLC_PUBLIC	uint32_t	pcg_rand(struct pcg_state *rng);
+NLC_PUBLIC	void		pcg_randset(void *mem, size_t len, uint64_t seed1, uint64_t seed2);
 
-/*	pcg_rand()
-Returns the next value in the sequence which state is stored in 'rng'
-	(updating 'rng' in the process).
-
-NOTE that 'rng' MUST be initialized before calling this function.
-*/
-Z_INL_FORCE uint32_t	pcg_rand(struct pcg_state *rng)
-{
-	uint64_t oldstate = rng->state;
-	/* Advance internal state */
-	rng->state = oldstate * 6364136223846793005ULL + rng->inc;
-	/* Calculate output function (XSH RR), uses old state for max ILP */
-	uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
-	uint32_t rot = oldstate >> 59u;
-	return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
-}
 
 /*	pcg_rand_bound()
 Returns a random number below 'bound', which is *unbiased* -
 	don't just modulo the result of pcg_rand()!.
 */
-Z_INL_FORCE uint32_t	pcg_rand_bound(struct pcg_state		*rng,
+NLC_INLINE uint32_t	pcg_rand_bound(struct pcg_state		*rng,
 					uint32_t		bound)
 {
 	/* [sirio: dark magic goes here]:
@@ -97,9 +83,9 @@ In actual fact, 'seed1' is the "init state" and 'seed2' the "init sequence",
 	but to highlight usage, they are just "seeds".
 For reproducible sequences, use the same pair of seeds across initializations.
 */
-Z_INL_FORCE void	pcg_seed(	struct pcg_state	*rng,
-					uint64_t		seed1,
-					uint64_t		seed2)
+NLC_INLINE void		pcg_seed(struct pcg_state	*rng,
+				uint64_t		seed1,
+				uint64_t		seed2)
 {
 	rng->state = 0u;
 	rng->inc = (seed2 << 1) | 1u; /* must be odd */
@@ -115,29 +101,9 @@ Z_INL_FORCE void	pcg_seed(	struct pcg_state	*rng,
 /*	pcg_seed_static()
 Seeds an rng with the recommended static constants.
 */
-Z_INL_FORCE void	pcg_seed_static(struct pcg_state *rng)
+NLC_INLINE void	pcg_seed_static(struct pcg_state *rng)
 {
 	pcg_seed(rng, PCG_RAND_S1, PCG_RAND_S2);
-}
-
-/*	pcg_randset()
-Fill an area of memory with random bytes.
-*/
-Z_INL_FORCE void	pcg_randset(void *mem, size_t len, uint64_t seed1, uint64_t seed2)
-{
-	/* setup rng */
-	struct pcg_state rnd_state;
-	pcg_seed(&rnd_state, seed1, seed2);
-	/* write 32-bit words */
-	uint32_t *word = mem;
-	mem += (len / sizeof(uint32_t) * sizeof(uint32_t));
-	while (word < mem)
-		*(word++) = pcg_rand(&rnd_state);
-	/* trailing bytes */
-	uint8_t *byte = (uint8_t *)word;
-	mem += (len % sizeof(uint32_t));
-	while (byte < mem)
-		*(byte++) = pcg_rand(&rnd_state);
 }
 
 #endif /* pcg_rand_h_ */

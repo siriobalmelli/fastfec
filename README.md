@@ -16,7 +16,10 @@ The focus is on solving problems with a healthy dose of minimalism
 This is *not* a hodgepodge - the code here is quite reliable
 	and being used in the real world.
 
-For usage examples, see the `.c` files in `test`.
+For commented usage examples, see the `.c` files in `test`. \
+Another place to pick up usage data is the relevant header file:
+	it contains comments on usage and often has inline
+	helper functions which show usage.
 
 Communication is always welcome, feel free to send a pull request
 	or drop me a line at <https://github.com/siriobalmelli>.
@@ -62,7 +65,7 @@ A few tips about this code:
 -	when in doubt, have a function return a status code as 'int'; 0 == success
 -	when allocating, return a pointer; NULL == fail
 -	when calling libc, probably best to return an FD; <1 == fail
--	all hail the Linux Kernel Style guide
+-	all hail the [Linux kernel coding style](https://01.org/linuxgraphics/gfx-docs/drm/process/coding-style.html)
 -	```
 	/* A proper comment block:
 	Lines start on the tab.
@@ -75,9 +78,13 @@ A few tips about this code:
 	Rather, explicitly suffix functions with '32' or '64' when multiple word
 		lengths are being used.
 -	`.c` files only #include their related `.h` file, which includes anything else.
--	Visibility is important: <https://gcc.gnu.org/wiki/Visibility>
--	unity builds? yes please
+-	Visibility is important: <https://gcc.gnu.org/wiki/Visibility> - see the
+		relevant helper macros in `nonlibc.h`.
+	Also, feel free to suffix internal helper functions with an underscore '_'
+		as a hint to other coders.
 -	use test programs to show intended usage
+-	Header files should list functions in the order in which they appear in the
+		corresponding `.c` file.
 	
 
 ## TODO

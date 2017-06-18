@@ -10,7 +10,7 @@ All the annoying little math snippets which aren't elsewere;
 */
 
 #include <stdint.h>
-
+#include <nonlibc.h>
 
 
 /*	nm_div_ceil(a, b)
@@ -18,7 +18,7 @@ All the annoying little math snippets which aren't elsewere;
 If 'b' divides evenly into 'a', returns 'a / b'.
 Else, returns 'a / b + 1'.
 */
-static inline __attribute__((always_inline))	uint64_t nm_div_ceil(uint64_t a, uint64_t b)
+NLC_INLINE	uint64_t nm_div_ceil(uint64_t a, uint64_t b)
 {
 	uint64_t ret = a / b;
 	if ((ret * b) < a)
@@ -30,7 +30,7 @@ static inline __attribute__((always_inline))	uint64_t nm_div_ceil(uint64_t a, ui
 Returns next higher power of 2, or itself if already power of 2.
 Shamelessly ripped off of an S/O thread.
 	*/
-static inline __attribute__((always_inline))	uint32_t nm_next_pow2(uint32_t x)
+NLC_INLINE	uint32_t nm_next_pow2(uint32_t x)
 {
 	if (!x)
 		return 0;
@@ -48,15 +48,14 @@ static inline __attribute__((always_inline))	uint32_t nm_next_pow2(uint32_t x)
 Returns `x` if `x` divides evenly into `mult`
 Else returns next multiple of mult above x
 */
-static inline __attribute__((always_inline))	uint32_t nm_next_mult32(uint32_t x, uint32_t mult)
+NLC_INLINE	uint32_t nm_next_mult32(uint32_t x, uint32_t mult)
 {
 	return ((x + (mult -1)) / mult) * mult;
 }
-static inline __attribute__((always_inline))	uint64_t nm_next_mult64(uint64_t x, uint64_t mult)
+NLC_INLINE	uint64_t nm_next_mult64(uint64_t x, uint64_t mult)
 {
 	return ((x + (mult -1)) / mult) * mult;
 }
-
 
 
 #endif /* nmath_h_ */

@@ -1,5 +1,5 @@
 nonlibc = shared_library(meson.project_name(),
-			'b2hx.c', 'hx2b.c', 'fnv.c',
+			'b2hx.c', 'hx2b.c', 'fnv.c', 'pcg_rand.c',
 			include_directories : inc,
 			install : true)
 

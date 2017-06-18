@@ -1,33 +1,30 @@
-/***
-* zed_dbg.h
-* by: Sirio Balmelli, 2014
-* http://b-ad.ch
-*
-* credit to Zed A. Shaw
-* the ideas for this work (very loosely) derive from his
-* debug macros in "learn C the hard way"
-* thanks
+/*	zed_dbg.h	control-flow and print macros for C
+
+The purpose of this library is to provide simple macros which abstract away
+	repetitive control-flow and debug/warning/info print mechanics.
+
+Credit to Zed A. Shaw:
+	The ideas for this work (very loosely) derive from his
+		debug macros in "learn C the hard way".
+	Thanks.
+
+The nondescriptive name 'zed_dbg' originally began as a tongue-in-cheek
+	reference to Pulp Fiction.
+It ended up sticking around in equal parts because the prefix 'Z' is both
+	unique and minimalistic; but also because a whole bunch of code
+	grew up using this library and I'm too lazy to go back and
+	change all of it.
+
+(c) 2014 Sirio Balmelli; https://b-ad.ch
 */
 #ifndef zed_dbg_h_
 #define zed_dbg_h_
 
 #include <errno.h>
 #include <stdio.h>
+#include <libgen.h>	/* basename() */
 #include <string.h>
 
- /* POSIX-style basename */
-#include <libgen.h>
-#include <string.h>
-
-/* a common define seen in library headers */
-#define	Z_INL_FORCE static inline __attribute__((always_inline))
-
-#ifndef Z_STR_OK
-#define Z_STR_OK stdout
-#endif
-#ifndef Z_STR_ERR
-#define Z_STR_ERR stderr
-#endif
 
 /* Global log level. We probably want to see Z_LOG_LVL as a -D in the Makefile */
 #ifndef Z_LOG_LVL
@@ -72,6 +69,7 @@ TODO: this scheme needs to change into a bitmask-based idea, rather than sequent
 #define Z_BLK_LVL 0
 */
 
+
 /* conditional execution based on loglevel */
 #define Z_DO(LVL, BLOCK) \
 	do { \
@@ -99,20 +97,20 @@ TODO: this scheme needs to change into a bitmask-based idea, rather than sequent
 		} \
 	} while (0)
 
-#define Z_log_line() Z_PRN(Z_STR_OK, "------------\n")
+#define Z_log_line() Z_PRN(stdout, "------------\n")
 #define Z_lne Z_log_line
 
 /* conditional logging, based on log level */
 #define Z_inf(LVL, M, ...) Z_DO(LVL, \
 				if (LVL) \
-					_log(Z_STR_OK, "I:" #LVL, M, ##__VA_ARGS__); \
+					_log(stdout, "I:" #LVL, M, ##__VA_ARGS__); \
 				else \
-					_log(Z_STR_OK, "INF", M, ##__VA_ARGS__); \
+					_log(stdout, "INF", M, ##__VA_ARGS__); \
 				)
 #define Z_log_info(M, ...) { Z_inf(0, M, ##__VA_ARGS__); }
 
 #define Z_log_warn(M, ...) do { \
-			_log(Z_STR_OK, "WRN", M, ##__VA_ARGS__); \
+			_log(stdout, "WRN", M, ##__VA_ARGS__); \
 			wrn_cnt++; \
 			} while(0)
 #define Z_wrn Z_log_warn
@@ -124,7 +122,7 @@ static int err_cnt = 0;
 static int wrn_cnt = 0;
 
 #define Z_log_err(M, ...) do { \
-			_log(Z_STR_ERR, "ERR", M, ##__VA_ARGS__); \
+			_log(stderr, "ERR", M, ##__VA_ARGS__); \
 			err_cnt++; \
 			} while(0)
 #define Z_err Z_log_err
@@ -144,19 +142,19 @@ static void __attribute__ ((constructor)) Z_start_()
 static void __attribute__ ((destructor)) Z_end_()
 {
 	if (err_cnt)
-		_log(Z_STR_ERR, __BASE_FILE__, "err_cnt == %d", err_cnt);
+		_log(stderr, __BASE_FILE__, "err_cnt == %d", err_cnt);
 	if (wrn_cnt)
-		_log(Z_STR_OK, __BASE_FILE__, "wrn_cnt == %d", wrn_cnt);
+		_log(stdout, __BASE_FILE__, "wrn_cnt == %d", wrn_cnt);
 }
 
 #define Z_bail(M, ...) do {\
-			_log(Z_STR_OK, "BAIL", M, ##__VA_ARGS__); \
+			_log(stdout, "BAIL", M, ##__VA_ARGS__); \
 			wrn_cnt++; \
 			goto out; \
 		} while (0)
 
 #define Z_die(M, ...) do { \
-			_log(Z_STR_ERR, "DIE", M, ##__VA_ARGS__); \
+			_log(stderr, "DIE", M, ##__VA_ARGS__); \
 			err_cnt++; \
 			goto out; \
 		} while(0)
@@ -174,10 +172,10 @@ static void __attribute__ ((destructor)) Z_end_()
 		for (__i = 0; __i < LEN; __i++) { \
 			/* == "__i % 8" */ \
 			if (!(__i & 0x7)) \
-				Z_PRN(Z_STR_OK, "\n"); \
-			Z_PRN(Z_STR_OK, "0x%hhx\t", b[__i]); \
+				Z_PRN(stdout, "\n"); \
+			Z_PRN(stdout, "0x%hhx\t", b[__i]); \
 		} \
-		Z_PRN(Z_STR_OK, "\n"); \
+		Z_PRN(stdout, "\n"); \
 		Z_log_line(); \
 	} while(0)
 

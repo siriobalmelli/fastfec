@@ -3,6 +3,7 @@
 /* index into this for b2hx conversions */
 static const char *syms = "0123456789abcdef";
 
+
 /*	b2hx()
 Writes byte_cnt bytes as (byte_cnt *2 +1) ascii hex digits to the mem in `*out`.
 	(+1 because trailing '\0').
@@ -35,10 +36,11 @@ size_t b2hx(const unsigned char *bin, char *hex, size_t byte_cnt)
 
 	return hex_pos; /* return number of hex CHARACTERS written */
 }
+
 /*	b2hx_BE()
 Big-endian version of b2hx() above.
 */
-size_t		b2hx_BE	(const unsigned char *bin, char *hex, size_t byte_cnt)
+size_t	b2hx_BE	(const unsigned char *bin, char *hex, size_t byte_cnt)
 {
 	if (!bin || !hex || !byte_cnt)
 		return 0;
