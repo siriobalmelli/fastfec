@@ -12,12 +12,13 @@ For all the 411, see 'pcg_rand.h'
 
 #include <pcg_rand.h>
 #include <zed_dbg.h>
+#include <stdlib.h> /* free() */
 
 
-/*	rand()
+/*	test_pcg_rand()
 Basic usage of pcg
 */
-int rand()
+int test_pcg_rand()
 {
 	int err_cnt = 0;
 
@@ -37,7 +38,27 @@ int rand()
 }
 
 
-/*	bounded_rand()
+/*	test_pcg_randset()
+
+Test setting an area of memory with random numbers drawn from a pcg generator.
+Doesn't actually test anything; depending on valgrind to catch any
+	fishy business.
+*/
+int test_pcg_randset()
+{
+	int err_cnt = 0;
+
+	const size_t len = 87694;
+	void *mem = malloc(len);
+
+	pcg_randset(mem, len, PCG_RAND_S1, PCG_RAND_S2);
+
+	free(mem);
+	return err_cnt;
+}
+
+
+/*	test_pcg_rand_bound()
 
 Test uniformity of randomly generated values with a certain bound:
 	certain numbers shouldn't be more statistically likely to appear.
@@ -45,7 +66,7 @@ For more info on this, see <https://blog.codinghorror.com/the-danger-of-naivete/
 
 returns 0 on success
 */
-int bounded_rand()
+int test_pcg_rand_bound()
 {
 	int err_cnt = 0;
 	const unsigned int bound = 7;		/* random numbers will be 0:(bound-1) */
@@ -96,8 +117,9 @@ int main()
 {
 	int err_cnt = 0;
 
-	err_cnt += rand();
-	err_cnt += bounded_rand();
+	err_cnt += test_pcg_rand();
+	err_cnt += test_pcg_randset();
+	err_cnt += test_pcg_rand_bound();
 
 	return err_cnt;
 }

@@ -12,3 +12,8 @@ pcg_rand_test = executable('pcg_rand_test', 'pcg_rand_test.c',
 			include_directories : inc,
 			link_with : nonlibc)
 test('pcg_rand test', pcg_rand_test)
+
+nmath_test = executable('nmath_test', 'nmath_test.c',
+			include_directories : inc,
+			link_with : nonlibc)
+test('nmath test', nmath_test)

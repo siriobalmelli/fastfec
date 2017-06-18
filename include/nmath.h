@@ -29,7 +29,7 @@ NLC_INLINE	uint64_t nm_div_ceil(uint64_t a, uint64_t b)
 /*	nm_next_pow2()
 Returns next higher power of 2, or itself if already power of 2.
 Shamelessly ripped off of an S/O thread.
-	*/
+*/
 NLC_INLINE	uint32_t nm_next_pow2(uint32_t x)
 {
 	if (!x)
