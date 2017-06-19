@@ -27,6 +27,28 @@ run_die()
 	fi
 }
 
+#	install_ninja()
+# Try and get a package manager for the system;
+#+	if found use it to install ninja.
+install_ninja()
+{
+	MGR=( "pacman"	"apt-get"	"dnf"		"emerge"	"port"		"brew"		"pkg" )
+	OPT=( "-S"	"install"	"install"	""		"install"	"install"	"install" )
+	PKG=( "ninja"	"ninja-build"	"ninja-build" 	"dev-util/ninja" "ninja"	"ninja"		"ninja" )
+
+	# This is bread-and-butter brute-force; try all the ones we know
+	#+	until one of them shows positive.
+	for i in $(seq 0 $(( ${#MGR[@]} -1 ))); do
+		if which ${MGR[$i]} >/dev/null 2>&1; then
+			run_die sudo ${MGR[$i]} ${OPT[$i]} ${PKG[$i]}
+			return 0
+		fi
+	done
+
+	# no joy
+	echo "missing package manager for this platform" >&2
+	exit 1
+}
 
 
 #	main()
@@ -35,7 +57,7 @@ main()
 {
 	# Make sure ninja and meson exist
 	if ! which ninja; then
-		run_die sudo apt-get install ninja-build
+		install_ninja
 	fi
 	if ! which meson; then
 		run_die sudo -H pip3 install meson
