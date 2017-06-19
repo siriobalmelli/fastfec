@@ -47,7 +47,7 @@ int equivalence()
 
 		/* compare */
 		Z_err_if(hash_a != hash_b,
-			"operations not equivalent : i %llu != j %llu",
+			"operations not equivalent : i %zu != j %zu",
 			i, j);
 	}
 
