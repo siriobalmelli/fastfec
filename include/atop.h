@@ -23,7 +23,7 @@ exec	:	function pointer e.g. 'free'
 */
 #define ATOP_SWAP_EXEC(var, swap, exec) { \
 	typeof(var) bits_temp_; \
-	bits_temp_ = (typeof(var))__atomic_exchange_n(&var, (typeof(var))swap, __ATOMIC_RELAXED); \
+	bits_temp_ = (typeof(var))__atomic_exchange_n(&var, (typeof(var))swap, __ATOMIC_CONSUME); \
 	if (bits_temp_ != ((typeof(var))swap)) { \
 		exec(bits_temp_); \
 		bits_temp_ = (typeof(var))swap; \
@@ -59,11 +59,11 @@ static inline __attribute__((always_inline))	atop_txn atop_txn_begin(atop_txn *o
 {
 	atop_txn local;
 	do {
-		local = __atomic_load_n(op, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE);
+		local = __atomic_load_n(op, __ATOMIC_CONSUME);
 		if (local & atop_txn_nostart)
 			return atop_txn_unsafe;
 	} while(!__atomic_compare_exchange_n(op, &local, local+1, 1, 
-			__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE, __ATOMIC_RELAXED)
+			__ATOMIC_CONSUME, __ATOMIC_CONSUME)
 		&& !pause()
 		);
 
@@ -82,8 +82,7 @@ static inline __attribute__((always_inline))	atop_txn atop_txn_end(atop_txn *op)
 	/* Assume that op_begin() WAS called before calling op_end, so don't
 		try and sanity check for -1.
 	*/
-	atop_txn ret = __atomic_sub_fetch(op, 1,
-				__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE);
+	atop_txn ret = __atomic_sub_fetch(op, 1, __ATOMIC_CONSUME);
 	/* only return number of operations, NOT any possible "nostart" flag */
 	return ret & ~atop_txn_nostart;
 }
@@ -94,13 +93,12 @@ Marks 'op' as "nostart" and then spinlocks until all operations have called _end
 */
 static inline __attribute__((always_inline))	void atop_txn_kill(atop_txn *op)
 {
-	uint32_t expect = atop_txn_nostart;
+	atop_txn expect = atop_txn_nostart;
 	do {
-		if (__atomic_fetch_or(op, atop_txn_nostart,
-				__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE) == -1)
+		if (__atomic_fetch_or(op, atop_txn_nostart, __ATOMIC_CONSUME) == -1)
 			return;
 	} while(!__atomic_compare_exchange_n(op, &expect, atop_txn_unsafe, 1, 
-			__ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE, __ATOMIC_RELAXED)
+			__ATOMIC_CONSUME, __ATOMIC_CONSUME)
 		&& !pause()
 		);
 	return;

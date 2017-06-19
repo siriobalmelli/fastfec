@@ -6,6 +6,10 @@
 
 Demonstration for the "atomic operations" family of functions.
 
+TODO:
+-	add threads to ATOP_SWAP_EXEC test
+-	write tests for atop_txn_() stuff
+
 (c) 2017 Sirio Balmelli; https://b-ad.ch
 */
 

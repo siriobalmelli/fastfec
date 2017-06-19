@@ -46,8 +46,9 @@ int equivalence()
 			hash_b = fnv_hash64(&hash_b, (uint8_t *)&phrases[i][j++], 1);
 
 		/* compare */
-		Z_err_if(hash_a != hash_b, "operations not equivalent - i=%ld, j=%ld",
-				i, j);
+		Z_err_if(hash_a != hash_b,
+			"operations not equivalent : i %llu != j %llu",
+			i, j);
 	}
 
 	return err_cnt;
