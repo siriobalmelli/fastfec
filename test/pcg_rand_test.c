@@ -102,7 +102,7 @@ int test_pcg_rand_bound()
 	*/
 	Z_err_if(lowest_deviation > 0.001 || highest_deviation > 0.001, "bad algorithm");
 	/* print info regardless */
-	Z_inf(0, "%d rng calls bounded at %d: -%f <%d> +%f",
+	Z_log(Z_inf, "%d rng calls bounded at %d: -%f <%d> +%f",
 		numiter, bound, lowest_deviation, expected, highest_deviation);
 
 	return err_cnt;

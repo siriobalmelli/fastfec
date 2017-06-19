@@ -57,5 +57,25 @@ NLC_INLINE	uint64_t nm_next_mult64(uint64_t x, uint64_t mult)
 	return ((x + (mult -1)) / mult) * mult;
 }
 
+/*	nm_bit_pos()
+Returns the index (1-based!) of lowest set bit in 'uint'.
+If no bits are set, returns 0.
+
+NOTE the index is 1-based (so that we return 0 in case no bits are set,
+	as opposed to e.g. -1: this makes using the output of this
+	call as an array index relatively safe).
+1-based index means that 0x80 returns '8', NOT '7'.
+*/
+NLC_INLINE	unsigned int nm_bit_pos(uint64_t uint)
+{
+	unsigned int ret = 0;
+	while (ret++ < (sizeof(uint) * 8)) {
+		if (uint & 0x1)
+			return ret;
+		uint >>= 1;
+	}
+	return 0;
+}
+
 
 #endif /* nmath_h_ */

@@ -81,6 +81,38 @@ int test_nm_next_mult()
 }
 
 
+/*	test_nm_bit_pos()
+
+Returns the index (1-based!) of lowest set bit in 'uint'.
+If no bits are set, returns 0.
+*/
+int test_nm_bit_pos()
+{
+	int err_cnt = 0;
+
+	/* no bits set should return 0 */
+	Z_err_if(nm_bit_pos(0x0) != 0, "%d", nm_bit_pos(0x0));
+	/* first bit set for both instances */
+	Z_err_if(nm_bit_pos(0x1) != 1, "%d", nm_bit_pos(0x1));
+	Z_err_if(nm_bit_pos(0x3) != 1, "%d", nm_bit_pos(0x3));
+	/* MSb set */
+	Z_err_if(nm_bit_pos(0x8000000000000000) != 64, "%d", nm_bit_pos(0x8000000000000000));
+
+	/* example: use nm_bit_pos() to index into an array of prints */
+	enum en {
+		en_none = 0x0,
+		en_one,
+		en_two
+	};
+	const char *prints[] = {
+		"en_none", "en_one", "en_two"
+	};
+	Z_err_if(strcmp("en_one", prints[nm_bit_pos(en_one)]), "");
+
+	return err_cnt;
+}
+
+
 /*	main()
 */
 int main()
@@ -90,6 +122,7 @@ int main()
 	err_cnt += test_nm_div_ceil();
 	err_cnt += test_nm_next_pow2();
 	err_cnt += test_nm_next_mult();
+	err_cnt += test_nm_bit_pos();
 
 	return err_cnt;
 }

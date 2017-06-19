@@ -17,3 +17,8 @@ nmath_test = executable('nmath_test', 'nmath_test.c',
 			include_directories : inc,
 			link_with : nonlibc)
 test('nmath test', nmath_test)
+
+zed_dbg_test = executable('zed_dbg_test', 'zed_dbg_test.c',
+			include_directories : inc,
+			link_with : nonlibc)
+test('zed_dbg test', zed_dbg_test)
