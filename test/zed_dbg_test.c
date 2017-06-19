@@ -4,6 +4,8 @@
 /*	zed_dbg_test.c
 
 Test and show usage for the print and control-flow macros in 'zed_dbg.h'
+
+(c) 2017 Sirio Balmelli; https://b-ad.ch
 */
 
 

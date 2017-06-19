@@ -7,6 +7,7 @@
 */
 
 #include <stdint.h>
+#include <unistd.h>	/* pause() */
 
 
 
@@ -19,68 +20,11 @@ Can be used e.g.: in check()->free() logic looking at shared variables.
 var	:	variable name
 swap	:	value e.g. '0' or 'NULL'
 exec	:	function pointer e.g. 'free'
-
-TODO: turn this into a test program
-examples:
-```
-// this is an example library
-
-struct widget {
-	int	fd;	//file descriptor
-	// other widgety things
-};
-
-void		widget_free(struct widget *wt)
-{
-	if (!wt)
-		return;
-	// call close on fd if it's open (aka: not in error state); but only once
-	ATOP_SWAP_EXEC(wt->fd, -1, close);
-	// free memory
-	free(wt);
-}
-
-struct widget *make_widget()
-{
-	// fail on bad malloc	TODO: use Zed
-	struct widget *ret = NULL;
-	if (!(ret = malloc(sizeof(struct widget))))
-		goto out;
-
-	// widget defaults in error (closed) state
-	ret->fd = -1;
-	// try and open FD
-	if ((fd = call_to_libc()) == -1)
-		goto out;
-
-	// success - return an object
-	return ret;
-
-	// failure - clean up gracefully
-out:
-	widget_free(ret);
-	return NULL;
-}
-
-
-struct widget *wt_a = NULL;
-struct widget *wt_b = NULL;
-
-int main()
-{
-	// do threaded things with widgets
-
-	// safe cleanup of widgets
-out:
-	ATOP_SWAP_EXEC(wt_a, NULL, widget_free);
-	ATOP_SWAP_EXEC(wt_b, NULL, widget_free);
-}
-```
 */
 #define ATOP_SWAP_EXEC(var, swap, exec) { \
 	typeof(var) bits_temp_; \
 	bits_temp_ = (typeof(var))__atomic_exchange_n(&var, (typeof(var))swap, __ATOMIC_RELAXED); \
-	if (bits_temp_ != ((typeof(var))swap) { \
+	if (bits_temp_ != ((typeof(var))swap)) { \
 		exec(bits_temp_); \
 		bits_temp_ = (typeof(var))swap; \
 	} \
@@ -161,7 +105,6 @@ static inline __attribute__((always_inline))	void atop_txn_kill(atop_txn *op)
 		);
 	return;
 }
-
 
 
 #endif /* atop_h_ */

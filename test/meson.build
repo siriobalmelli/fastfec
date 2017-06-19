@@ -22,3 +22,8 @@ zed_dbg_test = executable('zed_dbg_test', 'zed_dbg_test.c',
 			include_directories : inc,
 			link_with : nonlibc)
 test('zed_dbg test', zed_dbg_test)
+
+atop_test = executable('atop_test', 'atop_test.c',
+			include_directories : inc,
+			link_with : nonlibc)
+test('atop test', atop_test)
