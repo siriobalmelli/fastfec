@@ -31,6 +31,7 @@ Oh - and it lends itself to all kinds of puns. Z_end_()
 #include <libgen.h>	/* basename() */
 #include <string.h>
 #include <nmath.h>	/* nm_bit_pos() */
+#include <inttypes.h>	/* PRIu64 etc. for reliable printf across platforms */
 
 
 
