@@ -46,17 +46,21 @@ Don't despair. Things should still work with a little manual twiddling:
 
 
 ## I want to link against this library
-Get the library building as above, then run: `cd build-release && ninja all && sudo ninja install`. \
-You should now get some useful output from: `pkg-config --modversion nonlibc`.
+Get the library building as above, then run:
+```
+cd build-release && ninja all && sudo ninja install
+```
 
 Et voilà - now use [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
-	to configure inclusion and linkage in your build system du jour.
+	to configure inclusion and linkage in your build system du jour. \
+To verify things are kosher, check if you get some useful output from:
+	`pkg-config --modversion nonlibc`.
 
 If you're using [Meson](http://mesonbuild.com/index.html) to build your project,
-	it will now find and link to this library automatically. \
-Insert the following stanza in your `meson.build` file: 
+	it can now find and link to this library automatically,
+	once you insert the following stanza in your `meson.build` file: 
 ```
-nonlibc = dependency('nonlibc', fallback : ['nonlibc', 'nonlibc_dep'])
+nonlibc = dependency('nonlibc')
 ```
 
 
@@ -79,6 +83,11 @@ In that case, I recommend you do the following:
 If you're not using Meson, but [Linking](#i-want-to-link-against-this-library)
 	is not an option for you,
 	drop me a line and I'll see if I can help.
+
+
+## Cross-compilation
+TODO: ARM is on the docket for cross-compilation support. \
+Check back here soon.
 
 
 ## Hacking Notes
