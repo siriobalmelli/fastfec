@@ -76,7 +76,7 @@ In that case, I recommend you do the following:
 	executable('demo', 'test.c', dependencies : nonlibc)
 	```
 
-If you're not using Meson, but [Linking][I want to link against this library]
+If you're not using Meson, but [Linking](#i-want-to-link-against-this-library)
 	is not an option for you,
 	drop me a line and I'll see if I can help.
 
