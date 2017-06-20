@@ -25,29 +25,35 @@ Communication is always welcome, feel free to send a pull request
 	or drop me a line at <https://github.com/siriobalmelli>.
 
 
-## I want to link against this library
-Fortunately this library uses the [Meson build system](http://mesonbuild.com/index.html),
+## Will it compile on my system?
+Quite likely. \
+This library uses the [Meson build system](http://mesonbuild.com/index.html),
 	so things will be quite straightforward.
 
 If you're on a POSIX, try running `./bootstrap.sh` - chances are things will work
-	automagically and you'll find yourself with a `build-release` directory.
+	automagically and you'll find yourself with everything built and all tests running.
 
 ### I'm on Windows || It doesn't work
 Don't despair. Things should still be pretty straightforward:
 
 -	[install ninja](https://ninja-build.org/)
 -	[install meson](http://mesonbuild.com/Getting-meson.html)
--	run: `meson --buildtype release build-release`
+-	run: `meson --buildtype debugoptimized build-debug`
+-	`cd` into `build-debug` and run `ninja test`
+-	optional: you can also run the tests under `valgrind` with
+		`mesontest --wrap='valgrind --leak-check=full'`
+		(from inside `build-debug` of course)
 
-### Ok, I have a `build-release` dir
-Brilliant. \
-Now run: `cd build-release && ninja all && sudo ninja install` \
-You should now get useful output from: `pkg-config --modversion nonlibc`.
+
+## I want to link against this library
+Get the library building as above, then run: `cd build-release && ninja all && sudo ninja install`. \
+You should now get some useful output from: `pkg-config --modversion nonlibc`.
 
 Et voilà - now use [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
 	to configure inclusion and linkage in your build system du jour.
 
 If you happen to be using Meson, things are even simpler, just use TODO
+
 
 ## I want to statically include this library in my build
 I'm flattered.
@@ -91,6 +97,5 @@ A few tips about this code:
 -	integrate valgrind and code coverage testing
 -	test ARM cross-compilation
 -	integration as static library; document
--	cscope integrated
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?

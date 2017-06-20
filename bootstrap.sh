@@ -19,6 +19,7 @@
 #		$*	:	command sequence
 run_die()
 {
+	echo -e "\n\nEXEC: $*"
 	/bin/bash -c "$*"
 	poop=$?
 	if (( $poop )); then
@@ -55,6 +56,11 @@ install_ninja()
 # Pseudo-main: better cater to the rat-brain internal parser of C programmers ;)
 main()
 {
+	# optional: update cscope
+	if which cscope; then
+		run_die cscope -b -q -U -I./include -s./src -s./test
+	fi
+
 	# Make sure ninja and meson exist
 	if ! which ninja; then
 		install_ninja
@@ -68,6 +74,15 @@ main()
 	run_die meson --buildtype debugoptimized build-debug
 	run_die meson --buildtype release build-release
 	run_die meson --buildtype plain build-plain
+
+	# run the build
+	pushd build-debug
+	run_die ninja test
+	# optional: valgrind all the tests
+	if which valgrind; then
+		run_die mesontest --wrap=\'valgrind --leak-check=full\'
+	fi
+	popd
 }
 
 main
