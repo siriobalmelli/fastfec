@@ -20,11 +20,11 @@ int test_nm_div_ceil()
 	int err_cnt = 0;
 
 	/* divides evenly */
-	Z_err_if(nm_div_ceil(42, 7) != 6, "%ld", nm_div_ceil(42, 7));
+	Z_err_if(nm_div_ceil(42, 7) != 6, "%"PRIu64, nm_div_ceil(42, 7));
 	/* divides unevenly: expect division result +1 */
-	Z_err_if(nm_div_ceil(10, 6) != 2, "%ld", nm_div_ceil(10, 6));
+	Z_err_if(nm_div_ceil(10, 6) != 2, "%"PRIu64, nm_div_ceil(10, 6));
 	/* divides into 0: expect 1 */
-	Z_err_if(nm_div_ceil(5, 9) != 1, "%ld", nm_div_ceil(5, 9));
+	Z_err_if(nm_div_ceil(5, 9) != 1, "%"PRIu64, nm_div_ceil(5, 9));
 
 	return err_cnt;
 }
@@ -41,13 +41,13 @@ int test_nm_next_pow2()
 	/* A valid power of 2 should return itself.
 	Note that 0 and 1 are actually valid powers of 2 ;)
 	*/
-	Z_err_if(nm_next_pow2(0) != 0, "%d", nm_next_pow2(0));
-	Z_err_if(nm_next_pow2(1) != 1, "%d", nm_next_pow2(1));
-	Z_err_if(nm_next_pow2(64) != 64, "%d", nm_next_pow2(64));
+	Z_err_if(nm_next_pow2(0) != 0, "%"PRIu32, nm_next_pow2(0));
+	Z_err_if(nm_next_pow2(1) != 1, "%"PRIu32, nm_next_pow2(1));
+	Z_err_if(nm_next_pow2(64) != 64, "%"PRIu32, nm_next_pow2(64));
 
 	/* non-power-of-2 values should be promoted to the next power of 2 */
-	Z_err_if(nm_next_pow2(33) != 64, "%d", nm_next_pow2(33));
-	Z_err_if(nm_next_pow2(63) != 64, "%d", nm_next_pow2(63));
+	Z_err_if(nm_next_pow2(33) != 64, "%"PRIu32, nm_next_pow2(33));
+	Z_err_if(nm_next_pow2(63) != 64, "%"PRIu32, nm_next_pow2(63));
 	
 	return err_cnt;
 }
@@ -63,19 +63,19 @@ int test_nm_next_mult()
 	int err_cnt = 0;
 
 	/* exact (prime, odd, even) */
-	Z_err_if(nm_next_mult32(503, 503) != 503, "%d", nm_next_mult32(503, 503));	
-	Z_err_if(nm_next_mult64(3, 3) != 3, "%ld", nm_next_mult64(3, 3));	
-	Z_err_if(nm_next_mult64(42, 42) != 42, "%ld", nm_next_mult64(42, 42));	
+	Z_err_if(nm_next_mult32(503, 503) != 503, "%"PRIu32, nm_next_mult32(503, 503));	
+	Z_err_if(nm_next_mult64(3, 3) != 3, "%"PRIu64, nm_next_mult64(3, 3));	
+	Z_err_if(nm_next_mult64(42, 42) != 42, "%"PRIu64, nm_next_mult64(42, 42));	
 
 	/* divides evenly (prime, odd, even) */
-	Z_err_if(nm_next_mult32(503 * 2, 503) != 503 * 2, "%d", nm_next_mult32(503 * 2, 503));	
-	Z_err_if(nm_next_mult64(3 * 3, 3) != 3 * 3, "%ld", nm_next_mult64(3 * 3, 3));	
-	Z_err_if(nm_next_mult64(42 * 4, 42) != 42 * 4, "%ld", nm_next_mult64(42 * 4, 42));	
+	Z_err_if(nm_next_mult32(503 * 2, 503) != 503 * 2, "%"PRIu32, nm_next_mult32(503 * 2, 503));	
+	Z_err_if(nm_next_mult64(3 * 3, 3) != 3 * 3, "%"PRIu64, nm_next_mult64(3 * 3, 3));	
+	Z_err_if(nm_next_mult64(42 * 4, 42) != 42 * 4, "%"PRIu64, nm_next_mult64(42 * 4, 42));	
 
 	/* divides unevenly (prime, odd, even) */
-	Z_err_if(nm_next_mult32(503 +1, 503) != 503 * 2, "%d", nm_next_mult32(503 +1, 503));	
-	Z_err_if(nm_next_mult64(3 +2, 3) != 3 * 2, "%ld", nm_next_mult64(3 +2, 3));	
-	Z_err_if(nm_next_mult64(42 +3, 42) != 42 * 2, "%ld", nm_next_mult64(42 +3, 42));	
+	Z_err_if(nm_next_mult32(503 +1, 503) != 503 * 2, "%"PRIu32, nm_next_mult32(503 +1, 503));	
+	Z_err_if(nm_next_mult64(3 +2, 3) != 3 * 2, "%"PRIu64, nm_next_mult64(3 +2, 3));	
+	Z_err_if(nm_next_mult64(42 +3, 42) != 42 * 2, "%"PRIu64, nm_next_mult64(42 +3, 42));	
 
 	return err_cnt;
 }
@@ -91,12 +91,12 @@ int test_nm_bit_pos()
 	int err_cnt = 0;
 
 	/* no bits set should return 0 */
-	Z_err_if(nm_bit_pos(0x0) != 0, "%d", nm_bit_pos(0x0));
+	Z_err_if(nm_bit_pos(0x0) != 0, "%u", nm_bit_pos(0x0));
 	/* first bit set for both instances */
-	Z_err_if(nm_bit_pos(0x1) != 1, "%d", nm_bit_pos(0x1));
-	Z_err_if(nm_bit_pos(0x3) != 1, "%d", nm_bit_pos(0x3));
+	Z_err_if(nm_bit_pos(0x1) != 1, "%u", nm_bit_pos(0x1));
+	Z_err_if(nm_bit_pos(0x3) != 1, "%u", nm_bit_pos(0x3));
 	/* MSb set */
-	Z_err_if(nm_bit_pos(0x8000000000000000) != 64, "%d", nm_bit_pos(0x8000000000000000));
+	Z_err_if(nm_bit_pos(0x8000000000000000) != 64, "%u", nm_bit_pos(0x8000000000000000));
 
 	/* example: use nm_bit_pos() to index into an array of prints */
 	enum en {

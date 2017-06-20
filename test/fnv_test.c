@@ -86,10 +86,10 @@ int correctness()
 	for (int i = 0; i < phrase_cnt; i++) {
 		/* 64-bit */
 		uint64_t res64 = fnv_hash64(NULL, phrases[i], strlen(phrases[i]));
-		Z_err_if(res64 != out64[i], "i=%d; 0x%lx != 0x%lx", i, res64, out64[i]);
+		Z_err_if(res64 != out64[i], "i=%d; 0x%"PRIx64" != 0x%"PRIx64, i, res64, out64[i]);
 		/* 32-bit */
 		uint32_t res32 = fnv_hash32(NULL, phrases[i], strlen(phrases[i]));
-		Z_err_if(res32 != out32[i], "i=%d 0x%x != 0x%x", i, res32, out32[i]);
+		Z_err_if(res32 != out32[i], "i=%d 0x%"PRIx32" != 0x%"PRIx32, i, res32, out32[i]);
 	}
 
 	return err_cnt;

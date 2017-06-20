@@ -117,7 +117,7 @@ int test_b2hx()
 	Z_err_if(b2hx_u64(&n_64, 1, hex) != 17, "");
 	Z_err_if(strcmp(hex, hex_64), "'%s' not expected '%s'", hex, hex_64);
 	Z_err_if(hx2b_u64(hex_64) != n_64,
-		"%ld != %ld", hx2b_u64(hex_64), n_64);
+		"%"PRIu64" != %"PRIu64, hx2b_u64(hex_64), n_64);
 
 	const unsigned char byte_field[] = { 0xa0, 0xb1, 0xc2, 0xd3, 0xe4, 0xf5, 0x06, 0x17,
 			0x28, 0x39, 0x4a, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f };
