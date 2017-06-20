@@ -45,20 +45,39 @@ Don't despair. Things should still work with a little manual twiddling:
 		(from inside `build-debug` of course)
 
 
-## I want to link against this library
+## I want to link against this library {#LINK}
 Get the library building as above, then run: `cd build-release && ninja all && sudo ninja install`. \
 You should now get some useful output from: `pkg-config --modversion nonlibc`.
 
 Et voilà - now use [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
 	to configure inclusion and linkage in your build system du jour.
 
-If you happen to be using Meson, things are even simpler, just use TODO
+If you're using [Meson](http://mesonbuild.com/index.html) to build your project,
+	it will now find and link to this library automatically. \
+Insert the following stanza in your `meson.build` file: 
+```
+nonlibc = dependency('nonlibc', fallback : ['nonlibc', 'nonlibc_dep'])
+```
 
 
 ## I want to statically include this library in my build
-I'm flattered.
+The easiest way is if you also build your project with [Meson](http://mesonbuild.com/index.html). \
+In that case, I recommend you do the following:
+-	`mkdir -p subprojects`
+-	`git remote add nonlibc https://github.com/siriobalmelli/nonlibc.git`
+-	`git subtree add --prefix=subprojects/nonlibc nonlibc master`
+-	Add the following line to your toplevel `meson.build` file:
+	```
+	nonlibc = dependency('nonlibc', fallback : ['nonlibc', 'nonlibc_dep'])
+	```
+-	Add the `dependencies : nonlibc` stanza to the `executable` declaration(s)
+		in your `meson.build` file(s); e.g.:
+	```
+	executable('demo', 'test.c', dependencies : nonlibc)
+	```
 
-TODO
+If you're not using Meson, but [Linking][LINK] is not an option for you,
+	drop me a line and I'll see if I can help.
 
 
 ## Hacking Notes
@@ -94,8 +113,8 @@ A few tips about this code:
 	
 
 ## TODO
--	integrate valgrind and code coverage testing
 -	test ARM cross-compilation
--	integration as static library; document
+-	man pages (and how best to integrate with markdown docs readable when browsing github?)
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
+-	integrate code coverage testing
