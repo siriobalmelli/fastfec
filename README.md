@@ -88,6 +88,9 @@ A few tips about this code:
 	
 
 ## TODO
--	nitpick coding style
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
+-	integrate valgrind and code coverage testing
+-	test ARM cross-compilation
+-	integration as static library
+-	code TODOs; documentation cleanup
