@@ -128,9 +128,15 @@ To verify things are kosher, check if you get some useful output from:
 If you're using [Meson](http://mesonbuild.com/index.html) to build your project,
 	it can now find and link to this library automatically,
 	once you insert the following stanza in your `meson.build` file: 
-```
-nonlibc = dependency('nonlibc')
-```
+	```
+	nonlibc = dependency('nonlibc')
+	```
+
+... and then add the `dependencies : nonlibc` stanza to the `executable` declaration(s)
+		in your `meson.build` file(s); e.g.:
+	```
+	executable('demo', 'test.c', dependencies : nonlibc)
+	```
 
 
 ## I want to statically include this library in my build
@@ -152,7 +158,6 @@ In that case, I recommend you do the following:
 If you're not using Meson, but [Linking](#i-want-to-link-against-this-library)
 	is not an option for you,
 	drop me a line and I'll see if I can help.
-
 
 ## Cross-compilation
 TODO: ARM is on the docket for cross-compilation support. \
@@ -198,3 +203,4 @@ A few tips about how to hack on this code:
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
 -	integrate code coverage testing
+-	add library to WrapDB
