@@ -70,7 +70,7 @@ main()
 	fi
 
 	# make build dirs
-	rm -rfv build*
+	run_die rm -rfv build*
 	run_die meson --buildtype debugoptimized build-debug
 	run_die meson --buildtype release build-release
 	run_die meson --buildtype plain build-plain

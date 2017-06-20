@@ -28,15 +28,20 @@ int test_union_behavior()
 		uint8_t		u8[8];
 	};
 
-	union bits__ thing;
+	union bits__ thing = { .u64 = 0x0 };
 	const uint8_t val = 42;
 
 	/* test array indexing behavior */
 	thing.u8[0] = val;
-	Z_err_if((thing.u8[0] != thing.u16[0])
-		|| (thing.u8[0] != thing.u32[0])
-		|| (thing.u8[0] != thing.u64)
-		, "");
+	Z_err_if(thing.u8[0] != thing.u16[0],
+		"%"PRIx8" != %"PRIx16,
+		thing.u8[0], thing.u16[0]);
+	Z_err_if(thing.u8[0] != thing.u32[0],
+		"%"PRIx8" != %"PRIx32,
+		thing.u8[0], thing.u32[0]);
+	Z_err_if(thing.u8[0] != thing.u64,
+		"%"PRIx8" != %"PRIx64,
+		thing.u8[0], thing.u64);
 
 	/* test bitshift behavior */
 	thing.u64 <<= 8;
