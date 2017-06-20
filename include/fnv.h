@@ -3,6 +3,9 @@
 
 /*	fnv.h		FNV1a hash algorithm
 
+The algorithm is not invented here (gasp!) and is public domain.
+See <https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function>
+
 (c) 2016 Sirio Balmelli and Anthony Soenen; https://b-ad.ch
 */
 

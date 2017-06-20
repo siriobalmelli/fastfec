@@ -81,8 +81,8 @@ Check out the test code at [pcg_rand_test.c](test/pcg_rand_test.c).
 
 ### Grokking the codebase
 Set yourself up so you can look up and jump to/from functions/symbols
-	inside your text editor. \
-As an example, I use vim with [cscope](http://cscope.sourceforge.net/) support,
+	inside your text editor or IDE. \
+As an example, I use [vim](http://www.vim.org/) with [cscope](http://cscope.sourceforge.net/) support,
 	and you'll see that [bootstrap.sh](bootstrap.sh) generates
 	cscope files from the sources.
 
