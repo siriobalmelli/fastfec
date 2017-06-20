@@ -1,0 +1,5 @@
+# TODO: verify the build is clean, push this upstream
+[wrap-git]
+directory=nonlibc
+url=https://github.com/siriobalmelli/nonlibc.git
+revision=head

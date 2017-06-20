@@ -1,8 +1,0 @@
-# nonlibc description for the Meson Wrap dependency system
-#+	<http://mesonbuild.com/Wrap-dependency-system-manual.html>
-# Put this file in your 'subprojects' dir, then declare nonlibc in your 'meson.build' file like so:
-#+	`nonlibc_dep = dependency('nonlibc', fallback : ['nonlibc', 'nonlibc_dep'])`
-[wrap-git]
-directory=nonlibc
-url=https://github.com/siriobalmelli/nonlibc.git
-revision=head
