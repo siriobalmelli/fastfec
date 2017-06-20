@@ -45,7 +45,7 @@ Don't despair. Things should still work with a little manual twiddling:
 		(from inside `build-debug` of course)
 
 
-## I want to link against this library {#LINK}
+## I want to link against this library
 Get the library building as above, then run: `cd build-release && ninja all && sudo ninja install`. \
 You should now get some useful output from: `pkg-config --modversion nonlibc`.
 
@@ -76,7 +76,8 @@ In that case, I recommend you do the following:
 	executable('demo', 'test.c', dependencies : nonlibc)
 	```
 
-If you're not using Meson, but [Linking][LINK] is not an option for you,
+If you're not using Meson, but [Linking][I want to link against this library]
+	is not an option for you,
 	drop me a line and I'll see if I can help.
 
 
