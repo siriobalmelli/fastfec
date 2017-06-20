@@ -9,3 +9,6 @@ inc = include_directories('include')
 subdir('include')
 subdir('src')
 subdir('test')
+
+nonlibc_dep = declare_dependency(link_with : nonlibc,
+				include_directories : inc)

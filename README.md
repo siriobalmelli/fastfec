@@ -28,13 +28,13 @@ Communication is always welcome, feel free to send a pull request
 ## Will it compile on my system?
 Quite likely. \
 This library uses the [Meson build system](http://mesonbuild.com/index.html),
-	so things will be quite straightforward.
+	so things will be straightforward.
 
 If you're on a POSIX, try running `./bootstrap.sh` - chances are things will work
 	automagically and you'll find yourself with everything built and all tests running.
 
 ### I'm on Windows || It doesn't work
-Don't despair. Things should still be pretty straightforward:
+Don't despair. Things should still work with a little manual twiddling:
 
 -	[install ninja](https://ninja-build.org/)
 -	[install meson](http://mesonbuild.com/Getting-meson.html)
