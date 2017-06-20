@@ -16,6 +16,33 @@ The focus is on solving problems with a healthy dose of minimalism
 This is *not* a hodgepodge - the code here is quite reliable
 	and being used in the real world.
 
+Here's a quick rundown of the contents:
+
+### Control flow; print mechanics - [zed_dbg.h](include/zed_dbg.h)
+This header helps with the following annoyances:
+-	forgetting to insert a '\n' at the end of an impromptu
+		debug `printf` statement
+-	spending time commenting/uncommenting print statements,
+		no easy way to enable/disable entire categories
+		or sets of prints
+-	`printf`s inside conditionals increase code size
+		for no good reason
+-	program throws an error, but forgot to write a print there
+-	program throws an error and does do a print,
+		but you have to `grep` for it
+		because you don't remember which source file it was in
+-	kryptonite print statements full of CPP kudge
+		like `__FILE__` and `__LINE__`
+-	complex control flow in functions handling external state
+		e.g. malloc(), open(), fork()
+-	time spent making print output marginally legible so the Dev Ops people
+		don't poison your coffee
+-	needing to pretty-print large arrays of bytes in hex,
+		for post-mortem analysis
+
+Some usage examples are in [zed_dbg_test.c](test/zed_dbg_test.c);
+	[zed_dbg.h](include/zed_dbg.h) itself is fairly well commented also.
+
 For commented usage examples, see the `.c` files in `test`. \
 Another place to pick up usage data is the relevant header file:
 	it contains comments on usage and often has inline

@@ -23,6 +23,45 @@ It ended up sticking around in equal parts because the prefix 'Z' is both
 	change all of it.
 Oh - and it lends itself to all kinds of puns. Z_end_()
 
+
+ON THE PHILOSOPHY OF GOTOs
+
+This library provides a Z_die_if() macro which does
+-	logging
+-	incrementing an 'err_cnt' variable
+-	a `goto out`
+
+If you haven't spent a fair amount in the trenches writing C,
+	you may still have jammed in your head the mantra of
+	"You must never goto, Simba".
+This point of view is understandable, but will get you in trouble
+	when it comes to error handling.
+
+Somewhere in the innards of a function, you may encounter an error
+	(you DO check the return values of the functions you call, right?),
+	or you may yourself decide something isn't kosher.
+I wish to posit that THE right thing to do here is a goto.
+
+Are you looking at your screen in horror? Good - I have your attention.
+
+Let me try and explain:
+You see, the function you're in the middle of has likely caused at least a couple
+	state changes: you may have allocated memory, opened an fd (file descriptor),
+	written data somewhere, etc.
+There's multiple places in your function where you check a value for error;
+	it's very tricky to write bulletproof error handling code
+	in each one of these locations, not to mention kludgy!
+
+So how about this instead:
+-	put ONE block of error-handling instructions at the bottom
+		of your function (usually under the return statement)
+-	labeling that block `out:`
+-	jump there any time something bad happens
+
+"Hey! that sounds like a Try/Catch block in [favorite language]!"
+Precisely.
+
+
 (c) 2014 Sirio Balmelli; https://b-ad.ch
 */
 
@@ -49,7 +88,7 @@ Oh - and it lends itself to all kinds of puns. Z_end_()
 	#define Z_wr3 0x40
 	#define Z_wr4 0x80
 /* print text corresponding to each log level */
-static char *Z_log_txt[] = {
+const static char *Z_log_txt[] = {
 	"ERR",
 	"INF", "IN2", "IN3", "IN4",
 	"WRN", "WR2", "WR3", "WR4"
