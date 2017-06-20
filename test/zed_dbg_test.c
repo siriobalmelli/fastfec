@@ -112,8 +112,8 @@ out:
 
 Used as a hack to make a (conditional) Z_log function kill the program if
 	it's evaluated.
-This is the standard approach if you conditional execution inside
-	a Z_() function.
+This is the standard approach if you want
+	conditional execution inside a Z_() function.
 */
 int sudden_death_()
 {

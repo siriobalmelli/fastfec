@@ -20,6 +20,7 @@ Here's a quick rundown of the contents:
 
 ### Control flow; print mechanics - [zed_dbg.h](include/zed_dbg.h)
 This header helps with the following annoyances:
+
 -	forgetting to insert a '\n' at the end of an impromptu
 		debug `printf` statement
 -	spending time commenting/uncommenting print statements,
@@ -43,13 +44,54 @@ This header helps with the following annoyances:
 Some usage examples are in [zed_dbg_test.c](test/zed_dbg_test.c);
 	[zed_dbg.h](include/zed_dbg.h) itself is fairly well commented also.
 
-For commented usage examples, see the `.c` files in `test`. \
-Another place to pick up usage data is the relevant header file:
-	it contains comments on usage and often has inline
-	helper functions which show usage.
+### fast, reliable 32-bit AND 64-bit hashing - [fnv.h](include/fnv.h)
+If you need a non-crypto hash, odds are you want [FNV1A](https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function).
 
-Communication is always welcome, feel free to send a pull request
-	or drop me a line at <https://github.com/siriobalmelli>.
+This is the simplest, least-hassle implementation I know of. \
+Usage examples in [fnv_test.c](test/fnv_test.c).
+
+### straightforward integer math - [nmath.h](include/nmath.h)
+Sometimes what you DON'T want is floating-point math. \
+This library has sane implementations for:
+
+-	integer ceiling division (i.e.: if not evenly divisible, return +1)
+-	get the next power of 2 (or current number if a power of 2)
+-	return the next higher multiple of a number (or itself if evenly divisible)
+-	get the position of the lowest '1' bit in an integer
+
+Oh, and they're all inlines so your compiler can reason about local variables
+	and turn out decent assembly.
+
+Every function is shown used in [nmath_test.c](test/nmath_test.c)
+
+### generating and parsing hexadecimal strings vis-a-vis integers and bytefields
+That's done by [hx2b.h](include/hx2b.h) and [b2hx.h](include/b2hx.h).
+
+Check out [hex2bin2hex_test.c](test/hex2bin2hex_test.c) for the full monte.
+
+### proper RNG which isn't a hassle to set-up and use - [pcg_rand.h](include/pcg_rand.h)
+This is a simple, clean, fast implementation of [PCG](http://www.pcg-random.org/).
+
+That matters more than you may think - and anyways this API is simple and clean. \
+Check out the test code at [pcg_rand_test.c](test/pcg_rand_test.c).
+
+### other odds-and-ends
+-	visibility and inlining macros in [nonlibc.h](include/nonlibc.h)
+-	some lock-free/atomics in [atop.h](include/atop.h)
+
+### Grokking the codebase
+Set yourself up so you can look up and jump to/from functions/symbols
+	inside your text editor. \
+As an example, I use vim with [cscope](http://cscope.sourceforge.net/) support,
+	and you'll see that [bootstrap.sh](bootstrap.sh) generates
+	cscope files from the sources.
+
+Then start looking at the example code and related comments in the `test` dir;
+	you'll be able to jump to function definitions/implementations
+	and read their documentation in context with the usage in the test.
+
+Communication is always welcome, feel free to send a pull request or drop me a line at
+	<https://github.com/siriobalmelli>.
 
 
 ## Will it compile on my system?
@@ -118,7 +160,8 @@ Check back here soon.
 
 
 ## Hacking Notes
-A few tips about this code:
+A few tips about how to hack on this code:
+
 -	tabs!
 -	tabs are 8 spaces
 -	keep things clean by prefixing function groups with 4-letter faux-namespaces

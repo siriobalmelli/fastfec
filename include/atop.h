@@ -3,6 +3,10 @@
 
 /*	atop.h		ATomic OPerations
 
+These are NOT yet rigorously tested.
+Please keep an eye out for unusual behavior and let me know right away.
+Thank you, Sirio
+
 (c) 2016-2017 Sirio Balmelli; https://b-ad.ch
 */
 
