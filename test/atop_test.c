@@ -54,7 +54,7 @@ struct libw_widget *libw_new(void *random_arg)
 
 	/* fail on bad malloc() */
 	Z_die_if((ret = malloc(sizeof(struct libw_widget))) == NULL,
-		"alloc size %lu",
+		"alloc size %zu",
 		sizeof(struct libw_widget));
 
 	// widget defaults in error (closed) state
