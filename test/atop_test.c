@@ -82,7 +82,7 @@ struct libw_widget *wt_b = NULL;
 */
 int main()
 {
-	int err_cnt = 0;
+	Z_ret_t err_cnt = 0;
 
 	/* instantiate objects */
 	char useless_array[8] = { 0 };

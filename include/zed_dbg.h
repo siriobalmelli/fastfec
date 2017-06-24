@@ -71,6 +71,7 @@ Precisely.
 #include <string.h>
 #include <nmath.h>	/* nm_bit_pos() */
 #include <inttypes.h>	/* PRIu64 etc. for reliable printf across platforms */
+#include <stdint.h>
 
 
 
@@ -142,6 +143,7 @@ Print a separator line
 #define Z_lne Z_log_line
 
 
+
 /*	Z_log()
 Standard logging function.
 Allows user to specify a log level (e.g.: 'Z_in3') which MUST
@@ -152,11 +154,18 @@ This is so that logging can be selectively enabled/disabled at compile time.
 
 
 
+/*	Z_ret_t
+A sane return type which transcends platform, time, space and entropy itself.
+*/
+typedef int_fast8_t Z_ret_t;
+
+
+
 /* Global tracking of errors and warnings; as a catch-all.
 Usually, a function will define and check one or both of these locally.
-	*/
-static int err_cnt = 0;
-static int wrn_cnt = 0;
+*/
+static Z_ret_t err_cnt = 0;
+static Z_ret_t wrn_cnt = 0;
 
 /*	Z_log_wrn()
 Increment 'wrn_cnt' when logging a warning.
@@ -213,9 +222,9 @@ Static because we want every translation unit to run this separately
 static void __attribute__ ((destructor)) Z_end_()
 {
 	if (err_cnt)
-		Z_log_(stderr, Z_err, "%s; global err_cnt %d", __BASE_FILE__, err_cnt);
+		Z_log_(stderr, Z_err, "%s; global err_cnt %"PRIdFAST8, __BASE_FILE__, err_cnt);
 	if (wrn_cnt)
-		Z_log_(stderr, Z_wrn, "%s; global wrn_cnt %d", __BASE_FILE__, wrn_cnt);
+		Z_log_(stderr, Z_wrn, "%s; global wrn_cnt %"PRIdFAST8, __BASE_FILE__, wrn_cnt);
 }
 
 
@@ -226,12 +235,12 @@ Print a bunch of bytes, properly formatted.
 #define Z_prn_buf(BUF, LEN) \
 	do { \
 		char *b = (char*)BUF; \
-		size_t __i; \
-		for (__i = 0; __i < LEN; __i++) { \
-			/* == "__i % 8" */ \
-			if (!(__i & 0x7)) \
+		size_t i_; \
+		for (i_ = 0; i_ < LEN; i_++) { \
+			/* == "i_ % 8" */ \
+			if (!(i_ & 0x7)) \
 				Z_PRN(stdout, "\n"); \
-			Z_PRN(stdout, "0x%hhx\t", b[__i]); \
+			Z_PRN(stdout, "0x%hhx\t", b[i_]); \
 		} \
 		Z_PRN(stdout, "\n"); \
 		Z_log_line(); \

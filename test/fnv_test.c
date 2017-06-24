@@ -30,7 +30,7 @@ Verify this.
 
 returns 0 on success
 */
-int equivalence()
+Z_ret_t equivalence()
 {
 	int err_cnt = 0;
 
@@ -60,9 +60,9 @@ Tests correctness of computed values against known good results
 
 returns 0 on success
 */
-int correctness()
+Z_ret_t correctness()
 {
-	int err_cnt = 0;
+	Z_ret_t err_cnt = 0;
 
 	const uint64_t out64[phrase_cnt] = {
 		0x4fb124b03ec8f8f8,
@@ -83,13 +83,13 @@ int correctness()
 		0x6f93f02d
 	};
 
-	for (int i = 0; i < phrase_cnt; i++) {
+	for (uint_fast16_t i = 0; i < phrase_cnt; i++) {
 		/* 64-bit */
 		uint64_t res64 = fnv_hash64(NULL, phrases[i], strlen(phrases[i]));
-		Z_err_if(res64 != out64[i], "i=%d; 0x%"PRIx64" != 0x%"PRIx64, i, res64, out64[i]);
+		Z_err_if(res64 != out64[i], "i=%"PRIu16"; 0x%"PRIx64" != 0x%"PRIx64, i, res64, out64[i]);
 		/* 32-bit */
 		uint32_t res32 = fnv_hash32(NULL, phrases[i], strlen(phrases[i]));
-		Z_err_if(res32 != out32[i], "i=%d 0x%"PRIx32" != 0x%"PRIx32, i, res32, out32[i]);
+		Z_err_if(res32 != out32[i], "i=%"PRIu16"; 0x%"PRIx32" != 0x%"PRIx32, i, res32, out32[i]);
 	}
 
 	return err_cnt;
@@ -100,7 +100,7 @@ int correctness()
 */
 int main()
 {
-	int err_cnt = 0;
+	Z_ret_t err_cnt = 0;
 
 	err_cnt += equivalence();
 	err_cnt += correctness();
