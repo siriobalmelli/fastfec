@@ -67,9 +67,9 @@ int test_hx2b()
 	uint8_t ans8[] = {
 		0xff, 0xff, 0xff, 0xA, 0x5, 0x1, 0x7
 	};
-	for (int i=0; i < sizeof(ans8); i++) {
+	for (uint_fast16_t i=0; i < sizeof(ans8); i++) {
 		Z_err_if(hx2b_u8(check8[i]) != ans8[i],
-			"@i=%d  :  %hhx != %s",
+			"@i=%"PRIuFAST16"  :  %hhx != %s",
 			i, hx2b_u8(check8[i]), check8[i]);
 	}
 
@@ -80,9 +80,9 @@ int test_hx2b()
 	uint16_t ans16[] = {
 		0xff, 0xa, 0x1234, 0x555, 0x004
 	};
-	for (int i=0; i < sizeof(ans16) / sizeof(ans16[0]); i++) {
+	for (uint_fast16_t i=0; i < sizeof(ans16) / sizeof(ans16[0]); i++) {
 		Z_err_if(hx2b_u16(check16[i]) != ans16[i],
-			"@i=%d  :  %hx != %s",
+			"@i=%"PRIuFAST16"  :  %hx != %s",
 			i, hx2b_u16(check16[i]), check16[i]);
 	}
 
@@ -112,12 +112,12 @@ int test_b2hx()
 	Z_err_if(b2hx_u16(&n_16, 1, hex) != 5, "");
 	Z_err_if(strcmp(hex, hex_16), "'%s' not expected '%s'", hex, hex_16);
 	Z_err_if(hx2b_u16(hex_16) != n_16,
-		"%hd != %hd", hx2b_u16(hex_16), n_16);
+		"%"PRIu16" != %"PRIu16, hx2b_u16(hex_16), n_16);
 
 	Z_err_if(b2hx_u32(&n_32, 1, hex) != 9, "");
 	Z_err_if(strcmp(hex, hex_32), "'%s' not expected '%s'", hex, hex_32);
 	Z_err_if(hx2b_u32(hex_32) != n_32,
-		"%d != %d", hx2b_u32(hex_32), n_32);
+		"%"PRIu32" != %"PRIu32, hx2b_u32(hex_32), n_32);
 
 	Z_err_if(b2hx_u64(&n_64, 1, hex) != 17, "");
 	Z_err_if(strcmp(hex, hex_64), "'%s' not expected '%s'", hex, hex_64);
