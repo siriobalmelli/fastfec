@@ -81,9 +81,9 @@ struct malloc_err_example *malloc_error()
 	Z_die_if(( ret->ptr_a = malloc(sizeof(uint64_t)) ) == NULL,
 		"could not malloc() %zu bytes",
 		sizeof(uint64_t));
-	Z_die_if(( ret->ptr_b = malloc(1UL << 63) ) == NULL,
+	Z_die_if(( ret->ptr_b = malloc(1UL << (sizeof(long) * 8 - 1)) ) == NULL,
 		"could not malloc() %lu (insane amount) bytes",
-		1UL << 63);
+		1UL << (sizeof(long) * 8 - 1));
 
 
 	/* successful return */
@@ -200,7 +200,7 @@ int main()
 	/* malloc (with safety check); then print a buffer */
 	const size_t len = 125;
 	Z_die_if((a_malloc = malloc(len)) == NULL,
-		"len = %ld",
+		"len = %zu",
 		len);
 	Z_log(Z_inf, "printing buffer len %zu", len);
 	Z_prn_buf(a_malloc, len);
