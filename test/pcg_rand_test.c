@@ -32,7 +32,7 @@ int test_pcg_rand()
 	pcg_seed(&pcg2, PCG_RAND_S1, PCG_RAND_S2);
 	uint32_t res2 = pcg_rand(&pcg2);
 
-	Z_err_if(res1 != res2, "rng not reproducible: %d != %d", res1, res2);
+	Z_err_if(res1 != res2, "rng not reproducible: %"PRIu32" != %"PRIu32, res1, res2);
 
 	return err_cnt;
 }
@@ -69,23 +69,23 @@ returns 0 on success
 int test_pcg_rand_bound()
 {
 	int err_cnt = 0;
-	const unsigned int bound = 7;		/* random numbers will be 0:(bound-1) */
-	const unsigned int numiter = 4666797 * bound;	/* how many random nums to generate */
+	const uint_fast32_t bound = 7;		/* random numbers will be 0:(bound-1) */
+	const uint_fast32_t numiter = 4666797 * bound;	/* how many random nums to generate */
 
 	/* seed my RNG with the 'default' or 'static' seed */
 	struct pcg_state pcg;
 	pcg_seed_static(&pcg);
 
 	/* generate random numbers, log frequency of appearance */
-	int hits[bound];
+	uint_fast32_t hits[bound];
 	memset(hits, 0x0, sizeof(hits));
-	for (unsigned int i=0; i < numiter; i++)
+	for (uint_fast32_t i=0; i < numiter; i++)
 		hits[pcg_rand_bound(&pcg, bound)]++;
 
-	unsigned int lowest = -1, highest = 0;
+	uint_fast32_t lowest = -1, highest = 0;
 
 	/* check each 'slot', verify there was an even frequency of appearance */
-	for (unsigned int i=0; i < bound; i++) {
+	for (uint_fast32_t i=0; i < bound; i++) {
 		if (hits[i] < lowest)
 			lowest = hits[i];
 		if (hits[i] > highest)
@@ -93,7 +93,7 @@ int test_pcg_rand_bound()
 	}
 
 	/* report findings */
-	unsigned int expected = numiter / bound;
+	uint_fast32_t expected = numiter / bound;
 	double lowest_deviation = (expected - lowest) / (double)expected;
 	double highest_deviation = (highest - expected) / (double)expected;
 
@@ -102,7 +102,7 @@ int test_pcg_rand_bound()
 	*/
 	Z_err_if(lowest_deviation > 0.001 || highest_deviation > 0.001, "bad algorithm");
 	/* print info regardless */
-	Z_log(Z_inf, "%d rng calls bounded at %d: -%f <%d> +%f",
+	Z_log(Z_inf, "%"PRIuFAST32" rng calls bounded at %"PRIuFAST32": -%f <%"PRIuFAST32"> +%f",
 		numiter, bound, lowest_deviation, expected, highest_deviation);
 
 	return err_cnt;
