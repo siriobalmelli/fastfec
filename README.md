@@ -155,8 +155,42 @@ If you're not using Meson, but [Linking](#i-want-to-link-against-this-library)
 
 
 ## Cross-compilation
-TODO: ARM is on the docket for cross-compilation support. \
-Check back here soon.
+Cross compilation is tested for ARM so far, using [cross_arm.txt](toolchain/cross_arm.txt):
+```
+meson --cross-file=toolchain/cross_arm.txt --buildtype=plain build-arm
+cd build-arm
+ninja
+```
+
+We still depend on the following symbols at link-time:
+
+-	`__aeabi_dcmpgt`
+-	`__aeabi_ddiv`
+-	`__aeabi_ui2d`
+-	`__aeabi_uidiv`
+-	`__aeabi_uidivmod`
+-	`__aeabi_uldivmod`
+-	`__atomic_exchange_4`
+-	`__errno`
+-	`_impure_ptr`
+-	`basename`
+-	`close`
+-	`exit`
+-	`fprintf`
+-	`fputc`
+-	`free`
+-	`fwrite`
+-	`malloc`
+-	`memcmp`
+-	`memcpy`
+-	`memset`
+-	`setvbuf`
+-	`strcmp`
+-	`strerror`
+-	`strlen`
+
+Writing of optional built-ins for these is planned soon. \
+Stay tuned.
 
 
 ## Hacking Notes
@@ -190,11 +224,13 @@ A few tips about how to hack on this code:
 -	use test programs to show intended usage
 -	Header files should list functions in the order in which they appear in the
 		corresponding `.c` file.
-	
+-	Use more thoughtful <stdint.h> and <inttypes.h> types to declare and
+		print variables in this library (portability constraint).
+
 
 ## TODO
--	test ARM cross-compilation
 -	man pages (and how best to integrate with markdown docs readable when browsing github?)
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
 -	integrate code coverage testing
+-	code optional replacements for required libc calls (e.g.: on ARM)
