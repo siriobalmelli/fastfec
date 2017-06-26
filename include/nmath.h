@@ -66,7 +66,7 @@ NOTE the index is 1-based (so that we return 0 in case no bits are set,
 	call as an array index relatively safe).
 1-based index means that 0x80 returns '8', NOT '7'.
 */
-NLC_INLINE	unsigned int nm_bit_pos(uint64_t uint)
+NLC_INLINE	uint_fast8_t nm_bit_pos(uint64_t uint)
 {
 	unsigned int ret = 0;
 	while (ret++ < (sizeof(uint) * 8)) {

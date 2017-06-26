@@ -1,5 +1,5 @@
 project('nonlibc', 'c',
-	version : '0.1.0',
+	version : '0.1.1',
 	license : 'GPL2')
 description = 'Collection of standard-not-standard utilities for the discerning C programmer'
 

@@ -91,12 +91,13 @@ int test_nm_bit_pos()
 	int err_cnt = 0;
 
 	/* no bits set should return 0 */
-	Z_err_if(nm_bit_pos(0x0) != 0, "%u", nm_bit_pos(0x0));
+	Z_err_if(nm_bit_pos(0x0) != 0, "%"PRIuFAST8, nm_bit_pos(0x0));
 	/* first bit set for both instances */
-	Z_err_if(nm_bit_pos(0x1) != 1, "%u", nm_bit_pos(0x1));
-	Z_err_if(nm_bit_pos(0x3) != 1, "%u", nm_bit_pos(0x3));
+	Z_err_if(nm_bit_pos(0x1) != 1, "%"PRIuFAST8, nm_bit_pos(0x1));
+	Z_err_if(nm_bit_pos(0x3) != 1, "%"PRIuFAST8, nm_bit_pos(0x3));
 	/* MSb set */
-	Z_err_if(nm_bit_pos(0x8000000000000000) != 64, "%u", nm_bit_pos(0x8000000000000000));
+	Z_err_if(nm_bit_pos(0x8000000000000000) != 64,
+		"%"PRIuFAST8, nm_bit_pos(0x8000000000000000));
 
 	/* example: use nm_bit_pos() to index into an array of prints */
 	enum en {

@@ -1,0 +1,17 @@
+[binaries]
+c = '/usr/local/gcc-arm-none-eabi-5_4-2016q3/bin/arm-none-eabi-gcc'
+cpp = '/usr/local/gcc-arm-none-eabi-5_4-2016q3/bin/arm-none-eabi-g++'
+ar = '/usr/local/gcc-arm-none-eabi-5_4-2016q3/bin/arm-none-eabi-ar'
+strip = '/usr/local/gcc-arm-none-eabi-5_4-2016q3/bin/arm-none-eabi-strip'
+ld = '/usr/local/gcc-arm-none-eabi-5_4-2016q3/bin/arm-none-eabi-ld'
+
+[properties]
+has_function_printf = false
+c_link_args = ['-nostdlib']
+needs_exe_wrapper = true
+
+[host_machine]
+system = 'qemu'
+cpu = 'arm'
+cpu_family = 'arm'
+endian = 'little'
