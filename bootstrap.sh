@@ -137,14 +137,15 @@ check_meson()
 		if ! which pip3; then
 			# TODO: expand selection; fix implicit version in MacPorts
 			MGR=( "apt-get"     "port" )
-			OPT=( "install"     "install" )
+			OPT=( "-y install"     "install" )
 			PKG=( "python3-pip" "py35-pip" )
 
 			if ! run_pkg_ "$MGR" "$OPT" "$PKG"; then
 				exit 1
 			fi
 		fi
-		run_die sudo -H pip3 install meson
+		# full path to pip3 ... because Travis? wtf
+		run_die sudo -H $(which pip3) install meson
 	fi
 }
 
