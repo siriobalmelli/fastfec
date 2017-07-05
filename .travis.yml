@@ -1,0 +1,9 @@
+language: c
+dist: trusty
+sudo: required
+
+compiler:
+        - clang
+        - gcc
+
+script: ./bootstrap.sh
