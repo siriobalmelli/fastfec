@@ -2,7 +2,7 @@
 #define ffec_matrix_h_
 
 #include <stdint.h>
-#include "zed_dbg.h"
+#include <zed_dbg.h>
 
 
 /* parity matrix
@@ -44,7 +44,7 @@ void		ffec_matrix_row_unlink(	struct ffec_row		*row,
 
 /*	ffec_cell_init()
 */
-Z_INL_FORCE void	ffec_cell_init(struct ffec_cell *cell, uint32_t id)
+NLC_INLINE void	ffec_cell_init(struct ffec_cell *cell, uint32_t id)
 {
 	cell->c_prev = cell->c_next = cell->c_me = id;
 }
@@ -53,7 +53,7 @@ Z_INL_FORCE void	ffec_cell_init(struct ffec_cell *cell, uint32_t id)
 returns 0 if a cell is "set"
 	(aka: hasn't already been solved out of its row equation).
 */
-Z_INL_FORCE int		ffec_cell_test(struct ffec_cell *cell)
+NLC_INLINE int		ffec_cell_test(struct ffec_cell *cell)
 {
 	return (cell->c_prev == cell->c_next && cell->c_next == cell->c_me);
 }

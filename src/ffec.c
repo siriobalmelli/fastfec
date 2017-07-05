@@ -71,6 +71,7 @@ TODO:
 2016: Sirio Balmelli and Anthony Soenen
 */
 
+/* TODO: best move this into a "random" module in nonlibc */
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE	/* /dev/urandom; syscalls */
 #endif
@@ -84,8 +85,8 @@ TODO:
 
 #include <alloca.h>
 
-#include "ffec_int.h"
-#include "judyutil_L.h"
+#include <ffec_int.h>
+#include <judyutil_L.h>
 
 
 /*	ffec_calc_lengths()
@@ -211,7 +212,7 @@ int		ffec_init(	const struct ffec_params	*fp,
 
 #ifdef FFEC_DEBUG
 	/* print values for debug */
-	Z_inf(0, "\n\tseeds=[0x%lx,0x%lx]\tcnt: .k=%d .n=%d .p=%d",
+	Z_log(Z_inf, "\n\tseeds=[0x%lx,0x%lx]\tcnt: .k=%d .n=%d .p=%d",
 		fi->seeds[0], fi->seeds[1], fi->cnt.k, fi->cnt.n, fi->cnt.p);
 #endif
 
@@ -251,7 +252,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 		cell = ffec_get_col_first(fi->cells, i);
 		symbol = ffec_get_sym(fp, fi, i);
 #ifdef FFEC_DEBUG
-		Z_inf(0, "enc(esi %ld) @0x%lx",
+		Z_log(Z_inf, "enc(esi %ld) @0x%lx",
 			i, (uint64_t)symbol);
 #endif
 		for (j=0; j < FFEC_N1_DEGREE; j++) {
@@ -266,7 +267,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 					ffec_get_sym_p(fp, fi, cell[j].row_id),
 					fp->sym_len);
 #ifdef FFEC_DEBUG
-					Z_inf(0, "xor(esi %ld) -> p%d @0x%lx",
+					Z_log(Z_inf, "xor(esi %ld) -> p%d @0x%lx",
 						i, cell[j].row_id,
 						(uint64_t)ffec_get_sym_p(fp, fi, cell[j].row_id));
 #endif
@@ -347,7 +348,7 @@ recurse:
 	/* if given a pointer, copy symbol from there into matrix */
 	if (symbol && symbol != curr_sym) {
 #ifdef FFEC_DEBUG
-		Z_inf(0, "pull <-(esi %d) @0x%lx",
+		Z_log(Z_inf, "pull <-(esi %d) @0x%lx",
 			esi, (uint64_t)symbol);
 #endif
 		memcpy(curr_sym, symbol, fp->sym_len);
@@ -355,7 +356,7 @@ recurse:
 	/* ... otherwise assume it's already there */
 
 #ifdef FFEC_DEBUG
-	Z_inf(0, "decode (esi %d) @0x%lx",
+	Z_log(Z_inf, "decode (esi %d) @0x%lx",
 		esi, (uint64_t)curr_sym);
 #endif
 
@@ -393,7 +394,7 @@ recurse:
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
 #ifdef FFEC_DEBUG
-					Z_inf(0, "xor(esi %d) -> p%d @0x%lx",
+					Z_log(Z_inf, "xor(esi %d) -> p%d @0x%lx",
 						esi, cell[j].row_id,
 						(uint64_t)ffec_get_psum(fp, fi, cell[j].row_id));
 #endif
@@ -461,7 +462,7 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 		(fi->seeds[0] << 1) +1
 	};
 	/* setup rng */
-	struct pcg_rand_state rnd;
+	struct pcg_state rnd;
 	pcg_rand_seed(&rnd, seeds[0], seeds[1]);
 
 	/* write IDs sequentially */

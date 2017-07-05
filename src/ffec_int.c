@@ -1,7 +1,7 @@
-#include "ffec_int.h"
-#include "bits.h" /* div_ceil() */
+#include <ffec_int.h>
+#include <nmath.h> /* nm_div_ceil() */
 
-#include <math.h>
+#include <math.h> /* TODO: Y? */
 
 #ifdef Z_BLK_LVL
 #undef Z_BLK_LVL
@@ -12,6 +12,7 @@
 	3	:
 */
 
+/* TODO: test for x86+(proper YMM) here */
 #ifdef FFEC_DEBUG
 void		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
 {
@@ -105,13 +106,13 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 	/* temp 64-bit counters, to test for overflow */
 	uint64_t t_k, t_n, t_p;
 
-	t_k = div_ceil(src_len, fp->sym_len);
+	t_k = nm_div_ceil(src_len, fp->sym_len);
 	if (t_k < FFEC_MIN_K) {
-		Z_wrn("k=%ld < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
+		Z_log(Z_wrn, "k=%ld < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
 			t_k, FFEC_MIN_K, src_len, fp->sym_len);
 		t_k = FFEC_MIN_K;
 	}
-	Z_warn_if(t_k * fp->sym_len > src_len,
+	Z_wrn_if(t_k * fp->sym_len > src_len,
 		"symbol math requires larger source region: %ld > %ld (specified)",
 		t_k * fp->sym_len, src_len);
 
@@ -119,7 +120,7 @@ int		ffec_calc_sym_counts(const struct ffec_params	*fp,
 
 	t_p = t_n - t_k;
 	if (t_p < FFEC_MIN_P) {
-		Z_wrn("p=%ld < FFEC_MIN_P=%d;	k=%ld, fec_ratio=%lf",
+		Z_log(Z_wrn, "p=%ld < FFEC_MIN_P=%d;	k=%ld, fec_ratio=%lf",
 			t_p, FFEC_MIN_P, t_k, fp->fec_ratio);
 		t_p = FFEC_MIN_P;
 		t_n = t_p + t_k;
@@ -216,15 +217,12 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 	The algorithm used is 'Knuth-Fisher-Yates'.
 	*/
 	struct ffec_cell *cell_b;
-	uint32_t retry_cnt, temp;
+	uint32_t temp;
 	for (i=0, cell = fi->cells, cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
 	{
-/* TODO: evaluate ACTUAL loss of inefficiency if we don't give a fuck about duplicate ESIs
-	(not giving a fuck is universally faster for all algorithms)
- */
-#if 0
+#if FFEC_SWAP_NITPICK 
 		/*
 		Select a cell to swap with.
 		Make sure no other cells in this column contain the same row ID,
@@ -247,7 +245,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 			reasons it subtracts its own entropy and reduces
 			our efficiency ... OH F'ING WELL we TRIED.
 		*/
-		retry_cnt = 0;
+		uint32_t retry_cnt = 0;
 retry:
 		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
 		for (j = (i % FFEC_N1_DEGREE); j < i; j++) {

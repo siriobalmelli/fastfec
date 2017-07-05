@@ -190,7 +190,7 @@ struct nfec_params {
 	uint32_t	pad_32;
 
 	/* random seed */
-	struct pcg_rand_state	rng;
+	struct pcg_state	rng;
 }__attribute__((packed));
 
 

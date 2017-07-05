@@ -86,7 +86,7 @@ int test_single()
 		, "");
 
 	/* print efficiency */
-	Z_inf(0, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
+	Z_log(Z_inf, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
 		/*inefficiency*/(double)i / (double)TX.syms_page,
@@ -166,7 +166,7 @@ int test_circular()
 
 #if 0
 		/* print efficiency */
-		Z_inf(0, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
+		Z_log(Z_inf, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
 			\tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 			/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
 			/*inefficiency*/(double)i / (double)TX.syms_page,
@@ -263,7 +263,7 @@ int test_multi()
 	}
 
 	/* print efficiency */
-	Z_inf(0, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
+	Z_log(Z_inf, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*width*/width,
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_rx[0]->fi.cnt.p,
@@ -362,7 +362,7 @@ int test_multi_seq_drop()
 	}
 
 	/* print efficiency */
-	Z_inf(0, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
+	Z_log(Z_inf, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*width*/width,
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_rx[0]->fi.cnt.p,
@@ -439,22 +439,22 @@ int main(int argc, char **argv)
 	parse_opts(argc, argv);
 	/* adjust FEC ratio to width */
 	fec_ratio = 1.0 + ((fec_ratio -1.0) / width);
-	Z_inf(0, "effective fec_ratio adjusted to %.4f to account for width %d",
+	Z_log(Z_inf, "effective fec_ratio adjusted to %.4f to account for width %d",
 		fec_ratio, width);
-	Z_inf(0, "effective region length (width * pg): %ldMB",
+	Z_log(Z_inf, "effective region length (width * pg): %ldMB",
 			(uint64_t)syms_page * sym_len * width / 1024 / 1024);
 
 	int err_cnt;
-	Z_inf(0, "---- single-matrix test ----");
+	Z_log(Z_inf, "---- single-matrix test ----");
 	err_cnt += test_single();
 
-	Z_inf(0, "---- single-circular matrix test ----");
+	Z_log(Z_inf, "---- single-circular matrix test ----");
 	err_cnt += test_circular();
 
-	Z_inf(0, "---- multi test ----");
+	Z_log(Z_inf, "---- multi test ----");
 	err_cnt += test_multi();
 
-	Z_inf(0, "---- multi seq drop test ----");
+	Z_log(Z_inf, "---- multi seq drop test ----");
 	err_cnt += test_multi_seq_drop();
 	return err_cnt;
 }

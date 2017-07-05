@@ -68,7 +68,7 @@ struct mfec_hp {
 /*	mfec_pg()
 returns the pagesize
 */
-Z_INL_FORCE size_t mfec_pg(struct mfec_hp *hp)
+NLC_INLINE size_t mfec_pg(struct mfec_hp *hp)
 {
 	return hp->syms_page * hp->fp.sym_len;
 }
@@ -91,7 +91,7 @@ Everything else in this book is either seed data or pages from previous books
 NOTE: Returned address is in the underlying ringbuffer, NOT the assembled
 	"source" region seen by 'bk->fi'.
 */
-Z_INL_FORCE void *mfec_bk_data(struct mfec_bk *bk)
+NLC_INLINE void *mfec_bk_data(struct mfec_bk *bk)
 {
 	return bk->hp->the_one_ring.iov_base + bk->data_offt;
 }
@@ -99,7 +99,7 @@ Z_INL_FORCE void *mfec_bk_data(struct mfec_bk *bk)
 /*	mfec_bk_txesi_cnt()
 How many ESIs are actually transmitted for a book?
 */
-Z_INL_FORCE uint32_t mfec_bk_txesi_cnt(struct mfec_bk *bk)
+NLC_INLINE uint32_t mfec_bk_txesi_cnt(struct mfec_bk *bk)
 {
 	return bk->fi.cnt.n - bk->hp->syms_page * (bk->hp->width - 1);
 }

@@ -4,10 +4,11 @@
 #include <stdint.h>
 #include <unistd.h> /* usleep() */
 
-#include "ffec_matrix.h"
+#include <ffec_matrix.h>
 
-#include "pcg_rand.h"
-#include "zed_dbg.h"
+#include <zed_dbg.h>
+#include <nonlibc.h>
+#include <pcg_rand.h>
 
 #define	FFEC_N1_DEGREE 3		/* minimum number of 1s per matrix column */
 #if (FFEC_N1_DEGREE < 2 || FFEC_N1_DEGREE > 5)
@@ -64,7 +65,7 @@ struct ffec_counts {
 
 struct ffec_instance {
 	uint64_t			seeds[2];
-	struct pcg_rand_state		rng;
+	struct pcg_state		rng;
 	struct ffec_counts		cnt;
 	/* NO pointers allocated or deallocated by FEC.
 	Caller is responsible to make sure they're properly sized -
@@ -105,7 +106,7 @@ Caller crosses his heart and swears that 'memory':
 	- begins with all the source symbols
 	- has enough space for repair symbols and the scratch region
 */
-Z_INL_FORCE int	ffec_init_contiguous(
+NLC_INLINE int	ffec_init_contiguous(
 				const struct ffec_params	*fp,
 				struct ffec_instance		*fi,
 				size_t				src_len,
@@ -124,7 +125,7 @@ uint32_t	ffec_decode_sym_	(const struct ffec_params	*fp,
 					void				*symbol,
 					uint32_t			esi,
 					void				**j1_src_decoded);
-Z_INL_FORCE uint32_t ffec_decode_sym	(const struct ffec_params	*fp,
+NLC_INLINE uint32_t ffec_decode_sym	(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					void				*symbol,
 					uint32_t			esi)
@@ -148,7 +149,7 @@ Given the address of a SOURCE symbol, calculate its ESI.
 
 returns 'esi' or -1 on error.
 */
-Z_INL_FORCE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
+NLC_INLINE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
 					const struct ffec_instance	*fi,
 					void				*symbol)
 {
@@ -162,19 +163,19 @@ Z_INL_FORCE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
 
 NOTE that source and parity regions are not necessarily contiguous.
 */
-Z_INL_FORCE void	*ffec_get_sym_k(const struct ffec_params	*fp,
+NLC_INLINE void	*ffec_get_sym_k(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			k)
 {
 	return fi->source + (fp->sym_len * k);
 }
-Z_INL_FORCE void	*ffec_get_sym_p(const struct ffec_params	*fp,
+NLC_INLINE void	*ffec_get_sym_p(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			p)
 {
 	return fi->parity + (fp->sym_len * p);
 }
-Z_INL_FORCE void	*ffec_get_sym	(const struct ffec_params	*fp,
+NLC_INLINE void	*ffec_get_sym	(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			esi)
 {
@@ -185,7 +186,7 @@ Z_INL_FORCE void	*ffec_get_sym	(const struct ffec_params	*fp,
 		return ffec_get_sym_p(fp, fi, esi);
 	}
 }
-Z_INL_FORCE void	*ffec_get_psum	(const struct ffec_params	*fp,
+NLC_INLINE void	*ffec_get_psum	(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					uint32_t			row)
 {
@@ -193,11 +194,11 @@ Z_INL_FORCE void	*ffec_get_psum	(const struct ffec_params	*fp,
 }
 
 /* region lengths */
-Z_INL_FORCE size_t	ffec_len_cells	(const struct ffec_counts *fc)
+NLC_INLINE size_t	ffec_len_cells	(const struct ffec_counts *fc)
 {
 	return sizeof(struct ffec_cell) * fc->cols * FFEC_N1_DEGREE;
 }
-Z_INL_FORCE size_t	ffec_len_rows	(const struct ffec_counts *fc)
+NLC_INLINE size_t	ffec_len_rows	(const struct ffec_counts *fc)
 {
 	return sizeof(struct ffec_row) * fc->rows;
 }

@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 		, "");
 	ffec_encode(&fp, &fi);
 	clock_enc = clock() - clock_enc;
-	Z_inf(0, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
+	Z_log(Z_inf, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
 
 	/* invariant: encode must NOT alter the source region */
 	MD5(mem, fs.source_sz, hash_check);
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 	/* iterate through randomly ordered ESIs and decode for each */
 	for (i=0; i < fi_dec.cnt.cols; i++) {
 #ifdef FFEC_DEBUG
-		Z_inf(0, "submit ESI %d", next_esi[i]);
+		Z_log(Z_inf, "submit ESI %d", next_esi[i]);
 #endif
 
 // TODO: clean this up somehow
@@ -210,8 +210,8 @@ int main(int argc, char **argv)
 	/*
 		report
 	*/
-	Z_inf(0, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
-	Z_inf(0, "decoded with k=%d < i=%d < n=%d;\n\
+	Z_log(Z_inf, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
+	Z_log(Z_inf, "decoded with k=%d < i=%d < n=%d;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
 \tsource size=%.4lf MB, bitrates: enc=%ldMb/s, dec=%ldMb/s",
 		/*k*/fi_dec.cnt.k, /*i*/i, /*n*/fi_dec.cnt.n,

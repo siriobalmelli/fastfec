@@ -67,7 +67,7 @@ idx=2	r3	0	0	1	0	0	0	1	psum=s1^p2
 2016 Sirio Balmelli
 */
 
-#include "ffec_matrix.h"
+#include <ffec_matrix.h>
 
 
 #ifdef FFEC_MATRIX_DEBUG
@@ -80,7 +80,7 @@ __attribute__((constructor)) void ffec_matrix_self_test()
 	ffec_cell_init(&a_cell, 42);
 	Z_die_if(!ffec_cell_test(&a_cell), "expecting cell to be unset after init");
 	
-	Z_inf(0, "matrix self-test OK");
+	Z_log(Z_inf, "matrix self-test OK");
 	return;
 out:
 	raise(SIGQUIT);
