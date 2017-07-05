@@ -28,14 +28,21 @@ run_die()
 	fi
 }
 
-#	install_ninja()
+#	install_pkgs()
 # Try and get a package manager for the system;
 #+	if found use it to install ninja.
-install_ninja()
+install_pkgs()
 {
 	MGR=( "pacman"	"apt-get"	"dnf"		"emerge"	"port"		"brew"		"pkg" )
 	OPT=( "-S"	"install"	"install"	""		"install"	"install"	"install" )
-	PKG=( "ninja"	"ninja-build"	"ninja-build" 	"dev-util/ninja" "ninja"	"ninja"		"ninja" )
+	# TODO: pip3 for everyone; fix the implicit v3.5 for MacPorts
+	PKG=( "ninja" \
+		"ninja-build python3-pip" \
+		"ninja-build" \
+		"dev-util/ninja" \
+		"ninja py35-pip" \
+		"ninja"	\
+		"ninja" )
 
 	# This is bread-and-butter brute-force; try all the ones we know
 	#+	until one of them shows positive.
@@ -61,10 +68,11 @@ main()
 		run_die cscope -b -q -U -I./include -s./src -s./test
 	fi
 
-	# Make sure ninja and meson exist
-	if ! which ninja; then
-		install_ninja
+	# packages! ... ninja and pip3
+	if ! which ninja || ! which pip3; then
+		install_pkgs
 	fi
+	# meson comes from pip3
 	if ! which meson; then
 		run_die sudo -H pip3 install meson
 	fi
