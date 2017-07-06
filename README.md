@@ -93,6 +93,14 @@ Then start looking at the example code and related comments in the `test` dir;
 Communication is always welcome, feel free to send a pull request or drop me a line at
 	<https://github.com/siriobalmelli>.
 
+### You Complete Me
+The author uses [YCM](https://github.com/Valloric/YouCompleteMe).\
+You will notice that the [ycm config file](.ycm_extra_conf.py)
+	contains `compilation_database_folder='./build-debug'`.
+
+A successful build by ninja yields the file `build-debug/compile_commands.json`,
+	which means should pretty much run out-of-the-box.
+
 
 ## Will it compile on my system?
 Quite likely. \
