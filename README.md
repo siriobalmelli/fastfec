@@ -99,7 +99,7 @@ You will notice that the [ycm config file](.ycm_extra_conf.py)
 	contains `compilation_database_folder='./build-debug'`.
 
 A successful build by ninja yields the file `build-debug/compile_commands.json`,
-	which means should pretty much run out-of-the-box.
+	which means YCM should pretty much work out-of-the-box.
 
 
 ## Will it compile on my system?
