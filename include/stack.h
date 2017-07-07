@@ -50,6 +50,10 @@ Otherwise, assume it should be able to hold a pointer or equivalent unsigned int
 	#define STACK_MEM_TYPE uintptr_t
 #endif
 
+/*	Check function returns for STACK_ERR where indicated.
+*/
+#define STACK_ERR ((size_t)-1)
+
 /*	How much with the stack grow by each time it is resized?
 ... in Bytes.
 */
@@ -98,9 +102,11 @@ NLC_INLINE	size_t		stack_push(struct stack_t **stk, STACK_MEM_TYPE push_this)
 */
 NLC_INLINE	size_t		stack_pop(struct stack_t *stk, STACK_MEM_TYPE *pop_here)
 {
-	if (stk->next)
+	if (stk->next) {
 		*pop_here = stk->mem[--(stk->next)];
-	return stk->next;
+		return stk->next;
+	}
+	return STACK_ERR;
 }
 
 

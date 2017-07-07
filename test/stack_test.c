@@ -22,7 +22,7 @@ Z_ret_t	test_many(STACK_MEM_TYPE numiter)
 
 	/* pop off stack; verify sequence */
 	STACK_MEM_TYPE pop, remain;
-	while ( (remain = stack_pop(stk, &pop)) ) {
+	while ( (remain = stack_pop(stk, &pop)) != STACK_ERR) {
 		Z_die_if(--numiter != remain,
 			"--numiter %zu != remain %zu",
 			numiter, remain);
