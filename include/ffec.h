@@ -120,18 +120,10 @@ NLC_INLINE int	ffec_init_contiguous(
 
 uint32_t	ffec_encode		(const struct ffec_params	*fp,
 					struct ffec_instance		*fi);
-uint32_t	ffec_decode_sym_	(const struct ffec_params	*fp,
+uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					void				*symbol,
-					uint32_t			esi,
-					void				**j1_src_decoded);
-NLC_INLINE uint32_t ffec_decode_sym	(const struct ffec_params	*fp,
-					struct ffec_instance		*fi,
-					void				*symbol,
-					uint32_t			esi)
-{
-	return ffec_decode_sym_(fp, fi, symbol, esi, NULL);
-}
+					uint32_t			esi);
 
 void		ffec_esi_rand	(const struct ffec_instance	*fi,
 				uint32_t			*esi_seq,

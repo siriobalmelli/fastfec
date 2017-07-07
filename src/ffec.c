@@ -86,8 +86,7 @@ TODO:
 #include <alloca.h>
 
 #include <ffec_int.h>
-#include <judyutil_L.h>
-
+#include <stack.h>
 
 /*	ffec_calc_lengths()
 Calculate the needed memory lengths which the caller must
@@ -289,7 +288,7 @@ typedef struct {
 	};
 	};
 } __attribute__ ((packed)) ffec_esi_row_t;
-/*	ffec_decode_sym_()
+/*	ffec_decode_sym()
 Decode a symbol:
 a. XOR it into the PartialSum for all of its rows.
 b. Copy it into its final location in either "source" or "repair" regions.
@@ -305,29 +304,28 @@ Returns '-1' on error.
 NOTE on recursion:
 This function, if simply calling itself, can (with large blocks) recurse
 	to a point where it stack overflows.
-The solution is to allocate a j_array when entering the function,
-	and then simulate recursion with a jump.
+Also, recursion is SLOW: lots of stupid crud to push onto stack.
+The solution is to use a simple 64-bit LIFO struct from nonlibc.
 
 WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix memory
 	and read it directly from ffec_get_sym(esi)
-
-If 'j1_src_decoded' points somewhere, will append to a J1 array the ESI of all
-	SOURCE symbols decoded (specifically: INCLUDING the symbol we were called to decode).
 */
 uint32_t	ffec_decode_sym_	(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					void				*symbol,
-					uint32_t			esi,
-					void				**j1_src_decoded)
+					uint32_t			esi)
 {
-	/* state for "recursion" */
-	struct j_array state;
-	j_init_nomutex(&state);
-	ffec_esi_row_t tmp;
 
 	/* set up only only once */
 	err_cnt = 0;
+	struct stack_t *stk = NULL;
+
 	Z_die_if(!fp || !fi, "args");
+
+	Z_die_if(!(stk = stack_new()),
+		"");
+	ffec_esi_row_t tmp;
+
 	struct ffec_cell *cell = NULL;
 	void *curr_sym = NULL;
 
@@ -362,10 +360,6 @@ recurse:
 
 	/* If it's a source symbol, log it. */
 	if (esi < fi->cnt.k) {
-		if (j1_src_decoded) {
-			int rc;
-			J1S(rc, *j1_src_decoded, esi);
-		}
 		/* We may have just finished.
 		Avoid extra work.
 		*/
@@ -415,7 +409,7 @@ recurse:
 			cell = &fi->cells[n_rows[j]->c_last];
 			tmp.esi = cell->c_me / FFEC_N1_DEGREE;
 			tmp.row = cell->row_id;
-			j_enq_(&state, tmp.index);
+			stack_push(&stk, tmp.index);
 		}
 	}
 
@@ -425,8 +419,7 @@ check_recurse:
 		which was added into the array at some unknown
 		past iteration.
 	*/
-	tmp.index = j_deq_(&state);
-	if (tmp.index) {
+	if (stack_pop(stk, &tmp.index) != STACK_ERR) {
 		/* reset stack variables */
 		symbol = ffec_get_psum(fp, fi, tmp.row);
 		esi = tmp.esi;
@@ -434,7 +427,7 @@ check_recurse:
 	}
 
 out:
-	j_destroy_(&state);
+	stack_free(stk);
 	if (err_cnt)
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;
