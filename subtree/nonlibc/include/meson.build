@@ -1,0 +1,6 @@
+# We assume that we will be statically linked if we're a subproject;
+#+	ergo: don't pollute the system with our headers
+if not meson.is_subproject()
+	install_headers('atop.h', 'b2hx.h', 'fnv.h', 'hx2b.h', 'nmath.h',
+			'nonlibc.h', 'pcg_rand.h', 'stack.h', 'zed_dbg.h')
+endif

@@ -1,0 +1,14 @@
+language: c
+dist: trusty
+sudo: required
+
+addons:
+        apt:
+                packages:
+                        - valgrind
+
+compiler:
+        - clang
+        - gcc
+
+script: ./bootstrap.sh
