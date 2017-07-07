@@ -194,7 +194,7 @@ Log error, then goto 'out'
 
 /*	CONDITIONALS
 */
-#define Z_wrn_if(A, M, ...) if (A) { Z_log_warn("(" #A ") " M, ##__VA_ARGS__); }
+#define Z_wrn_if(A, M, ...) if (A) { Z_log_wrn("(" #A ") " M, ##__VA_ARGS__); }
 #define Z_err_if(A, M, ...) if (A) { Z_log_err("(" #A ") " M, ##__VA_ARGS__); }
 #define Z_die_if(A, M, ...) if (A) { Z_die("(" #A ") " M, ##__VA_ARGS__); }
 

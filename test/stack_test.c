@@ -19,7 +19,7 @@ Z_ret_t	test_many(STACK_MEM_TYPE numiter)
 			"ret %zu != i %zu",
 			ret, i);
 	}
-	
+
 	/* pop off stack; verify sequence */
 	STACK_MEM_TYPE pop, remain;
 	while ( (remain = stack_pop(stk, &pop)) ) {
@@ -30,7 +30,7 @@ Z_ret_t	test_many(STACK_MEM_TYPE numiter)
 			"pop %zu != remain %zu",
 			pop, remain);
 	}		
-		
+
 out:
 	stack_free(stk);
 	return err_cnt;
@@ -50,12 +50,15 @@ int main()
 	int shifts = 4;
 	if (!(getenv("VALGRIND")))
 		shifts = 21;
-	Z_log(Z_err, "env: '%s'", getenv("VALGRIND"));
 
 	STACK_MEM_TYPE numiter = 128;
 	for (int i=0; i < shifts; i++, numiter <<= 1) {
 		clock_t elapsed = clock();
 		err_cnt += test_many(numiter);
+		/* TODO: 'errno' is SOMETIMES set here, but ONLY on BSD;
+		It is NEVER set just before the 'return'
+			statement in test_many() ????
+		*/
 		elapsed = clock() - elapsed;
 		Z_log(Z_inf, "%zu stack pushes in %fs",
 			numiter, (double)elapsed / CLOCKS_PER_SEC);
