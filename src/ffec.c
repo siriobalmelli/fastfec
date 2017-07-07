@@ -207,7 +207,7 @@ int		ffec_init(	const struct ffec_params	*fp,
 	/* seed random number generator
 	lrand48_r() will be used to generate random numbers between 0 - 2^31.
 	*/
-	pcg_rand_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
+	pcg_seed(&fi->rng, fi->seeds[0], fi->seeds[1]);
 
 #ifdef FFEC_DEBUG
 	/* print values for debug */
@@ -456,7 +456,7 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 	};
 	/* setup rng */
 	struct pcg_state rnd;
-	pcg_rand_seed(&rnd, seeds[0], seeds[1]);
+	pcg_seed(&rnd, seeds[0], seeds[1]);
 
 	/* write IDs sequentially */
 	uint32_t limit = fi->cnt.n - esi_start;
@@ -512,7 +512,7 @@ int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ff
 	/* verify matrix cells */
 	if (memcmp(enc->cells, dec->cells, sizeof(struct ffec_cell) * enc->cnt.k * FFEC_N1_DEGREE))
 	{
-		Z_err("FEC matrices mismatched");
+		Z_log(Z_err, "FEC matrices mismatched");
 		uint32_t mismatch_cnt=0;
 		for (uint32_t i=0; i < enc->cnt.k * FFEC_N1_DEGREE; i++) {
 			if (memcmp(&enc->cells[i], &dec->cells[i], sizeof(enc->cells[0])))
@@ -521,7 +521,6 @@ int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ff
 		printf("\nmismatch %d <= %d cells\n\n", mismatch_cnt, enc->cnt.n * FFEC_N1_DEGREE);
 	}
 
-out:
 	return err_cnt;
 }
 
