@@ -310,7 +310,7 @@ The solution is to use a simple 64-bit LIFO struct from nonlibc.
 WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix memory
 	and read it directly from ffec_get_sym(esi)
 */
-uint32_t	ffec_decode_sym_	(const struct ffec_params	*fp,
+uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
 					void				*symbol,
 					uint32_t			esi)

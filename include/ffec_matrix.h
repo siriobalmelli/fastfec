@@ -2,7 +2,8 @@
 #define ffec_matrix_h_
 
 #include <stdint.h>
-#include <zed_dbg.h>
+#include <nonlibc.h>
+
 
 
 /* parity matrix
