@@ -175,7 +175,9 @@ main()
 	run_die ninja test
 	# optional: valgrind all the tests
 	if which valgrind; then
-		run_die mesontest --wrap=\'valgrind --leak-check=full\'
+		# NOTE: we set 'VALGRIND' so it can be tested with getenv()
+		#+	inside the tests themselves.
+		run_die VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'
 	fi
 	popd
 }

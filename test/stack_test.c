@@ -1,6 +1,7 @@
 #include <zed_dbg.h>
 #include <stack.h>
 #include <time.h> /* clock() */
+#include <stdlib.h> /* getenv() */
 
 /*	test_many()
 */
@@ -45,8 +46,14 @@ int main()
 {
 	int err_cnt = 0;
 
+	/* do MUCH less work if VALGRIND environment variable is set */
+	int shifts = 4;
+	if (!(getenv("VALGRIND")))
+		shifts = 21;
+	Z_log(Z_err, "env: '%s'", getenv("VALGRIND"));
+
 	STACK_MEM_TYPE numiter = 128;
-	for (int i=0; i < 21; i++, numiter <<= 1) {
+	for (int i=0; i < shifts; i++, numiter <<= 1) {
 		clock_t elapsed = clock();
 		err_cnt += test_many(numiter);
 		elapsed = clock() - elapsed;
