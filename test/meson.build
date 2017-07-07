@@ -27,3 +27,8 @@ atop_test = executable('atop_test', 'atop_test.c',
 			include_directories : inc,
 			link_with : nonlibc)
 test('atop test', atop_test)
+
+stack_test = executable('stack_test', 'stack_test.c',
+			include_directories : inc,
+			link_with : nonlibc)
+test('stack test', stack_test)
