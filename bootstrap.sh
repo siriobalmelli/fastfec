@@ -164,22 +164,23 @@ main()
 	# meson
 	check_meson
 
-	# make build dirs
+	# specify desired builds; test all of them
 	run_die rm -rfv build*
-	run_die meson --buildtype debugoptimized build-debug
-	run_die meson --buildtype release build-release
-	run_die meson --buildtype plain build-plain
+	BUILD_NAMES=( "debug"          "release" "plain" )
+	BUILD_TYPES=( "debugoptimized" "release" "plain" )
+	BUILD_GRIND=( "yes"            ""        "" )
 
-	# run the build
-	pushd build-debug
-	run_die ninja test
-	# optional: valgrind all the tests
-	if which valgrind; then
+	for i in $(seq 0 $(( ${#BUILD_NAMES[@]} -1 ))); do
+		run_die meson --buildtype ${BUILD_TYPES[$i]} build-${BUILD_NAMES[$i]}
+		pushd build-${BUILD_NAMES[$i]}
+		run_die ninja test
 		# NOTE: we set 'VALGRIND' so it can be tested with getenv()
 		#+	inside the tests themselves.
-		run_die VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'
-	fi
-	popd
+		if [[ ${BUILD_GRIND[$i]} ]]; then
+			run_die VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'
+		fi
+		popd
+	done
 }
 
 main

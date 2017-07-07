@@ -104,9 +104,9 @@ In order to get custom log levels for a file,
 */
 #ifndef Z_LOG_LVL
 	#ifdef NDEBUG
-		#define Z_LOG_LVL (Z_inf | Z_wrn | Z_err)
-	#else
 		#define Z_LOG_LVL (Z_err)
+	#else
+		#define Z_LOG_LVL (Z_inf | Z_wrn | Z_err)
 	#endif
 #endif
 
