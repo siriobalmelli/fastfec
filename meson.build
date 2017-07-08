@@ -12,7 +12,7 @@ add_project_arguments('-std=gnu99', language : 'c')
 
 # deps
 nonlibc = dependency('nonlibc', fallback : ['nonlibc', 'nonlibc_dep']) 
-crypto = dependency('openssl', required : true) #TODO: whyyyyyyy
+crypto = dependency('openssl', required : true) #MD5 in ffec_test
 #math is separate only on Linux
 cc = meson.get_compiler('c')
 m = cc.find_library('m', required : false)

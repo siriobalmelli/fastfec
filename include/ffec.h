@@ -10,6 +10,9 @@
 #include <nonlibc.h>
 #include <pcg_rand.h>
 
+#include <nmath.h> /* nm_div_ceil() */
+#include <math.h> /* ceill() */
+
 #define	FFEC_N1_DEGREE 3		/* minimum number of 1s per matrix column */
 #if (FFEC_N1_DEGREE < 2 || FFEC_N1_DEGREE > 5)
 	#error "FEC degree out of safe bounds"
@@ -194,5 +197,37 @@ NLC_INLINE size_t	ffec_len_rows	(const struct ffec_counts *fc)
 {
 	return sizeof(struct ffec_row) * fc->rows;
 }
-					
+
+
+
+/* Whether to engage in complexities with the aim of making sure that the same ESI
+	is never in a row more than once.
+
+TODO: evaluate ACTUAL loss of (fec) inefficiency if we don't care about duplicate ESIs
+	(not giving a fuck is universally faster for all algorithms)
+ */
+#define FFEC_SWAP_NITPICK 0
+
+/* ffec_math.h */
+void		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len);
+int		ffec_calc_sym_counts(const struct ffec_params	*fp,
+					size_t			src_len,
+					struct ffec_counts	*fc);
+void		ffec_init_matrix	(struct ffec_instance	*fi);
+
+int		ffec_calc_lengths_int(const struct ffec_params	*fp,
+				size_t				src_len,
+				struct ffec_sizes		*out,
+				enum ffec_direction		dir,
+				struct ffec_counts		*fc);
+
+/*	ffec_get_col_first()
+Gets the first cell for 'col'.
+The following FFEC_N1_DEGREE cells will be immediately following in memory.
+*/
+NLC_INLINE struct ffec_cell	*ffec_get_col_first(struct ffec_cell *cells, uint32_t col)
+{
+	return &cells[col * FFEC_N1_DEGREE];
+}
+
 #endif /* ffec_h_ */

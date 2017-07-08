@@ -84,8 +84,7 @@ TODO:
 #include <fcntl.h>
 
 #include <alloca.h>
-
-#include <ffec_int.h>
+#include <ffec.h>
 #include <stack.h>
 
 /*	ffec_calc_lengths()
@@ -96,6 +95,8 @@ returns 0 if parameters seem copacetic.
 NOTE: ffec_init() will NOT perform these safety checks,
 	as it assumes the caller has called ffec_calc_lengths() first
 	AND CHECKED THE RESULT.
+The reason for this approach is that the CALLER must allocate memory as desired:
+	they must use ffec_calc_lengths() to know the required size.
 */
 int		ffec_calc_lengths(const struct ffec_params	*fp,
 				size_t				src_len,
@@ -525,3 +526,94 @@ int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ff
 }
 
 
+/*	ffec_calc_sym_counts()
+Calculate the symbol counts for a given source length and FEC params.
+Populates them into 'fc', which must be allocated by the caller.
+
+returns:
+	0 if counts are valid 
+	>0 if symbol math required some adjustment to values:
+		caller is strongly advised to double-check sizes (including src_len!)
+	<0 on failure (aka: will overflow internal math, cannot proceed)
+*/
+int		ffec_calc_sym_counts(const struct ffec_params	*fp,
+					size_t			src_len,
+					struct ffec_counts	*fc)
+{
+	int err_cnt = 0;
+	int wrn_cnt = 0;
+	Z_die_if(!fp || !src_len || !fc, "args");
+	/* temp 64-bit counters, to test for overflow */
+	uint64_t t_k, t_n, t_p;
+
+	t_k = nm_div_ceil(src_len, fp->sym_len);
+	if (t_k < FFEC_MIN_K) {
+		Z_log(Z_wrn, "k=%ld < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
+			t_k, FFEC_MIN_K, src_len, fp->sym_len);
+		t_k = FFEC_MIN_K;
+	}
+	Z_wrn_if(t_k * fp->sym_len > src_len,
+		"symbol math requires larger source region: %ld > %ld (specified)",
+		t_k * fp->sym_len, src_len);
+
+	t_n = ceill(t_k * fp->fec_ratio);
+
+	t_p = t_n - t_k;
+	if (t_p < FFEC_MIN_P) {
+		Z_log(Z_wrn, "p=%ld < FFEC_MIN_P=%d;	k=%ld, fec_ratio=%lf",
+			t_p, FFEC_MIN_P, t_k, fp->fec_ratio);
+		t_p = FFEC_MIN_P;
+		t_n = t_p + t_k;
+	}
+
+	/* sanity check: matrix counters and iterators are all 32-bit */
+	Z_die_if(
+		t_n * FFEC_N1_DEGREE > (uint64_t)UINT32_MAX -2,
+		"n=%ld symbols is excessive for this implementation",
+		t_n);
+	/* assign everything */
+	fc->n = t_n;
+	fc->k = t_k;
+	fc->p = t_p;
+	fc->k_decoded = 0; /* because common sense */
+
+out:
+	if (err_cnt)
+		return 0 - err_cnt;
+	return wrn_cnt;
+}
+
+
+/*	ffec_calc_lengths_int()
+Calculates lengths for callers who already have symbol counts.
+Internal function, so no sanity checking performed.
+*/
+int		ffec_calc_lengths_int(const struct ffec_params	*fp,
+				size_t				src_len,
+				struct ffec_sizes		*out,
+				enum ffec_direction		dir,
+				struct ffec_counts		*fc)
+{
+	int err_cnt = 0;
+
+	/* do all maths in 64-bit, so we can avoid overflow */
+	uint64_t src, par, scr;
+	src = (uint64_t)fc->k * fp->sym_len;
+	par = (uint64_t)fc->p * fp->sym_len;
+	scr = (uint64_t)ffec_len_cells(fc) + ffec_len_rows(fc);
+	/* if decoding, scratch must have space for psums */
+	if (dir == decode)
+		scr += fp->sym_len * fc->rows;
+
+	/* combined size must not exceed UINT32_MAX */
+	Z_die_if(src + par + scr > (uint64_t)UINT32_MAX -2,
+		"cannot handle combined symbol space of %ld",
+		src + par + scr);
+
+	out->source_sz = src;
+	out->parity_sz = par;
+	out->scratch_sz = scr;
+
+out:
+	return err_cnt;
+}
