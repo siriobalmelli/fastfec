@@ -230,13 +230,17 @@ static void __attribute__ ((destructor)) Z_end_()
 
 
 /*	Z_prn_buf()
-Print a bunch of bytes, properly formatted.
+Print BUF_LEN bytes from BUF, properly formatted.
+Prepend a line containing LOG_MSG and its printf() arguments.
+Let compiler discard the whole section when the specified LOG_LVL is not enabled.
 */
-#define Z_prn_buf(BUF, LEN) \
-	do { \
+#define Z_prn_buf(LOG_LVL, BUF, BUF_LEN, LOG_MSG, ...) \
+	if (Z_LOG_LVL & LOG_LVL || LOG_LVL == Z_err) { \
+		Z_log_line(); \
+		Z_log_(stdout, LOG_LVL, LOG_MSG, ##__VA_ARGS__); \
 		char *b = (char*)BUF; \
 		size_t i_; \
-		for (i_ = 0; i_ < LEN; i_++) { \
+		for (i_ = 0; i_ < BUF_LEN; i_++) { \
 			/* == "i_ % 8" */ \
 			if (!(i_ & 0x7)) \
 				Z_PRN(stdout, "\n"); \
@@ -244,6 +248,6 @@ Print a bunch of bytes, properly formatted.
 		} \
 		Z_PRN(stdout, "\n"); \
 		Z_log_line(); \
-	} while(0)
+	}
 
 #endif

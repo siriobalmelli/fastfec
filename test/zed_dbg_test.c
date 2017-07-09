@@ -202,8 +202,8 @@ int main()
 	Z_die_if((a_malloc = malloc(len)) == NULL,
 		"len = %zu",
 		len);
-	Z_log(Z_inf, "printing buffer len %zu", len);
-	Z_prn_buf(a_malloc, len);
+	Z_prn_buf(Z_inf, a_malloc, len,
+		"printing buffer len %zu", len);
 
 	/* show user-controlled enabling/disabling of prints */
 	disabled_infos();
