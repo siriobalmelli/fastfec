@@ -1,6 +1,69 @@
+/*	ffec_rand.c
+
+Everything apropos symbol shuffling/distribution:
+-	shuffling symbols  prior to transmission
+-	generating a matrix
+-	getting a random Initialization Vector for encode
+*/
+
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE	/* /dev/urandom; syscalls, usleep() */
+#endif
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <linux/random.h>
+
 #include <ffec.h>
 
-/*	ffec_init_matrix()
+
+
+/*	ffec_esi_rand()
+
+Populate memory at 'esi_seq' with a randomly shuffled array of all the ESIs
+	in 'fi' starting from 'esi_start' (set it to 0 to obtain all symbols).
+Uses Knuth-Fisher-Yates.
+
+NOTE: 'esi_seq' should have been allocated by the caller and should be
+	of size >= '(fi->cnt.n - esi_start) * sizeof(uint32_t)'
+
+This function is used e.g.: in determining the order in which to send symbols over the wire.
+*/
+void		ffec_esi_rand	(const struct ffec_instance	*fi,
+				uint32_t			*esi_seq,
+				uint32_t			esi_start)
+{
+	/* derive seeds from existing instance */
+	uint64_t seeds[2] = {
+		(fi->seeds[1] >> 1) +1,
+		(fi->seeds[0] << 1) +1
+	};
+	/* setup rng */
+	struct pcg_state rnd;
+	pcg_seed(&rnd, seeds[0], seeds[1]);
+
+	/* write IDs sequentially */
+	uint32_t limit = fi->cnt.n - esi_start;
+	for (uint32_t i=0; i < limit; i++)
+		esi_seq[i] = i + esi_start;
+
+	/* Iterate and swap using XOR */
+	uint32_t rand;
+	uint32_t temp;
+	for (uint32_t i=0; i < limit -1; i++) {
+		rand = pcg_rand_bound(&rnd, limit -i) + i;
+		/* use temp var and not triple-XOR so as to avoid XORing a cell with itself */
+		temp = esi_seq[i];
+		esi_seq[i] = esi_seq[rand];
+		esi_seq[rand] = temp;
+	}
+
+	Z_prn_buf(Z_in2, esi_seq, fi->cnt.n,
+		"randomized ESI sequence:");
+}
+
+
+
+/*	ffec_gen_matrix_()
 Initialize the parity matrix; distribute all the source symbols into the rows (equations).
 
 The rub is we want an EVEN distribution of 1s between the rows,
@@ -12,7 +75,7 @@ Our tactic takes advantage of the fact that "columns" are implicit
 	b.) RANDOMLY SWAP CELLS between each other,
 	c.) link each cell to its row.
 */
-void		ffec_init_matrix	(struct ffec_instance	*fi)
+void		ffec_gen_matrix_(struct ffec_instance	*fi)
 {
 	/*
 		initialize cells and rows
@@ -78,7 +141,7 @@ void		ffec_init_matrix	(struct ffec_instance	*fi)
 		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
 		i++, cell++)
 	{
-#if FFEC_SWAP_NITPICK 
+#ifdef FFEC_COLLISION_RETRY
 		/*
 		Select a cell to swap with.
 		Make sure no other cells in this column contain the same row ID,
@@ -130,4 +193,25 @@ retry:
 	This is a literal "corner case" :P
 	*/
 	ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
+}
+
+
+
+/*	ffec_rand_seed_()
+Get random numbers to seed RNG; usually from /dev/urandom
+*/
+void		ffec_rand_seed_	(uint64_t seeds[2])
+{
+	size_t sz = sizeof(seeds[0]) * 2;
+#if 1
+	/* requires Ubuntu 16.04, which eschews EGLIBC */
+	while (syscall(SYS_getrandom, seeds, sz, 0) != sz)
+		usleep(100000);
+#else
+	int fd = 0;
+	Z_die_if((fd = open("/dev/urandom", O_NOATIME | O_RDONLY)) < 1, "");
+	while (read(fd, &fi->seeds, sz) != sz)
+		usleep(100000);
+	close(fd);
+#endif
 }

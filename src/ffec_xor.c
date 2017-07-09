@@ -1,12 +1,18 @@
+/*	ffec_xor.c
+
+Performance-critical XOR code
+*/
+
 #include <ffec.h>
 
-#pragma GCC optimize ("unroll-loops")
-
-/*	ffec_xor_symbols()
+/*	ffec_xor_into_symbol_()
 XOR 2 symbols, in blocks of FFEC_SYM_ALIGN bytes.
 */
-void __attribute__((hot)) __attribute__((optimize("O3")))
-		ffec_xor_into_symbol	(void *from, void *to, uint32_t sym_len)
+void	__attribute__((hot))
+	__attribute__((regparm(3)))
+	__attribute__((optimize("O3")))
+	__attribute__((optimize("unroll-loops")))
+	ffec_xor_into_symbol_	(void *from, void *to, uint32_t sym_len)
 {
 	uint32_t i;
 	for (i=0; i < sym_len / FFEC_SYM_ALIGN; i++) {
@@ -59,6 +65,9 @@ void __attribute__((hot)) __attribute__((optimize("O3")))
 
 			:						/* output */
 			: [src] "r" (from), [dst] "r" (to)		/* input */
+			/* TODO: how to prove that not adding "memory" as a clobber
+				(which slows things down!) is SAFE?
+			*/
 			:						/* clobber */
 		);
 
@@ -69,7 +78,7 @@ Rely on compiler unrolling loop for speed.
 		uintmax_t *p_f = from;
 		uintmax_t *p_t = to;
 		#ifndef __GNUC__
-			#pragma unroll(FFEC_SYM_ALIGN / sizeof(uintmax_t))
+			#pragma unroll (FFEC_SYM_ALIGN / sizeof(uintmax_t))
 		#endif
 		for (int i=0; i < FFEC_SYM_ALIGN / sizeof(uintmax_t); i++)
 			p_t[i] ^= p_f[i];

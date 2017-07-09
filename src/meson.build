@@ -1,4 +1,7 @@
-lib_files = [ 'ffec.c', 'ffec_init_matrix.c', 'ffec_xor.c', 'ffec_matrix.c' ]
+lib_files = [ 'ffec.c',
+		'ffec_xor.c', 'ffec_encode.c', 'ffec_decode.c', 'ffec_rand.c',
+		'ffec_utils.c',
+		'ffec_matrix.c' ]
 
 
 # We are being build stand-alone,

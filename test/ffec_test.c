@@ -24,7 +24,7 @@
 5MB region into 1280B symbols @ 10% FEC
 */
 double fec_ratio = 1.1;
-size_t original_sz = 5000000;
+size_t original_sz = 5000960;
 size_t sym_len = 1280;
 
 
@@ -53,7 +53,7 @@ void print_usage(char *pgm_name)
 fec_ratio	:	a fractional ratio >1.0 && <2.0\n\
 		default: 1.1\n\
 original_sz	:	data size in B\n\
-		default: 5000000 (5MB)\n\
+		default: 5000960 (5MB)\n\
 sym_len		:	size of FEC symbols, in B. Must be a multiple of 256\n\
 		default: 1280",
 		pgm_name);
@@ -108,8 +108,9 @@ int main(int argc, char **argv)
 	};
 	struct ffec_sizes fs;
 	Z_die_if(
-		ffec_calc_lengths(&fp, original_sz, &fs, decode)
-		, "");
+		ffec_calc_lengths(&fp, original_sz, &fs, decode),
+		"fp.fec_ratio %f; .sym_len %d",
+		fp.fec_ratio, fp.sym_len);
 
 	/*
 		set up source memory region
