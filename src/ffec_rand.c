@@ -6,12 +6,6 @@ Everything apropos symbol shuffling/distribution:
 -	getting a random Initialization Vector for encode
 */
 
-#ifndef _GNU_SOURCE
-	#define _GNU_SOURCE	/* /dev/urandom; syscalls, usleep() */
-#endif
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <linux/random.h>
 
 #include <ffec.h>
 
@@ -197,20 +191,44 @@ retry:
 
 
 
+
+/* 
+TODO: move over to nonlibc
+
+TODO: macro magix required!
+-	on Linuces which implement it, use 'SYS_getrandom'
+-	on BSD, use arc4random (?)
+-	fall back to /dev/urandom
+*/
+
+//#define USE_GETRANDOM
+
+#ifdef USE_GETRANDOM
+	#include <unistd.h>
+	#include <sys/syscall.h>
+	#include <linux/random.h>
+#else
+	#include <unistd.h> /* usleep() */
+	#include <fcntl.h>
+#endif
+
 /*	ffec_rand_seed_()
 Get random numbers to seed RNG; usually from /dev/urandom
 */
-void		ffec_rand_seed_	(uint64_t seeds[2])
+void		ffec_rand_seed_	(uint64_t *seeds)
 {
 	size_t sz = sizeof(seeds[0]) * 2;
-#if 1
+#ifdef USE_GETRANDOM
 	/* requires Ubuntu 16.04, which eschews EGLIBC */
 	while (syscall(SYS_getrandom, seeds, sz, 0) != sz)
 		usleep(100000);
 #else
 	int fd = 0;
-	Z_die_if((fd = open("/dev/urandom", O_NOATIME | O_RDONLY)) < 1, "");
-	while (read(fd, &fi->seeds, sz) != sz)
+	while ( (fd = open("/dev/urandom", O_RDONLY)) < 1) {
+		Z_log(Z_err, "open(\"/dev/urandom\" fail; retry");
+		usleep(100000);
+	}
+	while (read(fd, seeds, sz) != sz)
 		usleep(100000);
 	close(fd);
 #endif
