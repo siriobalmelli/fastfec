@@ -80,9 +80,11 @@ struct stack_t {
 /*
 	public
 */
-NLC_PUBLIC	struct stack_t	*stack_new();
+NLC_PUBLIC	__attribute__((warn_unused_result))
+		struct stack_t	*stack_new();
 NLC_PUBLIC	void		stack_free(struct stack_t *stk);
-NLC_PUBLIC	struct stack_t	*stack_extend(struct stack_t *stk);
+NLC_PUBLIC	__attribute__((warn_unused_result))
+		struct stack_t	*stack_extend(struct stack_t *stk);
 
 
 
