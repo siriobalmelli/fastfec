@@ -3,7 +3,7 @@
 
 #include <ffec.h>
 #include <math.h> /* ceill() */
-
+#include <nlc_urand.h>
 
 
 /*	ffec_calc_lengths()
@@ -110,7 +110,8 @@ int		ffec_init(	const struct ffec_params	*fp,
 
 	/* if no seed proposed, fish from /dev/urandom */
 	if (!seed1 || !seed2) {
-		ffec_rand_seed(fi->seeds);
+		Z_die_if(nlc_urand(fi->seeds, sizeof(fi->seeds))
+				!= sizeof(fi->seeds), "");
 	} else {
 		fi->seeds[0] = seed1;
 		fi->seeds[1] = seed2;

@@ -11,6 +11,7 @@
 #include <stdlib.h> /* atof */
 #include <openssl/md5.h>
 
+#include <nlc_urand.h>
 #include "ffec.h"
 
 /*	defaults:
@@ -30,7 +31,8 @@ void random_bytes(void *region, size_t size)
 	/* get seeds from /dev/urandom */
 	uint64_t seeds[2] = { 0 };
 
-	ffec_rand_seed(seeds);
+	while (nlc_urand(seeds, sizeof(seeds)) != sizeof(seeds))
+		usleep(10000);
 	pcg_randset(region, size, seeds[0], seeds[1]);
 }
 

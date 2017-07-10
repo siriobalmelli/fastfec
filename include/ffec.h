@@ -207,8 +207,6 @@ NLC_PUBLIC	void	ffec_esi_rand	(const struct ffec_instance	*fi,
 
 NLC_LOCAL	void	ffec_gen_matrix_(struct ffec_instance		*fi);
 
-NLC_PUBLIC	void	ffec_rand_seed	(uint64_t			*seeds);
-
 
 
 /*
