@@ -47,11 +47,11 @@ out:
 		#ifdef HAVE_LINUX_GETRANDOM                                                  
 			#include <linux/random.h>                                                   
 			#define nlc_urand_(buf, len) \
-				getrandom(buf, len, GRND_NONBLOCK)
+				getrandom(buf, len, 0)
 		#else                                                                        
 			#include <sys/syscall.h>                                                    
 			#define nlc_urand_(buf, len) \
-				syscall(SYS_getrandom, buf, len, GRND_NONBLOCK)
+				syscall(SYS_getrandom, buf, len, 0)
 		#endif
 
 	#endif     
