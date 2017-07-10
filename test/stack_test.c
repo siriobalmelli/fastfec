@@ -5,9 +5,9 @@
 
 /*	test_many()
 */
-Z_ret_t	test_many(STACK_MEM_TYPE numiter)
+int	test_many(STACK_MEM_TYPE numiter)
 {
-	Z_ret_t err_cnt = 0;
+	int err_cnt = 0;
 	struct stack_t *stk = NULL;
 	Z_die_if(!(stk = stack_new()),
 		"");

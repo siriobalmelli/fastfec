@@ -154,18 +154,11 @@ This is so that logging can be selectively enabled/disabled at compile time.
 
 
 
-/*	Z_ret_t
-A sane return type which transcends platform, time, space and entropy itself.
-*/
-typedef int_fast8_t Z_ret_t;
-
-
-
 /* Global tracking of errors and warnings; as a catch-all.
 Usually, a function will define and check one or both of these locally.
 */
-static Z_ret_t err_cnt = 0;
-static Z_ret_t wrn_cnt = 0;
+static int err_cnt = 0;
+static int wrn_cnt = 0;
 
 /*	Z_log_wrn()
 Increment 'wrn_cnt' when logging a warning.
@@ -222,9 +215,9 @@ Static because we want every translation unit to run this separately
 static void __attribute__ ((destructor)) Z_end_()
 {
 	if (err_cnt)
-		Z_log_(stderr, Z_err, "%s; global err_cnt %"PRIdFAST8, __BASE_FILE__, err_cnt);
+		Z_log_(stderr, Z_err, "%s; global err_cnt %d", __BASE_FILE__, err_cnt);
 	if (wrn_cnt)
-		Z_log_(stderr, Z_wrn, "%s; global wrn_cnt %"PRIdFAST8, __BASE_FILE__, wrn_cnt);
+		Z_log_(stderr, Z_wrn, "%s; global wrn_cnt %d", __BASE_FILE__, wrn_cnt);
 }
 
 

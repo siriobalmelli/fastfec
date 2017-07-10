@@ -12,7 +12,7 @@ Test and show usage for the print and control-flow macros in 'zed_dbg.h'
 
 /*	basic_function()
 
-In the majority of cases, a function returns an int (Z_ret_t),
+In the majority of cases, a function returns an int,
 	which should be 0 to indicate success.
 
 We can easily follow this convention by declaring a local 'err_cnt' variable
@@ -20,9 +20,9 @@ We can easily follow this convention by declaring a local 'err_cnt' variable
 	if they occur; then just return 'err_cnt' which will take care of
 	informing the caller if an error occurred.
 */
-Z_ret_t basic_function()
+int basic_function()
 {
-	Z_ret_t err_cnt = 0;
+	int err_cnt = 0;
 
 	/* test for an error condition;
 		print a message and increment error count if test evaluates to true.
@@ -30,7 +30,7 @@ Z_ret_t basic_function()
 		the test, error message and error message variables into 3 separate lines.
 	*/
 	Z_err_if(1 != 1,
-		"this will never error; err_cnt is %"PRIdFAST8,
+		"this will never error; err_cnt is %d",
 		err_cnt);
 
 	Z_die_if(1, "error!");
@@ -115,7 +115,7 @@ Used as a hack to make a (conditional) Z_log function kill the program if
 This is the standard approach if you want
 	conditional execution inside a Z_() function.
 */
-Z_ret_t sudden_death_()
+int sudden_death_()
 {
 	exit(1);
 }
@@ -132,8 +132,8 @@ void disabled_infos()
 #undef Z_LOG_LVL
 #define Z_LOG_LVL (Z_err)
 
-	Z_log(Z_inf, "this should NOT print: %"PRIdFAST8, sudden_death_());
-	Z_log(Z_wrn, "this should also NOT print: %"PRIdFAST8, sudden_death_());
+	Z_log(Z_inf, "this should NOT print: %d", sudden_death_());
+	Z_log(Z_wrn, "this should also NOT print: %d", sudden_death_());
 
 #undef Z_LOG_LVL
 #define Z_LOG_LVL (Z_err | Z_wrn | Z_inf)
@@ -145,8 +145,8 @@ Enable additional logging levels.
 */
 void enabled_infos()
 {
-	Z_log(Z_in2, "this will NOT print: %"PRIdFAST8, sudden_death_());
-	Z_log(Z_wr2, "this will also NOT print: %"PRIdFAST8, sudden_death_());
+	Z_log(Z_in2, "this will NOT print: %d", sudden_death_());
+	Z_log(Z_wr2, "this will also NOT print: %d", sudden_death_());
 
 #undef Z_LOG_LVL
 #define Z_LOG_LVL (Z_err | Z_wrn | Z_inf | Z_wr2 | Z_in2)
@@ -167,7 +167,7 @@ int main()
 	/* This will be incremented by any calls to
 		Z_err(), Z_err_if(), Z_die(), Z_die_if()
 	*/
-	Z_ret_t err_cnt = 0;
+	int err_cnt = 0;
 
 	/* Print: the current function name as an "info" loglevel;
 		'Z_inf' 'Z_wrn' and 'Z_err' levels are always enabled by default.
@@ -179,7 +179,7 @@ int main()
 
 	Always initialize them to their "failure values".
 	*/
-	Z_ret_t res = 0;
+	int res = 0;
 	void *a_pointer = NULL;
 	void *a_malloc = NULL;
 
@@ -190,7 +190,7 @@ int main()
 	Z_die_if(( res = basic_function() ) != 1,
 		"sum ting willy wong heah");
 	/* printing an info */
-	Z_log(Z_inf, "res is %"PRIdFAST8, res);
+	Z_log(Z_inf, "res is %d", res);
 
 	/* Show error handling for a function which allocates
 		(potentially multiple) memory regions.
