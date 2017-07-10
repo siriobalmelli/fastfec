@@ -10,8 +10,10 @@ XOR 2 symbols, in blocks of FFEC_SYM_ALIGN bytes.
 */
 void	__attribute__((hot))
 	__attribute__((regparm(3)))
+#ifdef __GCC__
 	__attribute__((optimize("O3")))
 	__attribute__((optimize("unroll-loops")))
+#endif
 	ffec_xor_into_symbol_	(void *from, void *to, uint32_t sym_len)
 {
 	uint32_t i;

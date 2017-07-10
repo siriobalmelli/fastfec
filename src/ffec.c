@@ -171,19 +171,19 @@ int		ffec_calc_sym_counts_(const struct ffec_params	*fp,
 
 	t_k = nm_div_ceil(src_len, fp->sym_len);
 	if (t_k < FFEC_MIN_K) {
-		Z_log(Z_wrn, "k=%ld < FFEC_MIN_K=%d;	src_len=%ld, sym_len=%d",
+		Z_log(Z_wrn, "k=%"PRIu64" < FFEC_MIN_K=%"PRIu32";  src_len=%zu, sym_len=%"PRIu32,
 			t_k, FFEC_MIN_K, src_len, fp->sym_len);
 		t_k = FFEC_MIN_K;
 	}
 	Z_wrn_if(t_k * fp->sym_len > src_len,
-		"symbol math requires larger source region: %ld > %ld (specified)",
+		"symbol math requires larger source region: %"PRIu64" > %zu (specified)",
 		t_k * fp->sym_len, src_len);
 
 	t_n = ceill(t_k * fp->fec_ratio);
 
 	t_p = t_n - t_k;
 	if (t_p < FFEC_MIN_P) {
-		Z_log(Z_wrn, "p=%ld < FFEC_MIN_P=%d;	k=%ld, fec_ratio=%lf",
+		Z_log(Z_wrn, "p=%"PRIu64" < FFEC_MIN_P=%"PRIu32";  k=%"PRIu64", fec_ratio=%lf",
 			t_p, FFEC_MIN_P, t_k, fp->fec_ratio);
 		t_p = FFEC_MIN_P;
 		t_n = t_p + t_k;
@@ -192,7 +192,7 @@ int		ffec_calc_sym_counts_(const struct ffec_params	*fp,
 	/* sanity check: matrix counters and iterators are all 32-bit */
 	Z_die_if(
 		t_n * FFEC_N1_DEGREE > (uint64_t)UINT32_MAX -2,
-		"n=%ld symbols is excessive for this implementation",
+		"n=%"PRIu64" symbols is excessive for this implementation",
 		t_n);
 	/* assign everything */
 	fc->n = t_n;
@@ -230,7 +230,7 @@ int		ffec_calc_lengths_int_(const struct ffec_params	*fp,
 
 	/* combined size must not exceed UINT32_MAX */
 	Z_die_if(src + par + scr > (uint64_t)UINT32_MAX -2,
-		"cannot handle combined symbol space of %ld",
+		"cannot handle combined symbol space of %"PRIu64,
 		src + par + scr);
 
 	out->source_sz = src;

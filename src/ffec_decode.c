@@ -82,14 +82,14 @@ recurse:
 	curr_sym = ffec_get_sym(fp, fi, esi);
 	/* if given a pointer, copy symbol from there into matrix */
 	if (symbol && symbol != curr_sym) {
-		Z_log(Z_in2, "pull <-(esi %d) @0x%lx",
-			esi, (uint64_t)symbol);
+		Z_log(Z_in2, "pull <-(esi %"PRIu32") @0x%"PRIxPTR,
+			esi, (uintptr_t)symbol);
 		memcpy(curr_sym, symbol, fp->sym_len);
 	}
 	/* ... otherwise assume it's already there */
 
-	Z_log(Z_in2, "decode (esi %d) @0x%lx",
-		esi, (uint64_t)curr_sym);
+	Z_log(Z_in2, "decode (esi %"PRIu32") @0x%"PRIxPTR,
+		esi, (uintptr_t)curr_sym);
 
 	/* If it's a source symbol, log it. */
 	if (esi < fi->cnt.k) {
@@ -120,9 +120,9 @@ recurse:
 			ffec_xor_into_symbol_(curr_sym,
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
-			Z_log(Z_in2, "xor(esi %d) -> p%d @0x%lx",
+			Z_log(Z_in2, "xor(esi %"PRIu32") -> p%"PRIu32" @0x%"PRIxPTR,
 				esi, cell[j].row_id,
-				(uint64_t)ffec_get_psum(fp, fi, cell[j].row_id));
+				(uintptr_t)ffec_get_psum(fp, fi, cell[j].row_id));
 		}
 		/* remove from row */
 		ffec_matrix_row_unlink(n_rows[j], &cell[j], fi->cells);

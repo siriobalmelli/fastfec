@@ -6,6 +6,8 @@
 #include <zed_dbg.h>
 #include <pcg_rand.h>
 #include <nmath.h> /* nm_div_ceil() */
+
+#define STACK_MEM_TYPE uint64_t
 #include <stack.h>
 
 #include <stdint.h>
@@ -212,7 +214,8 @@ NLC_LOCAL	void	ffec_rand_seed_	(uint64_t			seeds[2]);
 /*
 	ffec_xor.c
 */
-NLC_LOCAL	void	ffec_xor_into_symbol_	(void *from, void *to, uint32_t sym_len);
+NLC_LOCAL	void	__attribute__((regparm(3)))
+			ffec_xor_into_symbol_	(void *from, void *to, uint32_t sym_len);
 
 
 

@@ -21,7 +21,7 @@ int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ff
 	int err_cnt = 0;
 	/* verify seeds */
 	Z_err_if(memcmp(enc->seeds, dec->seeds, sizeof(enc->seeds)),
-		"FEC seeds mismatched: enc(0x%lx, 0x%lx) != dec(0x%lx, 0x%lx)",
+		"FEC seeds mismatched: enc(0x%"PRIx64", 0x%"PRIx64") != dec(0x%"PRIx64", 0x%"PRIx64")",
 		enc->seeds[0], enc->seeds[1], dec->seeds[0], dec->seeds[1]);
 
 	/* verify matrix cells */

@@ -36,8 +36,8 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 		*/
 		cell = ffec_get_col_first(fi->cells, i);
 		symbol = ffec_get_sym(fp, fi, i);
-		Z_log(Z_in2, "enc(esi %ld) @0x%lx",
-			i, (uint64_t)symbol);
+		Z_log(Z_in2, "enc(esi %"PRIu64") @0x%"PRIxPTR,
+			i, (uintptr_t)symbol);
 
 		for (j=0; j < FFEC_N1_DEGREE; j++) {
 			/* avoid empty cells under the staircase */
@@ -50,9 +50,9 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 			ffec_xor_into_symbol_(symbol,
 					ffec_get_sym_p(fp, fi, cell[j].row_id),
 					fp->sym_len);
-			Z_log(Z_in2, "xor(esi %ld) -> p%d @0x%lx",
+			Z_log(Z_in2, "xor(esi %"PRId64") -> p%"PRIu32" @0x%"PRIxPTR,
 				i, cell[j].row_id,
-				(uint64_t)ffec_get_sym_p(fp, fi, cell[j].row_id));
+				(uintptr_t)ffec_get_sym_p(fp, fi, cell[j].row_id));
 		}
 	}
 
