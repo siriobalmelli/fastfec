@@ -61,11 +61,11 @@ inefficiency	:	"number of symbols needed to decode" / k
 				but the tradeoff of LDGM is (slight) inefficiency.
 
 # TODO
+-	clean up randomness
 -	avx and non-avx build ok
--	OS X + CLANG ok
+-	tests for BOTH static and linked lib cases (nonlibc also)
 -	validation, aka pretty graphs
 -	rename 'stack'
 
 -	perf stat
 -	CDSChecker
--	tests for BOTH static and linked lib cases

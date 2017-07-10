@@ -212,10 +212,10 @@ TODO: macro magix required!
 	#include <fcntl.h>
 #endif
 
-/*	ffec_rand_seed_()
+/*	ffec_rand_seed()
 Get random numbers to seed RNG; usually from /dev/urandom
 */
-void		ffec_rand_seed_	(uint64_t *seeds)
+void		ffec_rand_seed	(uint64_t *seeds)
 {
 	size_t sz = sizeof(seeds[0]) * 2;
 #ifdef USE_GETRANDOM

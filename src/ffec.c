@@ -110,7 +110,7 @@ int		ffec_init(	const struct ffec_params	*fp,
 
 	/* if no seed proposed, fish from /dev/urandom */
 	if (!seed1 || !seed2) {
-		ffec_rand_seed_(fi->seeds);
+		ffec_rand_seed(fi->seeds);
 	} else {
 		fi->seeds[0] = seed1;
 		fi->seeds[1] = seed2;

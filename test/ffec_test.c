@@ -1,10 +1,3 @@
-#ifndef _GNU_SOURCE
-	#define _GNU_SOURCE	/* /dev/urandom; syscalls */
-#endif
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <linux/random.h>
-
 
 #include <unistd.h>
 
@@ -36,8 +29,8 @@ void random_bytes(void *region, size_t size)
 {
 	/* get seeds from /dev/urandom */
 	uint64_t seeds[2] = { 0 };
-	while (syscall(SYS_getrandom, seeds, sizeof(seeds), 0) != sizeof(seeds))
-		usleep(100000);
+
+	ffec_rand_seed(seeds);
 	pcg_randset(region, size, seeds[0], seeds[1]);
 }
 
@@ -212,9 +205,9 @@ int main(int argc, char **argv)
 		report
 	*/
 	Z_log(Z_inf, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
-	Z_log(Z_inf, "decoded with k=%d < i=%d < n=%d;\n\
+	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
-\tsource size=%.4lf MB, bitrates: enc=%ldMb/s, dec=%ldMb/s",
+\tsource size=%.4lf MB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
 		/*k*/fi_dec.cnt.k, /*i*/i, /*n*/fi_dec.cnt.n,
 		/*inefficiency*/(double)i / (double)fi_dec.cnt.k,
 		/*loss tolerance*/((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100,
