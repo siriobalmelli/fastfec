@@ -52,20 +52,23 @@ comp_ver()
 
 #	run_pkg_()
 # Run available package managers to try and install something.
-#		$1	:	array of package managers
-#		$2	:	array of command line options (one per package manager)
-#		$3	:	array of package names
+#		$1	:	array of "sudo" or "" strings ... because brew is the
+#+					ONE package manager that gets pissy being run sudo SMH
+#		$2	:	array of package managers
+#		$3	:	array of command line options (one per package manager)
+#		$4	:	array of package names
 # Return 0 on success
 run_pkg_()
 {
-	MGR="$1"
-	OPT="$2"
-	PKG="$3"
+	SUDO="$1"
+	MGR="$2"
+	OPT="$3"
+	PKG="$4"
 	# This is bread-and-butter brute-force; try all the ones we know
 	#+	until one of them shows positive.
 	for i in $(seq 0 $(( ${#MGR[@]} -1 ))); do
 		if which ${MGR[$i]} >/dev/null 2>&1; then
-			run_die sudo ${MGR[$i]} ${OPT[$i]} ${PKG[$i]}
+			run_die ${SUDO[$i]} ${MGR[$i]} ${OPT[$i]} ${PKG[$i]}
 			return 0
 		fi
 	done
@@ -82,6 +85,7 @@ check_ninja()
 {
 	# Try and get ninja from the package manager
 	if ! which ninja; then
+		SUDO=("sudo"   "sudo"       "sudo"    "sudo"   "sudo"    ""        "sudo" )
 		MGR=( "pacman" "apt-get"    "dnf"     "emerge" "port"    "brew"    "pkg" )
 		OPT=( "-S"     "-y install" "install" ""       "install" "install" "install" )
 		PKG=( "ninja" \
@@ -94,7 +98,7 @@ check_ninja()
 
 		# ... not a critical failure if this doesn't fly - we will try
 		#+	installing a binary below
-		run_pkg_ "$MGR" "$OPT" "$PKG"
+		run_pkg_ "$SUDO" "$MGR" "$OPT" "$PKG"
 	fi
 
 	# ... and it must be the correct version
@@ -136,11 +140,12 @@ check_meson()
 		# ... which requires pip3
 		if ! which pip3; then
 			# TODO: expand selection; fix implicit version in MacPorts
+			SUDO=("sudo"        "sudo"       "" )
 			MGR=( "apt-get"     "port"       "brew" )
 			OPT=( "-y install"     "install" "install" )
 			PKG=( "python3-pip" "py35-pip"   "python3" )
 
-			if ! run_pkg_ "$MGR" "$OPT" "$PKG"; then
+			if ! run_pkg_ "$SUDO" "$MGR" "$OPT" "$PKG"; then
 				exit 1
 			fi
 		fi
