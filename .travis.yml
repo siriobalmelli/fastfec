@@ -1,14 +1,21 @@
 language: c
-dist: trusty
 sudo: required
 
-addons:
-        apt:
-                packages:
-                        - valgrind
+os:
+        - linux
+        - osx
 
 compiler:
         - clang
         - gcc
+
+matrix:
+        include:
+                - os: linux
+                  dist: trusty
+
+# only valgrind on Linux for simplicity and speed
+before_install:
+        - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -y install valgrind
 
 script: ./bootstrap.sh

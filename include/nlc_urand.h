@@ -8,11 +8,11 @@ Hide away the annoyance of "correctly" getting urandom across various systems.
 
 #include <nonlibc.h>
 #include <zed_dbg.h>
-#include <unistd.h>
+
+#include <unistd.h>	/* read(); close() */
+#include <fcntl.h>	/* open(); O_RDONLY */
 
 
-
-#include <fcntl.h>
 
 /*	nlc_urand_open_()
 

@@ -136,9 +136,9 @@ check_meson()
 		# ... which requires pip3
 		if ! which pip3; then
 			# TODO: expand selection; fix implicit version in MacPorts
-			MGR=( "apt-get"     "port" )
-			OPT=( "-y install"     "install" )
-			PKG=( "python3-pip" "py35-pip" )
+			MGR=( "apt-get"     "port"       "brew" )
+			OPT=( "-y install"     "install" "install" )
+			PKG=( "python3-pip" "py35-pip"   "python3" )
 
 			if ! run_pkg_ "$MGR" "$OPT" "$PKG"; then
 				exit 1
