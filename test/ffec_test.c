@@ -62,7 +62,7 @@ fec_ratio	:	a fractional ratio >1.0 && <2.0\n\
 original_sz	:	data size in B\n\
 		default: 5000960 (5MB)\n\
 sym_len		:	size of FEC symbols, in B. Must be a multiple of 256\n\
-		default: 1280",
+		default: 1280\n",
 		pgm_name);
 }
 
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
 	struct ffec_sizes fs;
 	Z_die_if(
 		ffec_calc_lengths(&fp, original_sz, &fs, decode),
-		"fp.fec_ratio %f; .sym_len %d",
-		fp.fec_ratio, fp.sym_len);
+		"fp.fec_ratio %f; fp.sym_len %"PRIu32"; original_sz %zu",
+		fp.fec_ratio, fp.sym_len, original_sz);
 
 	/*
 		set up source memory region
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 	Z_log(Z_inf, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
 	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
-\tsource size=%.4lf MB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
+\tsource size=%.4lf MiB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
 		/*k*/fi_dec.cnt.k, /*i*/i, /*n*/fi_dec.cnt.n,
 		/*inefficiency*/(double)i / (double)fi_dec.cnt.k,
 		/*loss tolerance*/((double)(fi_dec.cnt.n - i) / (double)fi_dec.cnt.n) * 100,
