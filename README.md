@@ -61,5 +61,6 @@ inefficiency	:	"number of symbols needed to decode" / k
 				but the tradeoff of LDGM is (slight) inefficiency.
 
 # TODO
+-	check assembly: what does memory clobber of xor change?
 -	validation -> benchmarking, aka pretty graphs
--	rename 'stack'
+-	rename 'stack'; becomes nonlocking; release nonlibc

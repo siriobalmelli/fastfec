@@ -1,18 +1,28 @@
+/*	ffec_test.c
 
-#include <unistd.h>
+Test performance and correctness of ffec
 
-/* open() */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/uio.h> /* iovec */
-#include <fcntl.h>
-#include <time.h>
-#include <unistd.h>
-#include <stdlib.h> /* atof */
+(c) 2016 Sirio Balmelli
+*/
+
+/* override suppression of Z_inf with -DNDEBUG */
+#include <zed_dbg.h>
+#undef Z_LOG_LVL
+#define Z_LOG_LVL (Z_err | Z_wrn | Z_inf)
+
+#include <ffec.h>
+
+#include <time.h> /* clock() */
 #include <openssl/md5.h>
-
 #include <nlc_urand.h>
-#include "ffec.h"
+
+#include <stdlib.h> /* atof() */
+
+/*	who does symbol copying?
+if set: copy symbol into matrix ourselves BEFORE calling ffec_decode_sym()
+*/
+//#define FFEC_TEST_COPY_SYM
+
 
 /*	defaults:
 5MB region into 1280B symbols @ 10% FEC
@@ -20,6 +30,7 @@
 double fec_ratio = 1.1;
 size_t original_sz = 5000960;
 size_t sym_len = 1280;
+
 
 
 /*	random_bytes()
@@ -35,6 +46,7 @@ void random_bytes(void *region, size_t size)
 		usleep(10000);
 	pcg_randset(region, size, seeds[0], seeds[1]);
 }
+
 
 
 /*	print_usage()
@@ -53,7 +65,6 @@ sym_len		:	size of FEC symbols, in B. Must be a multiple of 256\n\
 		default: 1280",
 		pgm_name);
 }
-
 
 /*	parse_opts()
 */
@@ -77,11 +88,12 @@ void parse_opts(int argc, char **argv)
 				exit(1);
 		}
 	}
-	printf("sym_len: %ld\r\n", sym_len);
-	printf("fec_ratio: %f\r\n", fec_ratio);
-	printf("original_sz: %ld\r\n", original_sz);
 
+	Z_log(Z_inf, "sym_len: %zu", sym_len);
+	Z_log(Z_inf, "fec_ratio: %f", fec_ratio);
+	Z_log(Z_inf, "original_sz: %zu", original_sz);
 }
+
 
 
 /*	main()
@@ -124,14 +136,8 @@ int main(int argc, char **argv)
 	clock_t clock_enc = clock();
 	struct ffec_instance fi;
 	Z_die_if(
-#ifdef FFEC_DEBUG
-		/* force random number sequence for debugging purposes */
-		ffec_init_contiguous(&fp, &fi, original_sz, mem,
-						encode, PCG_RAND_S1, PCG_RAND_S2)
-#else
 		ffec_init_contiguous(&fp, &fi, original_sz, mem,
 						encode, 0, 0)
-#endif
 		, "");
 	ffec_encode(&fp, &fi);
 	clock_enc = clock() - clock_enc;
@@ -164,30 +170,30 @@ int main(int argc, char **argv)
 						decode, fi.seeds[0], fi.seeds[1])
 		, "");
 	uint32_t i;
-#ifdef FFEC_DEBUG
+#ifdef DEBUG
       Z_die_if(ffec_mtx_cmp(&fi, &fi_dec, &fp), "");
 #endif
 
-	/* iterate through randomly ordered ESIs and decode for each */
+	/* Iterate through randomly ordered ESIs and decode for each.
+	Break when decoder reports 0 symbols left to decode.
+	*/
 	for (i=0; i < fi_dec.cnt.cols; i++) {
-#ifdef FFEC_DEBUG
-		Z_log(Z_inf, "submit ESI %d", next_esi[i]);
-#endif
+		Z_log(Z_in2, "submit ESI %d", next_esi[i]);
 
-// TODO: clean this up somehow
-#if 1
-		/* stop decoding when decoder reports 0 symbols left to decode */
-		if (!ffec_decode_sym(&fp, &fi_dec,
-				ffec_get_sym(&fp, &fi, next_esi[i]),
-				next_esi[i]))
-			break;
-#else
+#ifdef FFEC_TEST_COPY_SYM
 		/* copy symbol into matrix manually, give only ESI */
 		memcpy(ffec_get_sym(&fp, &fi_dec, next_esi[i]),
 				ffec_get_sym(&fp, &fi, next_esi[i]), 
 				fp.sym_len);
 		if (!ffec_decode_sym(&fp, &fi_dec,
 				NULL,
+				next_esi[i]))
+			break;
+
+#else
+		/* the more usual case: give ffec a pointer and it copy */
+		if (!ffec_decode_sym(&fp, &fi_dec,
+				ffec_get_sym(&fp, &fi, next_esi[i]),
 				next_esi[i]))
 			break;
 #endif
@@ -223,11 +229,8 @@ int main(int argc, char **argv)
 			/ (1024 * 1024) * 8));
 
 out:
-	if (mem)
-		free(mem);
-	if (mem_dec)
-		free(mem_dec);
-	if (next_esi)
-		free(next_esi);
+	free(mem);
+	free(mem_dec);
+	free(next_esi);
 	return err_cnt;
 }
