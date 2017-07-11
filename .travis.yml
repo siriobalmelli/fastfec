@@ -1,19 +1,20 @@
 language: c
 sudo: required
 
+compiler:
+  - clang
+  - gcc
+
 matrix:
-        include:
-                - os: linux
-                  dist: trusty
-                  compiler:
-                          - clang
-                          - gcc
-                - os: osx
-                  compiler:
-                          - clang
+  include:
+    - os: linux
+      dist: trusty
+    - os: osx
 
 # only valgrind on Linux for simplicity and speed
-before_install:
-        - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -y install valgrind
+addons:
+  apt:
+    packages:
+      - graphviz
 
 script: ./bootstrap.sh
