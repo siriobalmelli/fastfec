@@ -1,13 +1,12 @@
 #project
 project('ffec', 'c',
-	version : '0.0.2')
+	version : '0.0.2',
+	default_options : [ 'c_std=gnu11' ])
 description = 'Fast FEC library'
 
 
 #sanity
 assert(meson.project_name() == 'ffec', 'Incorrect project name')
-
-add_project_arguments('-std=gnu99', language : 'c')
 
 
 # deps
