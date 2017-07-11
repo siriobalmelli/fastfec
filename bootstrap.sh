@@ -181,7 +181,7 @@ main()
 		run_die ninja test
 		# NOTE: we set 'VALGRIND' so it can be tested with getenv()
 		#+	inside the tests themselves.
-		if [[ ${BUILD_GRIND[$i]} ]]; then
+		if [[ ${BUILD_GRIND[$i]} ]] && which valgrind; then
 			run_die VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'
 		fi
 		popd
