@@ -1,5 +1,4 @@
 language: c
-sudo: required
 
 compiler:
   - clang
@@ -9,7 +8,9 @@ matrix:
   include:
     - os: linux
       dist: trusty
+      sudo: required
     - os: osx
+      sudo: required
 
 # only valgrind on Linux for simplicity and speed
 addons:
