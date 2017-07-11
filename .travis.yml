@@ -1,15 +1,16 @@
 language: c
 sudo: required
 
-compiler:
-        - clang
-        - gcc
-
 matrix:
         include:
                 - os: linux
                   dist: trusty
+                  compiler:
+                          - clang
+                          - gcc
                 - os: osx
+                  compiler:
+                          - clang
 
 # only valgrind on Linux for simplicity and speed
 before_install:
