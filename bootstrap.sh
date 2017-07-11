@@ -116,6 +116,7 @@ check_ninja()
 			echo "don't know how to handle '$PLATFORM'" >&2
 			exit 1
 		fi
+		run_die mkdir -p ./toolchain
 		run_die wget -O ./toolchain/ninja.zip "$URL"
 
 		# install
