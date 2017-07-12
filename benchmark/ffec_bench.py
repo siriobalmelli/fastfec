@@ -42,7 +42,7 @@ def run_single(block_size, fec_ratio):
     '''
     try:
         #TODO: This is hardcoded. That is bad.
-        sub = subprocess.run(["test/ffec_test", "-f {}".format(fec_ratio), "-o {}".format(block_size)],
+        sub = subprocess.run(["/home/tony/ffec/build-debug/test/ffec_test", "-f {}".format(fec_ratio), "-o {}".format(block_size)],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             shell=False, check=True);
     except subprocess.CalledProcessError as err:
@@ -72,8 +72,19 @@ def run_average(block_size, fec_ratio):
     return mean(a[0] for a in runs), mean(a[1] for a in runs), mean(a[2] for a in runs)
 
 
-
+import math
 import json
+import numpy as np 
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib 
+#do not use Xwindows 
+#Needs to be called before pyplot is imported
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt 
+import random 
+
+def fun(x, y):
+    return x**2 + y
 
 if __name__ == "__main__":
     # TODO: take range arguments from the command line
@@ -98,3 +109,19 @@ if __name__ == "__main__":
         json.dump(benchmark, f)
 
     #TODO: 3D plot!
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    X_sizes_log = [math.log(l,10) for l in X_size ]
+    y = np.arange(X_sizes_log[0], X_sizes_log[-1], 0.3)  
+    x = np.arange(Y_ratio[0], Y_ratio[-1], 0.01)
+    X, Y = np.meshgrid(x,y)
+    zs = np.array([fun(x,y) for x,y in zip(np.ravel(X), np.ravel(Y))])
+    Z = np.array(np.ravel(np.arange(Z_inef[0], Z_inef[-1], 0.005))) 
+
+    ax.plot_surface(X, Y, Z)
+    
+    ax.set_xlabel('Sizes')
+    ax.set_ylabel('Ratios')
+    ax.set_zlabel('Inefficiency')
+ 
+    plt.savefig('out.png', dpi=150)
