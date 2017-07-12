@@ -25,21 +25,17 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 	/* zero out all parity symbols */
 	memset(fi->parity, 0x0, fi->cnt.p * fp->sym_len);
 
-	int64_t i;
-	uint32_t j;
-	struct ffec_cell *cell;
-	void *symbol;
-	for (i=0; i < fi->cnt.cols; i++) {
+	for (int64_t i=0; i < fi->cnt.cols; i++) {
 		/* get source symbol
 		Note that ffec_xor_into_symbol_() issues prefetch instructions,
 			don't duplicate that here.
 		*/
-		cell = ffec_get_col_first(fi->cells, i);
-		symbol = ffec_enc_sym(fp, fi, i);
+		struct ffec_cell *cell = ffec_get_col_first(fi->cells, i);
+		void *symbol = ffec_enc_sym(fp, fi, i);
 		Z_log(Z_in2, "enc(esi %"PRIu64") @0x%"PRIxPTR,
 			i, (uintptr_t)symbol);
 
-		for (j=0; j < FFEC_N1_DEGREE; j++) {
+		for (uint32_t j=0; j < FFEC_N1_DEGREE; j++) {
 			/* avoid empty cells under the staircase */
 			if (ffec_cell_test(&cell[j]))
 				continue;

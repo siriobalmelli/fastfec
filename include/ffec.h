@@ -11,6 +11,7 @@
 #include <stack.h>
 
 #include <stdint.h>
+#include <stdlib.h> /* calloc(); free() */
 
 #include <ffec_matrix.h>
 

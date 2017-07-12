@@ -48,7 +48,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 
 
 	/* if 'src' is passed; we ASSUME ENCODE */
-	if (!src)
+	if (src)
 		ret->enc_source = src;
 	ret->source_len = src_len;
 

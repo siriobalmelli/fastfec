@@ -97,10 +97,9 @@ recurse:
 	}
 
 	/* get all rows */
-	unsigned int j;
 	struct ffec_row *n_rows[FFEC_N1_DEGREE];
 	memset(&n_rows, 0x0, sizeof(n_rows));
-	for (j=0; j < FFEC_N1_DEGREE; j++) {
+	for (unsigned int j=0; j < FFEC_N1_DEGREE; j++) {
 		/* if any cells are unset, avoid processing them
 			and avoid processing their row.
 		*/
@@ -129,7 +128,7 @@ recurse:
 		our symbol from ALL rows it belongs to
 		before recursing.
 	*/
-	for (j=0; j < FFEC_N1_DEGREE; j++) {
+	for (unsigned int j=0; j < FFEC_N1_DEGREE; j++) {
 		if (!n_rows[j])
 			continue;
 		if (n_rows[j]->cnt == 1) {
