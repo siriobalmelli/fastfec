@@ -124,7 +124,10 @@ if __name__ == "__main__":
     #
     # Y axis (sizes) plotted logarithmically
     Y_sizes_log = [math.log(l,2) for l in bm['Y_size'] ]
-    y = np.arange(Y_sizes_log[0], Y_sizes_log[-1], 1.0)  
+    # If interval is 1 for y, then y is only 1 value, there have to be 2 for it to work
+    # Seems that the generated Y, X from np.meshgrid have to be a multiple of the
+    # total number of values in Z
+    y = np.arange(Y_sizes_log[0], Y_sizes_log[-1], 0.5) 
     # X axis (ratios)
     x = np.arange(bm['X_ratio'][0], bm['X_ratio'][-1], 0.01)
     X, Y = np.meshgrid(x,y)
@@ -132,17 +135,24 @@ if __name__ == "__main__":
     # plot inefficiency
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    Z = np.array(np.ravel(np.arange(bm['Z_inef'][0], bm['Z_inef'][-1], 0.01))) 
+    Z = np.array(bm['Z_inef']).reshape(X.shape) 
     ax.plot_surface(X, Y, Z)
     ax.set_xlabel('Ratios')
     ax.set_ylabel('Sizes (log2)')
     ax.set_zlabel('Inefficiency')
     plt.savefig('inefficiency.png', dpi=300)
 
+    # Print the values of each array to see 
+    #print(x)
+    #print(y)
+    #print(X)
+    #print(Y)
+    #print(Z)
+
     # plot encode bitrate
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    Z = np.array(np.ravel(np.arange(bm['Z_enc'][0], bm['Z_enc'][-1], 100))) 
+    Z = np.array(bm['Z_enc']).reshape(X.shape) 
     ax.plot_surface(X, Y, Z)
     ax.set_xlabel('Ratios')
     ax.set_ylabel('Sizes (log2)')
@@ -152,7 +162,7 @@ if __name__ == "__main__":
     # plot decode bitrate
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    Z = np.array(np.ravel(np.arange(bm['Z_dec'][0], bm['Z_dec'][-1], 100))) 
+    Z = np.array(bm['Z_dec']).reshape(X.shape) 
     ax.plot_surface(X, Y, Z)
     ax.set_xlabel('Ratios')
     ax.set_ylabel('Sizes (log2)')
