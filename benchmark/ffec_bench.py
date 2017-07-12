@@ -82,11 +82,11 @@ def run_benchmark():
 
     # test for a linear gradient of fec_ratios 
     ret['X_ratio'] = [ 1.0 + (ratio_decimal / 100)
-                for ratio_decimal in range(1, 3) ] #16
+                for ratio_decimal in range(1, 16) ] #16
     # test across an exponential range of sizes
     ret['symbol_sz'] = 1280
     ret['Y_size'] = [ 2**sz_exp * ret['symbol_sz']
-                for sz_exp in range(8, 10) ] #20
+                for sz_exp in range(8, 20) ] #20
 
     # execute the runs
     ret['Z_inef'], ret['Z_enc'], ret['Z_dec'] = map(list,zip(*[ (run_average(size, fec_ratio))
