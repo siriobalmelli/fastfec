@@ -1,3 +1,6 @@
 build*
 cscope*
 .*.sw[op]
+benchmark/*.png
+.DS_Store
+benchmark/benchmark.json

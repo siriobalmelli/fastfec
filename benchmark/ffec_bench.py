@@ -60,6 +60,7 @@ def run_single(block_size, fec_ratio):
         exit(1)
 
 
+
 from statistics import mean
 
 def run_average(block_size, fec_ratio):
@@ -95,9 +96,8 @@ def run_benchmark():
     return ret
 
 
-import os
+
 import math
-import json
 import numpy as np 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib 
@@ -106,19 +106,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
 
-if __name__ == "__main__":
-
-    # look for an existing benchmark.json; if exists load that one
-    filename = 'benchmark.json'
-    if os.path.isfile(filename):
-        with open(filename) as f:
-            bm = json.load(f)
-    else:
-        bm = run_benchmark()
-        # dump to file
-        with open(filename, 'w') as f:
-            json.dump(bm, f)
-
+def make_plots(bm):
+    '''take a benchmarks dictionary 'bm' and write plots to disk
+    '''
     #
     #   prep 3D plots
     #
@@ -168,3 +158,23 @@ if __name__ == "__main__":
     ax.set_ylabel('Sizes (log2)')
     ax.set_zlabel('Decode Bitrate (Mb/s)')
     plt.savefig('decode.png', dpi=300)
+
+
+
+import os
+import json
+
+if __name__ == "__main__":
+
+    # look for an existing benchmark.json; if exists load that one
+    filename = 'benchmark.json'
+    if os.path.isfile(filename):
+        with open(filename) as f:
+            bm = json.load(f)
+    else:
+        bm = run_benchmark()
+        # dump to file
+        with open(filename, 'w') as f:
+            json.dump(bm, f)
+
+    make_plots(bm)
