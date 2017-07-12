@@ -42,7 +42,7 @@ def run_single(block_size, fec_ratio):
     '''
     try:
         #TODO: This is hardcoded. That is bad.
-        sub = subprocess.run(["/home/tony/ffec/build-debug/test/ffec_test", "-f {}".format(fec_ratio), "-o {}".format(block_size)],
+        sub = subprocess.run(["test/ffec_test", "-f {}".format(fec_ratio), "-o {}".format(block_size)],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             shell=False, check=True);
     except subprocess.CalledProcessError as err:
@@ -72,6 +72,30 @@ def run_average(block_size, fec_ratio):
     return mean(a[0] for a in runs), mean(a[1] for a in runs), mean(a[2] for a in runs)
 
 
+
+def run_benchmark():
+    '''actually run the benchmark.
+    Return a dictionary of results.
+    '''
+    ret = {}
+
+    # test for a linear gradient of fec_ratios 
+    ret['X_ratio'] = [ 1.0 + (ratio_decimal / 100)
+                for ratio_decimal in range(1, 3) ] #16
+    # test across an exponential range of sizes
+    ret['symbol_sz'] = 1280
+    ret['Y_size'] = [ 2**sz_exp * ret['symbol_sz']
+                for sz_exp in range(8, 10) ] #20
+
+    # execute the runs
+    ret['Z_inef'], ret['Z_enc'], ret['Z_dec'] = map(list,zip(*[ (run_average(size, fec_ratio))
+                        for size in ret['Y_size']
+                        for fec_ratio in ret['X_ratio'] ]))
+
+    return ret
+
+
+import os
 import math
 import json
 import numpy as np 
@@ -81,47 +105,56 @@ import matplotlib
 #Needs to be called before pyplot is imported
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
-import random 
-
-def fun(x, y):
-    return x**2 + y
 
 if __name__ == "__main__":
-    # TODO: take range arguments from the command line
 
-    # test across an exponential range of sizes
-    symbol_sz = 1280
-    X_size = [ 2**sz_exp * symbol_sz
-                for sz_exp in range(8, 10) ] #20
-    # test for a linear gradient of fec_ratios 
-    Y_ratio = [ 1.0 + (ratio_decimal / 100)
-                for ratio_decimal in range(1, 3) ] #16
+    # look for an existing benchmark.json; if exists load that one
+    filename = 'benchmark.json'
+    if os.path.isfile(filename):
+        with open(filename) as f:
+            bm = json.load(f)
+    else:
+        bm = run_benchmark()
+        # dump to file
+        with open(filename, 'w') as f:
+            json.dump(bm, f)
 
-    # execute the runs
-    Z_inef, Z_enc, Z_dec = map(list,zip(*[ (run_average(size, fec_ratio))
-                        for size in X_size
-                        for fec_ratio in Y_ratio ]))
+    #
+    #   prep 3D plots
+    #
+    # Y axis (sizes) plotted logarithmically
+    Y_sizes_log = [math.log(l,2) for l in bm['Y_size'] ]
+    y = np.arange(Y_sizes_log[0], Y_sizes_log[-1], 1.0)  
+    # X axis (ratios)
+    x = np.arange(bm['X_ratio'][0], bm['X_ratio'][-1], 0.01)
+    X, Y = np.meshgrid(x,y)
 
-    # dump to file
-    benchmark = { "X_size" : X_size, "Y_ratio" : Y_ratio, 
-            "Z_inef" : Z_inef, "Z_enc" : Z_enc, "Z_dec" : Z_dec }
-    with open('benchmark.json', 'w') as f:
-        json.dump(benchmark, f)
-
-    #TODO: 3D plot!
+    # plot inefficiency
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    X_sizes_log = [math.log(l,10) for l in X_size ]
-    y = np.arange(X_sizes_log[0], X_sizes_log[-1], 0.3)  
-    x = np.arange(Y_ratio[0], Y_ratio[-1], 0.01)
-    X, Y = np.meshgrid(x,y)
-    zs = np.array([fun(x,y) for x,y in zip(np.ravel(X), np.ravel(Y))])
-    Z = np.array(np.ravel(np.arange(Z_inef[0], Z_inef[-1], 0.005))) 
-
+    Z = np.array(np.ravel(np.arange(bm['Z_inef'][0], bm['Z_inef'][-1], 0.01))) 
     ax.plot_surface(X, Y, Z)
-    
-    ax.set_xlabel('Sizes')
-    ax.set_ylabel('Ratios')
+    ax.set_xlabel('Ratios')
+    ax.set_ylabel('Sizes (log2)')
     ax.set_zlabel('Inefficiency')
- 
-    plt.savefig('out.png', dpi=150)
+    plt.savefig('inefficiency.png', dpi=300)
+
+    # plot encode bitrate
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    Z = np.array(np.ravel(np.arange(bm['Z_enc'][0], bm['Z_enc'][-1], 100))) 
+    ax.plot_surface(X, Y, Z)
+    ax.set_xlabel('Ratios')
+    ax.set_ylabel('Sizes (log2)')
+    ax.set_zlabel('Encode Bitrate (Mb/s)')
+    plt.savefig('encode.png', dpi=300)
+
+    # plot decode bitrate
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    Z = np.array(np.ravel(np.arange(bm['Z_dec'][0], bm['Z_dec'][-1], 100))) 
+    ax.plot_surface(X, Y, Z)
+    ax.set_xlabel('Ratios')
+    ax.set_ylabel('Sizes (log2)')
+    ax.set_zlabel('Decode Bitrate (Mb/s)')
+    plt.savefig('decode.png', dpi=300)
