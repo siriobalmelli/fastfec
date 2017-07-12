@@ -10,59 +10,49 @@ Internal addressing and math inlines
 
 
 
-/*	ffec_get_esi()
-Given the address of a SOURCE symbol, calculate its ESI.
-
-returns 'esi' or -1 on error.
-*/
-NLC_INLINE uint32_t	ffec_get_esi	(const struct ffec_params	*fp,
-					const struct ffec_instance	*fi,
-					void				*symbol)
-{
-	uint32_t ret = (uint64_t)(symbol - fi->source) / fp->sym_len;
-	if (ret > fi->cnt.k)
-		ret = -1;
-	return ret;
-}
-
-
-
 /*
-	memory location inlines:	esi -> symbol*
-NOTE that source and parity regions are not necessarily contiguous.
+	addressing inlines
 */
 
-/*	ffec_get_sym_k()
-*/
-NLC_INLINE void	*ffec_get_sym_k		(const struct ffec_params	*fp,
-					struct ffec_instance		*fi,
-					uint32_t			k)
-{
-	return fi->source + (fp->sym_len * k);
-}
+/*	ffec_sym_p()
 
-/*	ffec_get_sym_p()
+Get address of a parity symbol.
+NOTE: this NOT 'esi', this is 'esi - k'
 */
-NLC_INLINE void	*ffec_get_sym_p		(const struct ffec_params	*fp,
-					struct ffec_instance		*fi,
+NLC_INLINE void	*ffec_sym_p		(const struct ffec_params	*fp,
+					const struct ffec_instance	*fi,
 					uint32_t			p)
 {
 	return fi->parity + (fp->sym_len * p);
 }
 
-/*	ffec_get_sym()
+/*	ffec_enc_sym()
+Encode-only: symbol may be in caller-controlled source region;
+	or may be in our parity region.
 */
-NLC_INLINE void	*ffec_get_sym		(const struct ffec_params	*fp,
-					struct ffec_instance		*fi,
+NLC_INLINE void	*ffec_enc_sym		(const struct ffec_params	*fp,
+					const struct ffec_instance	*fi,
 					uint32_t			esi)
 {
 	if (esi < fi->cnt.k) {
-		return ffec_get_sym_k(fp, fi, esi);
+		return (void *)fi->enc_source + (fp->sym_len * esi);
 	} else {
 		esi -= fi->cnt.k;
-		return ffec_get_sym_p(fp, fi, esi);
+		return ffec_sym_p(fp, fi, esi);
 	}
 }
+
+/*	ffec_dec_sym()
+Decode-only: get any ESI (they are all contiguous: faster)
+*/
+NLC_INLINE void	*ffec_dec_sym		(const struct ffec_params	*fp,
+					const struct ffec_instance	*fi,
+					uint32_t			esi)
+{
+	return fi->dec_source + (fp->sym_len * esi);
+}
+
+
 
 /*	ffec_get_psum()
 */

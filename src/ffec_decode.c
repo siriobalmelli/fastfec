@@ -42,10 +42,11 @@ NOTE on recursion:
 This function, if simply calling itself, can (with large blocks) recurse
 	to a point where it stack overflows.
 Also, recursion is SLOW: lots of stupid crud to push onto stack.
-The solution is to use a simple 64-bit LIFO struct from nonlibc.
+The solution is to use a simple 64-bit LIFO struct from nonlibc;
+	it is preallocated in 'fi' ... we reuse it each time we're called.
 
 WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix memory
-	and read it directly from ffec_get_sym(esi)
+	and read it directly from ffec_dec_sym(esi)
 */
 uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
@@ -55,14 +56,9 @@ uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 
 	/* set up only only once */
 	err_cnt = 0;
-	struct stack_t *stk = NULL;
-
 	Z_die_if(!fp || !fi, "args");
 
-	Z_die_if(!(stk = stack_new()),
-		"");
 	ffec_esi_row_t tmp;
-
 	struct ffec_cell *cell = NULL;
 	void *curr_sym = NULL;
 
@@ -79,7 +75,7 @@ recurse:
 		goto check_recurse;
 
 	/* point to symbol in matrix */
-	curr_sym = ffec_get_sym(fp, fi, esi);
+	curr_sym = ffec_dec_sym(fp, fi, esi);
 	/* if given a pointer, copy symbol from there into matrix */
 	if (symbol && symbol != curr_sym) {
 		Z_log(Z_in2, "pull <-(esi %"PRIu32") @0x%"PRIxPTR,
@@ -140,7 +136,7 @@ recurse:
 			cell = &fi->cells[n_rows[j]->c_last];
 			tmp.esi = cell->c_me / FFEC_N1_DEGREE;
 			tmp.row = cell->row_id;
-			stack_push(&stk, tmp.index);
+			stack_push(&fi->stk, tmp.index);
 		}
 	}
 
@@ -150,7 +146,7 @@ check_recurse:
 		which was added into the array at some unknown
 		past iteration.
 	*/
-	if (stack_pop(stk, &tmp.index) != STACK_ERR) {
+	if (stack_pop(fi->stk, &tmp.index) != STACK_ERR) {
 		/* reset stack variables */
 		symbol = ffec_get_psum(fp, fi, tmp.row);
 		esi = tmp.esi;
@@ -158,7 +154,6 @@ check_recurse:
 	}
 
 out:
-	stack_free(stk);
 	if (err_cnt)
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;

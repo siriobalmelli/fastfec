@@ -64,3 +64,8 @@ inefficiency	:	"number of symbols needed to decode" / k
 -	check assembly: what does memory clobber of xor change?
 -	validation -> benchmarking, aka pretty graphs
 -	rename 'stack'; becomes nonlocking; release nonlibc
+-	change notes about NO alloc: note that stack() DOES alloc
+-	0-copy I/O in nonlibc; replace in ffec
+
+# IDEAS
+-	split up seeds across many packets: less overhead per-packet; depend on MANY of them arriving

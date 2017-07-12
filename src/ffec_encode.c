@@ -35,7 +35,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 			don't duplicate that here.
 		*/
 		cell = ffec_get_col_first(fi->cells, i);
-		symbol = ffec_get_sym(fp, fi, i);
+		symbol = ffec_enc_sym(fp, fi, i);
 		Z_log(Z_in2, "enc(esi %"PRIu64") @0x%"PRIxPTR,
 			i, (uintptr_t)symbol);
 
@@ -48,11 +48,11 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 				continue;
 			/* XOR into parity symbol for that row */
 			ffec_xor_into_symbol_(symbol,
-					ffec_get_sym_p(fp, fi, cell[j].row_id),
+					ffec_sym_p(fp, fi, cell[j].row_id),
 					fp->sym_len);
 			Z_log(Z_in2, "xor(esi %"PRId64") -> p%"PRIu32" @0x%"PRIxPTR,
 				i, cell[j].row_id,
-				(uintptr_t)ffec_get_sym_p(fp, fi, cell[j].row_id));
+				(uintptr_t)ffec_sym_p(fp, fi, cell[j].row_id));
 		}
 	}
 

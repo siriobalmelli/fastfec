@@ -52,13 +52,6 @@ TODO: evaluate ACTUAL loss of (fec) inefficiency if we don't care about duplicat
 
 
 
-/*	ffec_direction
-*/
-enum ffec_direction {
-	encode,
-	decode
-};
-
 /*	ffec_params
 Caller sets these and passes them to ffec; must be the same at encode and decode ends.
 */
@@ -67,17 +60,6 @@ struct ffec_params {
 						although it can be higher.
 					*/
 	uint32_t	sym_len;	/* Must be multiple of FFEC_SYM_ALIGN */
-};
-
-/*	ffec_sizes
-Organizes necessary memory region sizes for the caller.
-This is important as ffec does NO memory allocation;
-	must be handled by caller.
-*/
-struct ffec_sizes {
-	size_t		source_sz;
-	size_t		parity_sz;
-	size_t		scratch_sz;
 };
 
 /*	ffec_counts
@@ -103,12 +85,21 @@ struct ffec_instance {
 	uint64_t			seeds[2];
 	struct pcg_state		rng;
 	struct ffec_counts		cnt;
-	/* NO pointers allocated or deallocated by FEC.
-	Caller is responsible to make sure they're properly sized -
-		use ffec_calc_lengths().
+
+	/* These pointers are allocated and deallocated as a single memory
+		region by ffec.
+	Caller is responsible for calling ffec_free() on this struct.
 	*/
-	void				*source;
+	size_t				source_len;
+	const void			*enc_source;	/* enc_ OR dec_ is NULL; that's how
+								to tell whether ENCODE/DECODE.
+							*/
+	void				*dec_source;	
+
+	size_t				parity_len;
 	void				*parity;
+
+	size_t				scratch_len;
 	union {
 	void				*scratch; /* FEC does all work here */
 	struct ffec_cell		*cells;	/* ... and the scratch region
@@ -119,6 +110,9 @@ struct ffec_instance {
 	/* references into 'scratch' */
 	struct ffec_row			*rows;
 	void				*psums; /* only on decode */
+
+	/* recursion stack|lifo; only on decode */
+	struct stack_t			*stk;
 };
 
 
@@ -126,6 +120,15 @@ struct ffec_instance {
 /*
 	ffec.c
 */
+NLC_PUBLIC	struct ffec_instance	*ffec_new(const struct ffec_params *fp,
+						size_t			src_len,
+						const void		*src,
+						uint64_t		seed1,
+						uint64_t		seed2);
+
+NLC_PUBLIC	void			ffec_free(struct ffec_instance	*fi);
+
+#if 0
 NLC_PUBLIC	int	ffec_calc_lengths(const struct ffec_params	*fp,
 					size_t				src_len,
 					struct ffec_sizes		*out,
@@ -157,6 +160,7 @@ NLC_INLINE int		ffec_init_contiguous(
 {
 	return ffec_init(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
 }
+#endif
 
 NLC_PUBLIC	int	ffec_test_esi		(const struct ffec_instance *fi,
 						uint32_t		esi);
@@ -165,11 +169,8 @@ NLC_LOCAL	int	ffec_calc_sym_counts_(const struct ffec_params	*fp,
 						size_t			src_len,
 						struct ffec_counts	*fc);
 
-NLC_LOCAL	int	ffec_calc_lengths_int_(const struct ffec_params	*fp,
-						size_t			src_len,
-						struct ffec_sizes	*out,
-						enum ffec_direction	dir,
-						struct ffec_counts	*fc);
+NLC_LOCAL	int	ffec_calc_lengths_(const struct ffec_params	*fp,
+						struct ffec_instance	*fi);
 
 
 /*
@@ -186,7 +187,6 @@ Must be available to callers, but extra-kludgy and unfit for
 */
 NLC_PUBLIC	uint32_t	ffec_encode	(const struct ffec_params	*fp,
 						struct ffec_instance		*fi);
-
 
 /*
 	ffec_decode.c
