@@ -1,6 +1,6 @@
 #project
 project('ffec', 'c',
-	version : '0.0.2',
+	version : '0.1.0',
 	default_options : [ 'c_std=gnu11' ])
 description = 'Fast FEC library'
 
