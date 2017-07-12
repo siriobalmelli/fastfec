@@ -41,6 +41,7 @@ def run_single(block_size, fec_ratio):
         decode_bitrate  :   Mb/s
     '''
     try:
+        #TODO: This is hardcoded. That is bad.
         sub = subprocess.run(["test/ffec_test", "-f {}".format(fec_ratio), "-o {}".format(block_size)],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             shell=False, check=True);
@@ -75,19 +76,25 @@ def run_average(block_size, fec_ratio):
 import json
 
 if __name__ == "__main__":
-    # generate a set of runs to be executed
+    # TODO: take range arguments from the command line
+
+    # test across an exponential range of sizes
     symbol_sz = 1280
-    run = { (2**sz_exp * symbol_sz, 1.0 + (ratio_decimal / 100)) : None
-                for sz_exp in range(8, 20) 
-                for ratio_decimal in range(1, 16)
-            }
+    X_size = [ 2**sz_exp * symbol_sz
+                for sz_exp in range(8, 10) ] #20
+    # test for a linear gradient of fec_ratios 
+    Y_ratio = [ 1.0 + (ratio_decimal / 100)
+                for ratio_decimal in range(1, 3) ] #16
 
     # execute the runs
-    for k in run:
-        run[k] = run_average(k[0], k[1])
-        print("run sz={0};\tfec={1}:\t\tinef={2};\tenc={3};\tdec={4}".format(
-                k[0], k[1], run[k][0], run[k][1], run[k][2]))
+    Z_inef, Z_enc, Z_dec = map(list,zip(*[ (run_average(size, fec_ratio))
+                        for size in X_size
+                        for fec_ratio in Y_ratio ]))
 
     # dump to file
+    benchmark = { "X_size" : X_size, "Y_ratio" : Y_ratio, 
+            "Z_inef" : Z_inef, "Z_enc" : Z_enc, "Z_dec" : Z_dec }
     with open('benchmark.json', 'w') as f:
-        json.dump(run, f)
+        json.dump(benchmark, f)
+
+    #TODO: 3D plot!
