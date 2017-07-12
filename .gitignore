@@ -4,3 +4,4 @@ cscope*
 benchmark/*.png
 .DS_Store
 benchmark/benchmark.json
+toolchain*
