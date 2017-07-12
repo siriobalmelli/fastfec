@@ -194,7 +194,7 @@ NLC_PUBLIC	uint32_t	ffec_encode	(const struct ffec_params	*fp,
 */
 NLC_PUBLIC	uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 						struct ffec_instance		*fi,
-						void				*symbol,
+						const void			*symbol,
 						uint32_t			esi);
 
 
@@ -214,7 +214,7 @@ NLC_LOCAL	void	ffec_gen_matrix_(struct ffec_instance		*fi);
 	ffec_xor.c
 */
 NLC_LOCAL	void	__attribute__((regparm(3)))
-			ffec_xor_into_symbol_	(void *from, void *to, uint32_t sym_len);
+			ffec_xor_into_symbol_	(const void *from, void *to, uint32_t sym_len);
 
 
 

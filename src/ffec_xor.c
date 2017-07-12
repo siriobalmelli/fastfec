@@ -14,12 +14,12 @@ void	__attribute__((hot))
 	__attribute__((optimize("O3")))
 	__attribute__((optimize("unroll-loops")))
 #endif
-	ffec_xor_into_symbol_	(void *from, void *to, uint32_t sym_len)
+	ffec_xor_into_symbol_	(const void *from, void *to, uint32_t sym_len)
 {
 	uint32_t i;
 	for (i=0; i < sym_len / FFEC_SYM_ALIGN; i++) {
 		__builtin_prefetch(from + FFEC_SYM_ALIGN, 0, 0);
-		__builtin_prefetch(to + FFEC_SYM_ALIGN, 0, 0);
+		__builtin_prefetch(to + FFEC_SYM_ALIGN, 1, 0);
 
 /* AVX-specific: speeeeed */
 #ifdef __AVX__
@@ -77,7 +77,7 @@ void	__attribute__((hot))
 Rely on compiler unrolling loop for speed.
 */
 #else
-		uintmax_t *p_f = from;
+		const uintmax_t *p_f = from;
 		uintmax_t *p_t = to;
 		#ifndef __GNUC__
 			#pragma unroll (FFEC_SYM_ALIGN / sizeof(uintmax_t))

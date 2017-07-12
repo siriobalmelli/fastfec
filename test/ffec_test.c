@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 			break;
 
 #else
-		/* the more usual case: give ffec a pointer and it copy */
+		/* the more usual case: give ffec a pointer and have it copy */
 		if (!ffec_decode_sym(&fp, fi_decode,
 				ffec_enc_sym(&fp, fi_encode, next_esi[i]),
 				next_esi[i]))

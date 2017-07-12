@@ -31,7 +31,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 			don't duplicate that here.
 		*/
 		struct ffec_cell *cell = ffec_get_col_first(fi->cells, i);
-		void *symbol = ffec_enc_sym(fp, fi, i);
+		const void *symbol = ffec_enc_sym(fp, fi, i);
 		Z_log(Z_in2, "enc(esi %"PRIu64") @0x%"PRIxPTR,
 			i, (uintptr_t)symbol);
 

@@ -30,15 +30,15 @@ NLC_INLINE void	*ffec_sym_p		(const struct ffec_params	*fp,
 Encode-only: symbol may be in caller-controlled source region;
 	or may be in our parity region.
 */
-NLC_INLINE void	*ffec_enc_sym		(const struct ffec_params	*fp,
+NLC_INLINE const void	*ffec_enc_sym		(const struct ffec_params	*fp,
 					const struct ffec_instance	*fi,
 					uint32_t			esi)
 {
 	if (esi < fi->cnt.k) {
-		return (void *)fi->enc_source + (fp->sym_len * esi);
+		return fi->enc_source + (fp->sym_len * esi);
 	} else {
 		esi -= fi->cnt.k;
-		return ffec_sym_p(fp, fi, esi);
+		return (const void *)ffec_sym_p(fp, fi, esi);
 	}
 }
 

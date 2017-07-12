@@ -50,7 +50,7 @@ WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix mem
 */
 uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
-					void				*symbol,
+					const void			*symbol,
 					uint32_t			esi)
 {
 
