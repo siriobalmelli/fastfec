@@ -2,6 +2,7 @@ build*
 cscope*
 .*.sw[op]
 benchmark/*.png
+benchmark/*.pdf
 .DS_Store
 benchmark/benchmark.json
 toolchain*

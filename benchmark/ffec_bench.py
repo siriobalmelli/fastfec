@@ -53,7 +53,7 @@ def run_single(block_size, fec_ratio):
     
     res = rex.match(sub.stdout.decode('ascii'))
     try:
-        return float(res.group(1)), int(res.group(2)), int(res.group(3))
+        return float(res.group(1)), float(res.group(2)) / 1000, float(res.group(3)) / 1000
     except:
         print("regex didn't match!")
         print(sub.stdout.decode('ascii'))
@@ -74,7 +74,9 @@ def run_average(block_size, fec_ratio):
 
 
 
-def run_benchmark():
+import numpy as np 
+
+def gen_benchmark():
     '''actually run the benchmark.
     Return a dictionary of results.
     '''
@@ -82,82 +84,74 @@ def run_benchmark():
 
     # test for a linear gradient of fec_ratios 
     ret['X_ratio'] = [ 1.0 + (ratio_decimal / 100)
-                for ratio_decimal in range(1, 16) ] #16
+                for ratio_decimal in range(1, 4) ] #16
     # test across an exponential range of sizes
     ret['symbol_sz'] = 1280
     ret['Y_size'] = [ 2**sz_exp * ret['symbol_sz']
-                for sz_exp in range(8, 20) ] #20
+                for sz_exp in range(8, 11) ] #20
+
+    # Generate mesh of graphing coordinates against which
+    #+  to run tests (so they execute in the right order!)
+    X, Y = np.meshgrid(ret['X_ratio'], ret['Y_size'])
 
     # execute the runs
-    ret['Z_inef'], ret['Z_enc'], ret['Z_dec'] = map(list,zip(*[ (run_average(size, fec_ratio))
-                        for size in ret['Y_size']
-                        for fec_ratio in ret['X_ratio'] ]))
+    # NOTE: don't use a list comprehension: avoid map(list, zip())
+    #+  and more explicitly show loop nesting (important when making a mesh to plot, later)
+    ret['Z_inef'], ret['Z_enc'], ret['Z_dec'] = map(list,zip(*[ 
+                            run_average(fec_ratio = X[i][j], block_size = Y[i][j])
+                                for i in range(len(X)) 
+                                for j in range(len(X[0]))
+                            ]))
 
     return ret
 
 
-
-import math
-import numpy as np 
+from math import log
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib 
 #do not use Xwindows 
 #Needs to be called before pyplot is imported
+import matplotlib 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
+from matplotlib import cm
+
+def format_plot(ax):
+    '''common plot formatting code in one place.
+    ax : a subplot.
+    '''
 
 def make_plots(bm):
     '''take a benchmarks dictionary 'bm' and write plots to disk
     '''
-    #
-    #   prep 3D plots
-    #
-    # Y axis (sizes) plotted logarithmically
-    Y_sizes_log = [math.log(l,2) for l in bm['Y_size'] ]
-    # If interval is 1 for y, then y is only 1 value, there have to be 2 for it to work
-    # Seems that the generated Y, X from np.meshgrid have to be a multiple of the
-    # total number of values in Z
-    y = np.arange(Y_sizes_log[0], Y_sizes_log[-1], 0.5) 
-    # X axis (ratios)
-    x = np.arange(bm['X_ratio'][0], bm['X_ratio'][-1], 0.01)
-    X, Y = np.meshgrid(x,y)
+    X, Y = np.meshgrid(bm['X_ratio'], [ log(y, 2) for y in bm['Y_size'] ])
 
-    # plot inefficiency
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    Z = np.array(bm['Z_inef']).reshape(X.shape) 
-    ax.plot_surface(X, Y, Z)
-    ax.set_xlabel('Ratios')
-    ax.set_ylabel('Sizes (log2)')
-    ax.set_zlabel('Inefficiency')
-    plt.savefig('inefficiency.png', dpi=300)
+    # Repeat plotting work for the following:
+    do_plots = { "Z_inef" : ("Inefficiency", "inefficiency"),
+                "Z_enc" : ("Encode Bitrate (Gb/s)", "encode" ),
+                "Z_dec" : ("Decode Bitrate (Gb/s)", "decode" )
+                }
 
-    # Print the values of each array to see 
-    #print(x)
-    #print(y)
-    #print(X)
-    #print(Y)
-    #print(Z)
-
-    # plot encode bitrate
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    Z = np.array(bm['Z_enc']).reshape(X.shape) 
-    ax.plot_surface(X, Y, Z)
-    ax.set_xlabel('Ratios')
-    ax.set_ylabel('Sizes (log2)')
-    ax.set_zlabel('Encode Bitrate (Mb/s)')
-    plt.savefig('encode.png', dpi=300)
-
-    # plot decode bitrate
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    Z = np.array(bm['Z_dec']).reshape(X.shape) 
-    ax.plot_surface(X, Y, Z)
-    ax.set_xlabel('Ratios')
-    ax.set_ylabel('Sizes (log2)')
-    ax.set_zlabel('Decode Bitrate (Mb/s)')
-    plt.savefig('decode.png', dpi=300)
+    for k, v in do_plots.items():
+        # plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        Z = np.array(bm[k]).reshape(X.shape) 
+        ax.plot_surface(X, Y, Z, cmap=cm.gist_ncar, antialiased=True, linewidth=0, shade=False)
+        # labels
+        ax.tick_params(labelsize = 6)
+        ax.set_frame_on(False)
+        ax.grid(True)
+#        ax.axis(v = 'tight', xmin = bm['X_ratio'][0], xmax = bm['X_ratio'][-1],
+#                ymin = log(bm['Y_size'][0], 2), ymax = log(bm['Y_size'][-1], 2))
+        ax.set_xlabel('Ratios')
+        ax.invert_xaxis()
+        ax.set_ylabel('Sizes (log2)')
+        ax.invert_yaxis()
+        # layout; save
+        plt.title('ffec; {0}; [commit]'.format(v[0]))
+        plt.tight_layout()
+        plt.savefig('{0}.pdf'.format(v[1]), dpi=600,
+                    papertype='letter', orientation='landscape')
 
 
 
@@ -172,7 +166,7 @@ if __name__ == "__main__":
         with open(filename) as f:
             bm = json.load(f)
     else:
-        bm = run_benchmark()
+        bm = gen_benchmark()
         # dump to file
         with open(filename, 'w') as f:
             json.dump(bm, f)
