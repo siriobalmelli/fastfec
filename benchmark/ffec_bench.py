@@ -6,6 +6,9 @@
 # It's disgusting - needs thorough pythonization - but fails to suck sufficiently
 #+  for the purpose of some quick measurements.
 #
+# JSON naming format:
+#   $(date +%Y-%m-%d).$(printf "%.8s" $(git rev-parse HEAD)).$(hostname).bench.json
+#
 # (c) 2017 Sirio Balmelli
 
 
