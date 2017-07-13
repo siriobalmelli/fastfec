@@ -13,6 +13,26 @@
 
 
 
+import subprocess
+
+def current_commit():
+    '''returns the current git commit; or dies
+    '''
+    # get current git commit; ergo must run inside repo
+    try:
+        sub = subprocess.run([ 'git', 'rev-parse', '--short', 'HEAD' ],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            shell=False, check=True);
+    except subprocess.CalledProcessError as err:
+        print(err.cmd)
+        print(err.stdout.decode('ascii'))
+        print(err.stderr.decode('ascii'))
+        exit(1)
+
+    return sub.stdout.decode('ascii').strip()
+
+
+
 from math import ceil
 
 def confidence_guess(block_size):
@@ -31,7 +51,6 @@ def confidence_guess(block_size):
 
 
 
-import subprocess
 import re
 rex = re.compile('.*inefficiency=([0-9.]+).*enc=([0-9]+).*dec=([0-9]+).*', re.DOTALL)
 
@@ -85,6 +104,8 @@ def gen_benchmark():
     '''
     ret = {}
 
+    ret['commit-id'] = current_commit()
+
     # test for a linear gradient of fec_ratios in 0.5% increments until 10%
     ret['X_ratio'] = [ 1.0 + (i / 1000) for i in range (1, 105, 5) ]
     # test across an exponential range of sizes
@@ -108,21 +129,31 @@ def gen_benchmark():
     return ret
 
 
+
+def human_format(num):
+    '''formats 'num' into the proper K|M|G|TiB.
+    returns a string.
+    '''
+    magnitude = 0
+    while abs(num) >= 1024:
+        magnitude += 1
+        num /= 1024.0
+    return '%.5s %s' % (num, ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'][magnitude])
+
+
+
 from math import log
-from mpl_toolkits.mplot3d import Axes3D
-#do not use Xwindows 
-#Needs to be called before pyplot is imported
+# Do not use Xwindows;
+#+  needs to be called before pyplot is imported
 import matplotlib 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
 from matplotlib import cm
 
-#from matplotlib.colors import LogNorm
-
-def make_plots_alt(bm):
+def make_plots(bm):
     lin_x = bm['X_ratio'] # for legibility only
     log_y = [ log(y, 2) for y in bm['Y_size'] ]
-    lin_y = [ y for y in bm['Y_size'] ] # used for labels
+    tick_y = [ human_format(y) for y in bm['Y_size'] ] # used for labels
     X, Y = np.meshgrid(lin_x, log_y)
 
     # Repeat plotting work for the following:
@@ -139,11 +170,11 @@ def make_plots_alt(bm):
         p = plt.pcolormesh(X, Y, Z, cmap=cm.get_cmap('Vega20'), axes=ax,
                             vmin=bm[k][0], vmax=bm[k][-1])
 
-        ax.set_xlabel('ratio')
+        ax.set_xlabel('ratio (ex: 1.011 == 1.1% FEC)')
         ax.set_xticks(lin_x, minor=False)
         ax.set_ylabel('block size (log2)')
         ax.set_yticks(log_y, minor=False)
-        ax.set_yticklabels(lin_y)
+        ax.set_yticklabels(tick_y)
 
         # standard label formatting
         ax.tick_params(labelsize = 5)
@@ -166,69 +197,10 @@ def make_plots_alt(bm):
         cb.ax.grid(True)
 
         # layout; save
-        plt.title('ffec: [commit]'.format(v[0]))
+        plt.title('ffec lib benchmark; commit {0}'.format(bm['commit-id']))
         plt.tight_layout()
-        plt.savefig('{0}.pdf'.format(v[1]), dpi=600,
+        plt.savefig('{0} - {1}.pdf'.format(bm['commit-id'], v[1]), dpi=600,
                     papertype='a4', orientation='landscape')
-
-
-def make_plots(bm):
-    '''take a benchmarks dictionary 'bm' and write plots to disk
-    '''
-    X, Y = np.meshgrid(bm['X_ratio'], [ log(y, 2) for y in bm['Y_size'] ])
-
-    # Repeat plotting work for the following:
-    do_plots = { "Z_inef" : ("Inefficiency", "inefficiency"),
-                "Z_enc" : ("Encode Bitrate (Gb/s)", "encode" ),
-                "Z_dec" : ("Decode Bitrate (Gb/s)", "decode" )
-                }
-
-    for k, v in do_plots.items():
-        # plot
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        Z = np.array(bm[k]).reshape(X.shape) 
-        ax.plot_surface(X, Y, Z, cmap=cm.gist_ncar, antialiased=False, linewidth=0, shade=True)
-
-        #ticks
-        ax.set_xlabel('ratio')
-        ax.set_xticks(bm['X_ratio'], minor=True)
-        ax.minorticks_on()
-        ax.invert_xaxis()
-#        ax.tick_params(axis='x',which='minor',bottom='off')
-        ax.set_ylabel('block size (log2)')
-        ax.invert_yaxis()
-#        ax.axis(v = 'tight')
-
-        # labels
-        ax.tick_params(labelsize = 6)
-        ax.set_frame_on(False)
-        ax.grid(True)
-
-        # layout; save
-        plt.title('ffec: {0}; [commit]'.format(v[0]))
-#        plt.tight_layout()
-        plt.savefig('{0}.pdf'.format(v[1]), dpi=600,
-                    papertype='letter', orientation='landscape')
-
-
-
-def current_commit():
-    '''returns the current git commit; or dies
-    '''
-    # get current git commit; ergo must run inside repo
-    try:
-        #TODO: This is hardcoded. That is bad.
-        sub = subprocess.run([ 'git', 'rev-parse', '--short', 'HEAD' ],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                            shell=False, check=True);
-    except subprocess.CalledProcessError as err:
-        print(err.cmd)
-        print(err.stdout.decode('ascii'))
-        print(err.stderr.decode('ascii'))
-        exit(1)
-
-    return sub.stdout.decode('ascii')
 
 
 
@@ -259,5 +231,4 @@ if __name__ == "__main__":
         with open(filename, 'w') as f:
             json.dump(bm, f)
 
-#    make_plots(bm)
-    make_plots_alt(bm)
+    make_plots(bm)

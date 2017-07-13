@@ -6,3 +6,4 @@ benchmark/*.pdf
 .DS_Store
 benchmark/benchmark.json
 toolchain*
+__pycache__*
