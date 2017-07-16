@@ -92,6 +92,7 @@ void parse_opts(int argc, char **argv)
 	Z_log(Z_inf, "sym_len: %zu", sym_len);
 	Z_log(Z_inf, "fec_ratio: %f", fec_ratio);
 	Z_log(Z_inf, "original_sz: %zu", original_sz);
+	Z_log(Z_inf, "N: %d", FFEC_N1_DEGREE);
 }
 
 
@@ -204,11 +205,10 @@ int main(int argc, char **argv)
 	*/
 	Z_log(Z_inf, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
 	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
-\tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
+\tinefficiency=%lf; FEC=%.2lf%%\n\
 \tsource size=%.4lf MiB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
 		/*k*/fi_decode->cnt.k, /*i*/i, /*n*/fi_decode->cnt.n,
 		/*inefficiency*/(double)i / (double)fi_decode->cnt.k,
-		/*loss tolerance*/((double)(fi_decode->cnt.n - i) / (double)fi_decode->cnt.n) * 100,
 		/*FEC*/(fp.fec_ratio -1) * 100,
 		/*source size*/(double)original_sz / (1024 * 1024),
 		/*enc bitrate*/(uint64_t)((double)original_sz

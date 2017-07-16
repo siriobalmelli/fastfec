@@ -27,7 +27,8 @@ elif get_option('buildtype') == 'release'
 	add_project_arguments([ '-DNDEBUG', '-march=native', '-mtune=native', '-Ofast' ],
 				language : 'c')
 
-# plain : NO flags ... use this to cross check the effect of flags on the other build types
+# plain : NO flags and an old architecture;
+#+	use this to cross check the effect of flags on the other build types.
 elif get_option('buildtype') == 'plain'
 	add_project_arguments([ '-DNDEBUG', '-march=core2' ],
 				language : 'c')
@@ -50,3 +51,7 @@ subdir('include')
 subdir('src')
 subdir('test')
 subdir('benchmark')
+
+
+# NOTE: to test different N values; run e.g.:
+# `CFLAGS="-DFFEC_N1_DEGREE=7" meson --buildtype release build-release-N7`

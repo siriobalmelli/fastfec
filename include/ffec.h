@@ -23,7 +23,7 @@ Minimum number of 1s per matrix column.
 #ifndef FFEC_N1_DEGREE
 	#define	FFEC_N1_DEGREE 3
 #endif
-#if (FFEC_N1_DEGREE < 2 || FFEC_N1_DEGREE > 5)
+#if (FFEC_N1_DEGREE < 2 || FFEC_N1_DEGREE > 7)
 	#error "FEC degree out of safe bounds"
 #endif
 
