@@ -65,6 +65,7 @@ inefficiency	:	"number of symbols needed to decode" / k
 -	validation -> benchmarking, aka pretty graphs
 -	rename 'stack'; becomes nonlocking; release nonlibc
 -	0-copy I/O in nonlibc; replace in ffec
+-	64-bit performance (extremely large blocks?)
 
 # IDEAS
 -	split up seeds across many packets when transmitting:
