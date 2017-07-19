@@ -205,10 +205,11 @@ int main(int argc, char **argv)
 	*/
 	Z_log(Z_inf, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
 	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
-\tinefficiency=%lf; FEC=%.2lf%%\n\
+\tinefficiency=%lf; channel loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
 \tsource size=%.4lf MiB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
 		/*k*/fi_decode->cnt.k, /*i*/i, /*n*/fi_decode->cnt.n,
 		/*inefficiency*/(double)i / (double)fi_decode->cnt.k,
+		/*channel loss tolerance*/((double)(fi_decode->cnt.n - i) / (double)fi_decode->cnt.n) * 100,
 		/*FEC*/(fp.fec_ratio -1) * 100,
 		/*source size*/(double)original_sz / (1024 * 1024),
 		/*enc bitrate*/(uint64_t)((double)original_sz
