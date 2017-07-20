@@ -242,9 +242,15 @@ A few tips about how to hack on this code:
 
 
 ## TODO
+-	stack becomes lock-free (CDSChecker?)
+-	... lock-free validation (testing?)
 -	man pages (and how best to integrate with markdown docs readable when browsing github?)
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
 -	integrate code coverage testing
--	add library to WrapDB
--	code optional replacements for required libc calls (e.g.: on ARM)
+-	integrate sanitizers
+-	add library to WrapDB; submit to Meson site for inclusion
+-	code optional replacements for required libc calls (e.g.: on ARM) ?
+-	reimplement malloc(); realloc(); free(); memcpy() to use
+		zero-copy I/O primitves behind the scenes
+		(see <https://dvdhrm.wordpress.com/tag/memfd/>)

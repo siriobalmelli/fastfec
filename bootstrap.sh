@@ -171,9 +171,9 @@ main()
 
 	# specify desired builds; test all of them
 	run_die rm -rfv build*
-	BUILD_NAMES=( "debug"          "release" "plain" )
-	BUILD_TYPES=( "debugoptimized" "release" "plain" )
-	BUILD_GRIND=( "yes"            ""        "" )
+	BUILD_NAMES=( "debug" "debug-opt"      "release" "plain" )
+	BUILD_TYPES=( "debug" "debugoptimized" "release" "plain" )
+	BUILD_GRIND=( ""      "yes"            ""        "" )
 
 	for i in $(seq 0 $(( ${#BUILD_NAMES[@]} -1 ))); do
 		run_die meson --buildtype ${BUILD_TYPES[$i]} build-${BUILD_NAMES[$i]}
