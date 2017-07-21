@@ -118,8 +118,6 @@ def gen_benchmark():
     X, Y = np.meshgrid(ret['X_ratio'], ret['Y_size'])
 
     # execute the runs
-    # NOTE: don't use a list comprehension: avoid map(list, zip())
-    #+  and more explicitly show loop nesting (important when making a mesh to plot, later)
     ret['Z_inef'], ret['Z_enc'], ret['Z_dec'] = map(list,zip(*[ 
                             run_average(fec_ratio = X[i][j], block_size = Y[i][j])
                                 for i in range(len(X)) 
