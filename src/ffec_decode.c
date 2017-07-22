@@ -135,7 +135,7 @@ recurse:
 			cell = &fi->cells[n_rows[j]->c_last];
 			tmp.esi = cell->c_me / FFEC_N1_DEGREE;
 			tmp.row = cell->row_id;
-			stack_push(&fi->stk, tmp.index);
+			lifo_push(&fi->stk, tmp.index);
 		}
 	}
 
@@ -145,7 +145,7 @@ check_recurse:
 		which was added into the array at some unknown
 		past iteration.
 	*/
-	if (stack_pop(fi->stk, &tmp.index) != STACK_ERR) {
+	if (lifo_pop(fi->stk, &tmp.index) != LIFO_ERR) {
 		/* reset stack variables */
 		symbol = ffec_get_psum(fp, fi, tmp.row);
 		esi = tmp.esi;

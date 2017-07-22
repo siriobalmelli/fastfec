@@ -7,8 +7,8 @@
 #include <pcg_rand.h>
 #include <nmath.h> /* nm_div_ceil() */
 
-#define STACK_MEM_TYPE uint64_t
-#include <stack.h>
+#define LIFO_MEM_TYPE uint64_t
+#include <lifo.h>
 
 #include <stdint.h>
 #include <stdlib.h> /* calloc(); free() */
@@ -113,7 +113,7 @@ struct ffec_instance {
 	void				*psums; /* only on decode */
 
 	/* recursion stack|lifo; only on decode */
-	struct stack_t			*stk;
+	struct lifo			*stk;
 };
 
 

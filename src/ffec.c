@@ -43,7 +43,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 		ret = calloc(1, sizeof(struct ffec_instance))
 		), "calloc(1, %zu)", sizeof(struct ffec_instance));
 	Z_die_if(!(
-		ret->stk = stack_new()
+		ret->stk = lifo_new()
 		), "");
 
 
@@ -151,7 +151,7 @@ void			ffec_free(struct ffec_instance		*fi)
 		free(fi->parity);
 
 	/* stack */
-	stack_free(fi->stk);
+	lifo_free(fi->stk);
 }
 
 

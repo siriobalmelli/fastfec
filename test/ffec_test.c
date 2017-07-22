@@ -53,7 +53,7 @@ void random_bytes(void *region, size_t size)
 */
 void print_usage(char *pgm_name)
 {
-	printf(
+	fprintf(stderr,
 "usage:\n\
 %s	[-f <fec_ratio>] [-o <original_sz>] [-s <sym_len>] [-h]\n\
 \n\
