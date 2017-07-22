@@ -29,7 +29,7 @@ def current_commit():
         print(err.stderr.decode('ascii'))
         exit(1)
 
-    return sub.stdout.decode('ascii').strip()
+    return sub.stdout.decode('ascii').strip('\n')
 
 
 
@@ -150,6 +150,7 @@ from matplotlib import cm
 
 def make_plots(bm):
     lin_x = bm['X_ratio'] # for legibility only
+    tick_x = [ '%.5s' % y for y in bm['X_ratio'] ] # used for labels
     log_y = [ log(y, 2) for y in bm['Y_size'] ]
     tick_y = [ human_format(y) for y in bm['Y_size'] ] # used for labels
     X, Y = np.meshgrid(lin_x, log_y)
@@ -170,6 +171,7 @@ def make_plots(bm):
 
         ax.set_xlabel('ratio (ex: 1.011 == 1.1% FEC)')
         ax.set_xticks(lin_x, minor=False)
+        ax.set_xticklabels(tick_x, rotation=70)
         ax.set_ylabel('block size (log2)')
         ax.set_yticks(log_y, minor=False)
         ax.set_yticklabels(tick_y)
