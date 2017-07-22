@@ -58,7 +58,7 @@ $ ./bootstrap.sh
 $ # hash stdin:
 $ echo -n '' | build-release/util/fnvsum
 cbf29ce484222325  -
-$ hash a file:
+$ # hash a file:
 $ build-release/util/fnvsum /path/to/some/file
 ```
 
