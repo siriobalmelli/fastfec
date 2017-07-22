@@ -1,0 +1,17 @@
+#	utils
+# Any utilities directly provided by this library
+
+
+# if included as subproject, build utilities but don't install them
+if meson.is_subproject()
+	util_install = false
+else
+	util_install = true
+endif
+
+
+fnvsum = executable('fnvsum', 'fnvsum.c',
+		include_directories : inc,
+		link_with : nonlibc,
+		install : util_install)
+test('fnvsum test', find_program('test_fnvsum.py'))
