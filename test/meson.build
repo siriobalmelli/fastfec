@@ -28,10 +28,10 @@ pcg_rand_test = executable('pcg_rand_test', 'pcg_rand_test.c',
 			link_with : nonlibc)
 test('pcg_rand test', pcg_rand_test)
 
-stack_test = executable('stack_test', 'stack_test.c',
+lifo_test = executable('lifo_test', 'lifo_test.c',
 			include_directories : inc,
 			link_with : nonlibc)
-test('stack test', stack_test)
+test('lifo test', lifo_test)
 
 zed_dbg_test = executable('zed_dbg_test', 'zed_dbg_test.c',
 			include_directories : inc,

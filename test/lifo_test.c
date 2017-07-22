@@ -1,28 +1,28 @@
 #include <zed_dbg.h>
-#include <stack.h>
+#include <lifo.h>
 #include <time.h> /* clock() */
 #include <stdlib.h> /* getenv() */
 
 /*	test_many()
 */
-int	test_many(STACK_MEM_TYPE numiter)
+int	test_many(LIFO_MEM_TYPE numiter)
 {
 	int err_cnt = 0;
-	struct stack_t *stk = NULL;
-	Z_die_if(!(stk = stack_new()),
+	struct lifo *stk = NULL;
+	Z_die_if(!(stk = lifo_new()),
 		"");
 
 	/* push to stack sequentially */
-	for (STACK_MEM_TYPE i=0; i < numiter; i++) {
-		STACK_MEM_TYPE ret = stack_push(&stk, i);
+	for (LIFO_MEM_TYPE i=0; i < numiter; i++) {
+		LIFO_MEM_TYPE ret = lifo_push(&stk, i);
 		Z_die_if(ret != i,
 			"ret %zu != i %zu",
 			ret, i);
 	}
 
 	/* pop off stack; verify sequence */
-	STACK_MEM_TYPE pop, remain;
-	while ( (remain = stack_pop(stk, &pop)) != STACK_ERR) {
+	LIFO_MEM_TYPE pop, remain;
+	while ( (remain = lifo_pop(stk, &pop)) != LIFO_ERR) {
 		Z_die_if(--numiter != remain,
 			"--numiter %zu != remain %zu",
 			numiter, remain);
@@ -32,7 +32,7 @@ int	test_many(STACK_MEM_TYPE numiter)
 	}		
 
 out:
-	stack_free(stk);
+	lifo_free(stk);
 	return err_cnt;
 }
 
@@ -51,7 +51,7 @@ int main()
 	if (!(getenv("VALGRIND")))
 		shifts = 21;
 
-	STACK_MEM_TYPE numiter = 128;
+	LIFO_MEM_TYPE numiter = 128;
 	for (int i=0; i < shifts; i++, numiter <<= 1) {
 		clock_t elapsed = clock();
 		err_cnt += test_many(numiter);

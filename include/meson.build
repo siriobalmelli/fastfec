@@ -3,5 +3,5 @@
 if not meson.is_subproject()
 	install_headers('atop.h', 'b2hx.h', 'fnv.h', 'hx2b.h', 'nmath.h',
 			'nonlibc.h', 'nlc_urand.h', 'pcg_rand.h',
-			'stack.h', 'zed_dbg.h')
+			'lifo.h', 'zed_dbg.h')
 endif
