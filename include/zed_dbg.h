@@ -104,9 +104,9 @@ In order to get custom log levels for a file,
 */
 #ifndef Z_LOG_LVL
 	#ifdef NDEBUG
-		#define Z_LOG_LVL (Z_inf | Z_wrn | Z_err)
-	#else
 		#define Z_LOG_LVL (Z_err)
+	#else
+		#define Z_LOG_LVL (Z_inf | Z_wrn | Z_err)
 	#endif
 #endif
 
@@ -154,18 +154,11 @@ This is so that logging can be selectively enabled/disabled at compile time.
 
 
 
-/*	Z_ret_t
-A sane return type which transcends platform, time, space and entropy itself.
-*/
-typedef int_fast8_t Z_ret_t;
-
-
-
 /* Global tracking of errors and warnings; as a catch-all.
 Usually, a function will define and check one or both of these locally.
 */
-static Z_ret_t err_cnt = 0;
-static Z_ret_t wrn_cnt = 0;
+static int err_cnt = 0;
+static int wrn_cnt = 0;
 
 /*	Z_log_wrn()
 Increment 'wrn_cnt' when logging a warning.
@@ -194,9 +187,9 @@ Log error, then goto 'out'
 
 /*	CONDITIONALS
 */
-#define Z_wrn_if(A, M, ...) if (A) { Z_log_warn("(" #A ") " M, ##__VA_ARGS__); }
-#define Z_err_if(A, M, ...) if (A) { Z_log_err("(" #A ") " M, ##__VA_ARGS__); }
-#define Z_die_if(A, M, ...) if (A) { Z_die("(" #A ") " M, ##__VA_ARGS__); }
+#define Z_wrn_if(A, M, ...) if (__builtin_expect(A, 0)) { Z_log_wrn("(" #A ") " M, ##__VA_ARGS__); }
+#define Z_err_if(A, M, ...) if (__builtin_expect(A, 0)) { Z_log_err("(" #A ") " M, ##__VA_ARGS__); }
+#define Z_die_if(A, M, ...) if (__builtin_expect(A, 0)) { Z_die("(" #A ") " M, ##__VA_ARGS__); }
 
 
 
@@ -222,21 +215,25 @@ Static because we want every translation unit to run this separately
 static void __attribute__ ((destructor)) Z_end_()
 {
 	if (err_cnt)
-		Z_log_(stderr, Z_err, "%s; global err_cnt %"PRIdFAST8, __BASE_FILE__, err_cnt);
+		Z_log_(stderr, Z_err, "%s; global err_cnt %d", __BASE_FILE__, err_cnt);
 	if (wrn_cnt)
-		Z_log_(stderr, Z_wrn, "%s; global wrn_cnt %"PRIdFAST8, __BASE_FILE__, wrn_cnt);
+		Z_log_(stderr, Z_wrn, "%s; global wrn_cnt %d", __BASE_FILE__, wrn_cnt);
 }
 
 
 
 /*	Z_prn_buf()
-Print a bunch of bytes, properly formatted.
+Print BUF_LEN bytes from BUF, properly formatted.
+Prepend a line containing LOG_MSG and its printf() arguments.
+Let compiler discard the whole section when the specified LOG_LVL is not enabled.
 */
-#define Z_prn_buf(BUF, LEN) \
-	do { \
+#define Z_prn_buf(LOG_LVL, BUF, BUF_LEN, LOG_MSG, ...) \
+	if (Z_LOG_LVL & LOG_LVL || LOG_LVL == Z_err) { \
+		Z_log_line(); \
+		Z_log_(stdout, LOG_LVL, LOG_MSG, ##__VA_ARGS__); \
 		char *b = (char*)BUF; \
 		size_t i_; \
-		for (i_ = 0; i_ < LEN; i_++) { \
+		for (i_ = 0; i_ < BUF_LEN; i_++) { \
 			/* == "i_ % 8" */ \
 			if (!(i_ & 0x7)) \
 				Z_PRN(stdout, "\n"); \
@@ -244,6 +241,6 @@ Print a bunch of bytes, properly formatted.
 		} \
 		Z_PRN(stdout, "\n"); \
 		Z_log_line(); \
-	} while(0)
+	}
 
 #endif

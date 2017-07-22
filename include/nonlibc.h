@@ -28,13 +28,14 @@ You'll keep track of all your functions (and not lose "private/local" functions
 	buried somewhere in a .c file), BUT the exported symbols of your library
 	will be exactly and only that which you intend to export.
 */
-#if __GNUC__ >= 4
+#if (__GNUC__ >= 4) || defined(__clang__)
 	#define NLC_PUBLIC __attribute__ ((visibility ("default")))
 	#define NLC_LOCAL  __attribute__ ((visibility ("hidden")))
 #else
 	#define NLC_PUBLIC
 	#define NLC_LOCAL
 #endif
+
 
 #define nonlibc_h_
 #endif /* nonlibc_h_ */

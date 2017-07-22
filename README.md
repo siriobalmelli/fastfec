@@ -75,6 +75,11 @@ This is a simple, clean, fast implementation of [PCG](http://www.pcg-random.org/
 That matters more than you may think - and anyways this API is simple and clean. \
 Check out the test code at [pcg_rand_test.c](test/pcg_rand_test.c).
 
+### a very fast growing LIFO - [lifo.h](include/lifo.h)
+The fastest possible way I know to push/pop pointer-sized values onto a stack,
+	which grows (reallocates memory) as necessary,
+	and can be kept around between function calls.
+
 ### other odds-and-ends
 -	visibility and inlining macros in [nonlibc.h](include/nonlibc.h)
 -	some lock-free/atomics in [atop.h](include/atop.h)
@@ -246,5 +251,9 @@ A few tips about how to hack on this code:
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
 -	integrate code coverage testing
--	add library to WrapDB
--	code optional replacements for required libc calls (e.g.: on ARM)
+-	integrate LLVM sanitizers
+-	add library to WrapDB; submit to Meson site for inclusion
+-	code optional replacements for required libc calls (e.g.: on ARM) ?
+-	reimplement malloc(); realloc(); free(); memcpy() to use
+		zero-copy I/O primitves behind the scenes
+		(see <https://dvdhrm.wordpress.com/tag/memfd/>)

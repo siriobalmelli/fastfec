@@ -1,14 +1,20 @@
 language: c
-dist: trusty
 sudo: required
-
-addons:
-        apt:
-                packages:
-                        - valgrind
+dist: trusty
 
 compiler:
-        - clang
-        - gcc
+  - clang
+  - gcc
+
+matrix:
+  include:
+    - os: linux
+    - os: osx
+
+# only valgrind on Linux for simplicity and speed
+addons:
+  apt:
+    packages:
+      - valgrind
 
 script: ./bootstrap.sh

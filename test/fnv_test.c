@@ -30,7 +30,7 @@ Verify this.
 
 returns 0 on success
 */
-Z_ret_t equivalence()
+int equivalence()
 {
 	int err_cnt = 0;
 
@@ -60,9 +60,9 @@ Tests correctness of computed values against known good results
 
 returns 0 on success
 */
-Z_ret_t correctness()
+int correctness()
 {
-	Z_ret_t err_cnt = 0;
+	int err_cnt = 0;
 
 	const uint64_t out64[phrase_cnt] = {
 		0x4fb124b03ec8f8f8,
@@ -100,7 +100,7 @@ Z_ret_t correctness()
 */
 int main()
 {
-	Z_ret_t err_cnt = 0;
+	int err_cnt = 0;
 
 	err_cnt += equivalence();
 	err_cnt += correctness();
