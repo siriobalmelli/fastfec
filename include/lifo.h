@@ -100,7 +100,9 @@ NLC_PUBLIC	__attribute__((warn_unused_result))
 NLC_INLINE	size_t		lifo_push(struct lifo **stk, LIFO_MEM_TYPE push_this)
 {
 	struct lifo *sk = *stk;
-	if (!(sk->mem_len - (sk->next * sizeof(LIFO_MEM_TYPE))))
+
+	/* most of the time we do NOT need to extend the stack */
+	if (__builtin_expect( !(sk->mem_len - (sk->next * sizeof(LIFO_MEM_TYPE))), 0))
 		*stk = sk = lifo_extend(sk);
 
 	sk->mem[sk->next] = push_this;
