@@ -9,11 +9,13 @@ This header file exports defines and macros to clean up ugly code and abstract
 */
 
 
+
 /*	inlining!
 Use this in header files when defining inline functions for use library callers.
 The effect is the same as a macro, except these are actually legibile ;)
  */
 #define	NLC_INLINE static inline __attribute__((always_inline))
+
 
 
 /*	visibility!
@@ -35,6 +37,28 @@ You'll keep track of all your functions (and not lose "private/local" functions
 	#define NLC_PUBLIC
 	#define NLC_LOCAL
 #endif
+
+
+
+/*	benchmarking!
+Use these macros to time segments of code (hopefully) without
+	being tricked by either compiler or CPU reordering.
+
+Calls clock(), which on libc can be obtained with:
+	#include <time.h>
+*/
+#define nlc_timing_start(timer_name) \
+	__atomic_thread_fence(__ATOMIC_SEQ_CST); \
+	asm volatile("" : : : "memory"); \
+	clock_t timer_name = clock(); \
+	__atomic_thread_fence(__ATOMIC_SEQ_CST);
+
+#define nlc_timing_stop(timer_name) \
+	__atomic_thread_fence(__ATOMIC_SEQ_CST); \
+	asm volatile("" : : : "memory"); \
+	timer_name = clock() - timer_name; \
+	__atomic_thread_fence(__ATOMIC_SEQ_CST);
+
 
 
 #define nonlibc_h_

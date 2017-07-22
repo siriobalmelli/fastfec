@@ -17,7 +17,6 @@ if not meson.is_subproject()
 			filebase : meson.project_name(),
 			description : description)
 
-
 # Assume that we export (as a subproject) ONLY a static dependency;
 #+	on the rationale that otherwise this library should be compiled and installed
 #+	(i.e.: `sudo ninja install` from the 'build-release' dir),

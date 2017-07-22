@@ -50,6 +50,27 @@ If you need a non-crypto hash, odds are you want [FNV1A](https://en.wikipedia.or
 This is the simplest, least-hassle implementation I know of. \
 Usage examples in [fnv_test.c](test/fnv_test.c).
 
+An `fnvsum` utility is also provided for hashing files (or stdin),
+	on the pattern of `md5sum`. \
+To build the codebase and then use `fnvsum`:
+``` {.bash}
+$ ./bootstrap.sh
+$ # hash stdin:
+$ echo -n '' | build-release/util/fnvsum
+cbf29ce484222325  -
+$ hash a file:
+$ build-release/util/fnvsum /path/to/some/file
+```
+
+Running `sudo ninja install` from one of the build directories installs this library,
+	after which `fnvsum` will be in your path:
+``` {.bash}
+nonlibc/build-release$ sudo ninja install
+$ which fnvsum
+/usr/local/bin/fnvsum
+$
+```
+
 ### straightforward integer math - [nmath.h](include/nmath.h)
 Sometimes what you DON'T want is floating-point math. \
 This library has sane implementations for:
@@ -79,6 +100,10 @@ Check out the test code at [pcg_rand_test.c](test/pcg_rand_test.c).
 The fastest possible way I know to push/pop pointer-sized values onto a stack,
 	which grows (reallocates memory) as necessary,
 	and can be kept around between function calls.
+
+### accurately timing blocks of code
+Use the `nlc_timing_start()` and `nlc_timing_stop()` macros in [nonlibc.h](include/nonlibc.h). \
+See e.g.: [fnv_test.c](test/fnv_test.c) for usage examples.
 
 ### other odds-and-ends
 -	visibility and inlining macros in [nonlibc.h](include/nonlibc.h)

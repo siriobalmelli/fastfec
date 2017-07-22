@@ -84,7 +84,6 @@ def FlagsForFile( filename ):
 
     # Bear in mind that compilation_info.compiler_flags_ does NOT return a
     # python list, but a "list-like" StringVec object
-    # TODO: If we don't find any flags, use the default list of flags provided.
     compilation_info = database.GetCompilationInfoForFile( filename )
     final_flags = MakeRelativePathsInFlagsAbsolute(
       compilation_info.compiler_flags_,

@@ -1,3 +1,4 @@
+#include <nonlibc.h>
 #include <zed_dbg.h>
 #include <lifo.h>
 #include <time.h> /* clock() */
@@ -53,13 +54,13 @@ int main()
 
 	LIFO_MEM_TYPE numiter = 128;
 	for (int i=0; i < shifts; i++, numiter <<= 1) {
-		clock_t elapsed = clock();
+		nlc_timing_start(elapsed);
 		err_cnt += test_many(numiter);
 		/* TODO: 'errno' is SOMETIMES set here, but ONLY on BSD;
 		It is NEVER set just before the 'return'
 			statement in test_many() ????
 		*/
-		elapsed = clock() - elapsed;
+		nlc_timing_stop(elapsed);
 		Z_log(Z_inf, "%zu stack pushes in %fs",
 			numiter, (double)elapsed / CLOCKS_PER_SEC);
 	}
