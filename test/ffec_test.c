@@ -13,6 +13,8 @@ Test performance and correctness of ffec
 #include <ffec.h>
 
 #include <time.h> /* clock() */
+#include <nonlibc.h>
+
 #include <openssl/md5.h>
 #include <nlc_urand.h>
 
@@ -131,12 +133,15 @@ int main(int argc, char **argv)
 	/*
 		encode
 	*/
-	clock_t clock_enc = clock();
-	Z_die_if(!(
-		fi_encode = ffec_new(&fp, original_sz, mem, 0, 0)
-		), "");
-	ffec_encode(&fp, fi_encode);
-	clock_enc = clock() - clock_enc;
+	nlc_timing_start(clock_enc);
+		Z_die_if(!(
+			fi_encode = ffec_new(&fp, original_sz, mem, 0, 0)
+			), "");
+		ffec_encode(&fp, fi_encode);
+		/* create random order into which to send symbols */
+		next_esi = malloc(fi_encode->cnt.n * sizeof(uint32_t));
+		ffec_esi_rand(fi_encode, next_esi, 0);
+	nlc_timing_stop(clock_enc);
 	Z_log(Z_inf, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
 
 	/* invariant: encode must NOT alter the source region */
@@ -148,46 +153,43 @@ int main(int argc, char **argv)
 	/*
 		decode
 	*/
-	/* create random order into which to "send"(decode) symbols */
-	next_esi = malloc(fi_encode->cnt.n * sizeof(uint32_t));
-	ffec_esi_rand(fi_encode, next_esi, 0);
 
-	clock_t clock_dec = clock();
-	Z_die_if(!(
-		fi_decode = ffec_new(&fp, original_sz, NULL,
-					fi_encode->seeds[0],
-					fi_encode->seeds[1])
-		), "");
+	nlc_timing_start(clock_dec);
+		Z_die_if(!(
+			fi_decode = ffec_new(&fp, original_sz, NULL,
+						fi_encode->seeds[0],
+						fi_encode->seeds[1])
+			), "");
 #ifdef DEBUG
-      Z_die_if(ffec_mtx_cmp(fi_encode, fi_decode, &fp), "");
+	      Z_die_if(ffec_mtx_cmp(fi_encode, fi_decode, &fp), "");
 #endif
 
-	/* Iterate through randomly ordered ESIs and decode for each.
-	Break when decoder reports 0 symbols left to decode.
-	*/
-	uint32_t i;
-	for (i=0; i < fi_decode->cnt.cols; i++) {
-		Z_log(Z_in2, "submit ESI %d", next_esi[i]);
+		/* Iterate through randomly ordered ESIs and decode for each.
+		Break when decoder reports 0 symbols left to decode.
+		*/
+		uint32_t i;
+		for (i=0; i < fi_decode->cnt.cols; i++) {
+			Z_log(Z_in2, "submit ESI %d", next_esi[i]);
 
 #ifdef FFEC_TEST_COPY_SYM
-		/* copy symbol into matrix manually, give only ESI */
-		memcpy(ffec_dec_sym(&fp, fi_decode, next_esi[i]),
-				ffec_enc_sym(&fp, fi_encode, next_esi[i]), 
-				fp.sym_len);
-		if (!ffec_decode_sym(&fp, fi_decode,
-				NULL,
-				next_esi[i]))
-			break;
+			/* copy symbol into matrix manually, give only ESI */
+			memcpy(ffec_dec_sym(&fp, fi_decode, next_esi[i]),
+					ffec_enc_sym(&fp, fi_encode, next_esi[i]), 
+					fp.sym_len);
+			if (!ffec_decode_sym(&fp, fi_decode,
+					NULL,
+					next_esi[i]))
+				break;
 
 #else
-		/* the more usual case: give ffec a pointer and have it copy */
-		if (!ffec_decode_sym(&fp, fi_decode,
-				ffec_enc_sym(&fp, fi_encode, next_esi[i]),
-				next_esi[i]))
-			break;
+			/* the more usual case: give ffec a pointer and have it copy */
+			if (!ffec_decode_sym(&fp, fi_decode,
+					ffec_enc_sym(&fp, fi_encode, next_esi[i]),
+					next_esi[i]))
+				break;
 #endif
-	}
-	clock_dec = clock() - clock_dec;
+		}
+	nlc_timing_stop(clock_dec);
 
 
 	/*
