@@ -71,6 +71,9 @@ def fnvsum_file(string, expect_fnv):
 
 #   main()
 if __name__ == "__main__":
+    if sys.argv[1] is not None:
+        fnvsum = sys.argv[1]
+
     for string, fnv in hashes.items():
         fnvsum_stdin(string, fnv)
         fnvsum_file(string, fnv)

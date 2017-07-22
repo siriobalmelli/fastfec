@@ -14,4 +14,7 @@ fnvsum = executable('fnvsum', 'fnvsum.c',
 		include_directories : inc,
 		link_with : nonlibc,
 		install : util_install)
-test('fnvsum test', find_program('test_fnvsum.py'))
+
+test('fnvsum test',
+	find_program('test_fnvsum.py'),
+	args : fnvsum.full_path())
