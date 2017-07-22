@@ -237,18 +237,23 @@ int		ffec_calc_lengths_(const struct ffec_params	*fp,
 	int err_cnt = 0;
 
 	/* do all maths in 64-bit, so we can avoid overflow */
-	uint64_t src, par, scr;
+	uint64_t src, par, scr, psum;
 	src = (uint64_t)fi->cnt.k * fp->sym_len;
 	par = (uint64_t)fi->cnt.p * fp->sym_len;
 	scr = (uint64_t)ffec_len_cells(&fi->cnt) + ffec_len_rows(&fi->cnt);
+	psum = (uint64_t)fp->sym_len * fi->cnt.rows;
+
+	/* Combined size must not exceed UINT32_MAX;
+	count 'psum' even on ENCODE; since it's no good to encode
+		something the receiver can't decode!
+	*/
+	Z_die_if(src + par + scr + psum > (uint64_t)UINT32_MAX -2,
+		"cannot handle combined symbol space of %"PRIu64,
+		src + par + scr + psum);
+
 	/* if decoding, scratch must have space for psums */
 	if (!fi->enc_source)
-		scr += fp->sym_len * fi->cnt.rows;
-
-	/* combined size must not exceed UINT32_MAX */
-	Z_die_if(src + par + scr > (uint64_t)UINT32_MAX -2,
-		"cannot handle combined symbol space of %"PRIu64,
-		src + par + scr);
+		scr += psum;
 
 	fi->source_len = src;
 	fi->parity_len = par;

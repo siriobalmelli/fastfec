@@ -42,12 +42,25 @@ Given in Bytes.
 #define FFEC_MIN_K 7
 #define	FFEC_MIN_P 3
 
+/*	Source matrix randomization passes.
+Number of randomization passes executed
+	when perfoming the source symbol swap step of matrix init.
+*/
+#ifndef FFEC_RAND_PASSES
+	#define FFEC_RAND_PASSES 2
+#endif
+#if (FFEC_RAND_PASSES  < 1 || FFEC_RAND_PASSES  > 5)
+	#error "ridiculous randomization registered!"
+#endif
+
 /*	Collision retry
 Whether to engage in complexities at matrix init time; with the aim of
 	making sure that the same ESI is never in a row more than once.
 
 TODO: evaluate ACTUAL loss of (fec) inefficiency if we don't care about duplicate ESIs
 	(not giving a fuck is universally faster for all algorithms).
+
+NOTE: the code for this has been totally removed; look for it in the Git tree if interested.
  */
 //#define FFEC_COLLISION_RETRY (FFEC_N1_DEGREE * 4)
 
@@ -129,48 +142,15 @@ NLC_PUBLIC	struct ffec_instance	*ffec_new(const struct ffec_params *fp,
 
 NLC_PUBLIC	void			ffec_free(struct ffec_instance	*fi);
 
-#if 0
-NLC_PUBLIC	int	ffec_calc_lengths(const struct ffec_params	*fp,
-					size_t				src_len,
-					struct ffec_sizes		*out,
-					enum ffec_direction		dir);
-
-NLC_PUBLIC	int	ffec_init	(const struct ffec_params	*fp,
-					struct ffec_instance		*fi,
-					size_t				src_len,
-					void				*source,
-					void				*parity,
-					void				*scratch,
-					enum ffec_direction		dir,
-					uint64_t			seed1,
-					uint64_t			seed2);
-
-/*	ffec_init_contiguous()
-Caller crosses his heart and swears that 'memory':
-	- begins with all the source symbols
-	- is large enough for repair symbols and the scratch region
-*/
-NLC_INLINE int		ffec_init_contiguous(
-					const struct ffec_params	*fp,
-					struct ffec_instance		*fi,
-					size_t				src_len,
-					void				*memory,
-					enum ffec_direction		dir,
-					uint64_t			seed1,
-					uint64_t			seed2)
-{
-	return ffec_init(fp, fi, src_len, memory, NULL, NULL, dir, seed1, seed2);
-}
-#endif
 
 NLC_PUBLIC	int	ffec_test_esi		(const struct ffec_instance *fi,
 						uint32_t		esi);
 
-NLC_LOCAL	int	ffec_calc_sym_counts_(const struct ffec_params	*fp,
+NLC_LOCAL	int	ffec_calc_sym_counts_	(const struct ffec_params *fp,
 						size_t			src_len,
 						struct ffec_counts	*fc);
 
-NLC_LOCAL	int	ffec_calc_lengths_(const struct ffec_params	*fp,
+NLC_LOCAL	int	ffec_calc_lengths_	(const struct ffec_params *fp,
 						struct ffec_instance	*fi);
 
 

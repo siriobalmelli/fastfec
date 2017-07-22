@@ -131,60 +131,36 @@ void		ffec_gen_matrix_(struct ffec_instance	*fi)
 	*/
 	struct ffec_cell *cell_b;
 	uint32_t temp;
-	for (i=0, cell = fi->cells, cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
-		i < cell_cnt -1; /* -1 because last cell can't swap with anyone */
-		i++, cell++)
-	{
-#ifdef FFEC_COLLISION_RETRY
-		/*
-		Select a cell to swap with.
-		Make sure no other cells in this column contain the same row ID,
-			so as to preclude multiple cells in the same column being
-			part of the same equation - they would XOR to 0
-			and likely affect alignment of universal dark matter,
-			leading to Lorenz-Fitzgerald-Einstein disturbances
-			and tempting the gods to anger.
+	cell_cnt = fi->cnt.k * FFEC_N1_DEGREE;
 
-		The approach is to pick a random cell for swap and then
-			go back through any previous cells in this column
-			to verify it is different.
-		Avoid infinite loops (like being in the last column with a double row_id)
-			by using 'retry_cnt'.
-		I'm sure this violates the absolute "randomness" of the
-			algorithm, but no reasonable alternative is in sight.
-
-		To be fair, the algorithm DOES still work with double
-			XOR of a symbol into the same column, but for obvious
-			reasons it subtracts its own entropy and reduces
-			our efficiency ... OH F'ING WELL we TRIED.
-		*/
-		uint32_t retry_cnt = 0;
-retry:
-		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
-		for (j = (i % FFEC_N1_DEGREE); j < i; j++) {
-			if ( fi->cells[j].row_id == cell_b->row_id
-				&& retry_cnt++ < FFEC_COLLISION_RETRY)
-			{
-				goto retry;
-			}
+	/* Perform all the randomization passes without assigning the cells to a row.
+	NOTE that back-to-front is a faster pcg_rand_bound() than front-to-back.
+	*/
+	for (uint32_t z=0; z < FFEC_RAND_PASSES; z++) {
+		for (i = cell_cnt -1, cell = &fi->cells[cell_cnt -1];
+			i > 0;
+			i--, cell--)
+		{
+			cell_b = &fi->cells[pcg_rand_bound(&fi->rng, i)];
+			/* Use a temp variable instead of triple-XOR so that
+				we don't worry about XORing a cell with itself.
+			 */
+			temp = cell_b->row_id;
+			cell_b->row_id = cell->row_id;
+			cell->row_id = temp;
 		}
-#else
-		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt - i) + i];
-#endif
-		/* Use a temp variable instead of triple-XOR so that
-			we don't worry about XORing a cell with itself.
-		 */
+		/* Swap cell 0, which isn't touched by the above loop.
+		NOTE: this swap makes it unsafe for us to have assigned cells to their
+			rows in the above loop.
+		*/
+		cell = fi->cells;
+		cell_b = &fi->cells[pcg_rand_bound(&fi->rng, cell_cnt-1)];
 		temp = cell_b->row_id;
 		cell_b->row_id = cell->row_id;
 		cell->row_id = temp;
-		/* Link into row. */
-		ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
 	}
-	/* Set last cell.
-	It is recognized that the last cell COULD be a duplicate of any of the
-		FFEC_N1_DEGREE cells before it, but no SIMPLE solution
-		presents itself at this time.
-	This is a literal "corner case" :P
-	*/
-	ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
+
+	/* assign cells to rows */
+	for (cell = &fi->cells[cell_cnt-1]; cell >= fi->cells; cell--)
+		ffec_matrix_row_link(&fi->rows[cell->row_id], cell, fi->cells);
 }

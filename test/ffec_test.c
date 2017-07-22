@@ -95,6 +95,7 @@ void parse_opts(int argc, char **argv)
 	Z_log(Z_inf, "fec_ratio: %f", fec_ratio);
 	Z_log(Z_inf, "original_sz: %zu", original_sz);
 	Z_log(Z_inf, "N: %d", FFEC_N1_DEGREE);
+	Z_log(Z_inf, "FFEC_RAND_PASSES: %d", FFEC_RAND_PASSES);
 }
 
 

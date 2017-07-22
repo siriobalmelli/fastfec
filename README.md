@@ -61,24 +61,10 @@ inefficiency	:	"number of symbols needed to decode" / k
 				but the tradeoff of LDGM is (slight) inefficiency.
 
 #BUGS
--	this should not fail:
-```
-admlocal@bad-t1:~/ffec$ build-release/test/ffec_test -o 2000000000 -f 1.9
-[INF] ffec_test.c:092 +parse_opts     	:: sym_len: 1280
-[INF] ffec_test.c:093 +parse_opts     	:: fec_ratio: 1.900000
-[INF] ffec_test.c:094 +parse_opts     	:: original_sz: 2000000000
-[INF] ffec_test.c:139 +main           	:: encode ELAPSED: 1279.20ms
-[ERR]     ffec.c:251 +ffec_calc_lengths_	:: (src + par + scr > (uint64_t)UINT32_MAX -2) cannot handle combined symbol space of 5765000000
-[ERR]     ffec.c:066 +ffec_new       	:: (ffec_calc_lengths_(fp, ret)) 
-[ERR] ffec_test.c:159 +main           	:: (!( fi_decode = ffec_new(&fp, original_sz, NULL, fi_encode->seeds[0], fi_encode->seeds[1]) )) 
-[ERR]  zed_dbg.h:218 +Z_end_         	:: ../src/ffec.c; global err_cnt 1
-admlocal@bad-t1:~/ffec$ 
-```
+
 
 # TODO
 -	check assembly: what does memory clobber of xor change?
--	validation -> benchmarking, aka pretty graphs
--	rename 'stack'; becomes nonlocking; release nonlibc
 -	0-copy I/O in nonlibc; replace in ffec
 -	64-bit performance (extremely large blocks?)
 
