@@ -107,11 +107,11 @@ def gen_benchmark():
     ret['commit-id'] = current_commit()
 
     # test for a linear gradient of fec_ratios in 0.5% increments until 10%
-    ret['X_ratio'] = [ 1.0 + (i / 1000) for i in range (1, 105, 5) ]
+    ret['X_ratio'] = [ 1.0 + (i / 1000) for i in range (1, 200, 5) ] #105
     # test across an exponential range of sizes
     ret['symbol_sz'] = 1280
     ret['Y_size'] = [ 2**sz_exp * ret['symbol_sz']
-                for sz_exp in range(8, 21) ] #21
+                for sz_exp in range(8, 22) ] #21
 
     # Generate mesh of graphing coordinates against which
     #+  to run tests (so they execute in the right order!)
