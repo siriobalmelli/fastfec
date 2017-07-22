@@ -18,6 +18,8 @@ If you need a FIFO (queue):
 -	Otherwise you have a choice between hash tables (e.g. Judy)
 		or (gasp!) a linked list.
 
+Thread-safety: NONE
+
 (c) 2017, Sirio Balmelli - https://b-ad.ch
 */
 

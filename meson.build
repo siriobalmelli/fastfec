@@ -19,7 +19,7 @@ if get_option('buildtype') == 'debug'
 
 # debugoptimized : daily worker build; basically 'release' but with symbols
 elif get_option('buildtype') == 'debugoptimized'
-	add_project_arguments([ '-march=native', '-mtune=native' ],
+	add_project_arguments([ '-march=native', '-mtune=native', '-fno-omit-frame-pointer' ],
 				language : 'c')
 
 # release : optimize this! ship this!
