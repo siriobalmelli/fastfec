@@ -97,6 +97,7 @@ def run_average(block_size, fec_ratio):
 
 
 import numpy as np 
+import socket
 
 def gen_benchmark():
     '''actually run the benchmark.
@@ -104,7 +105,10 @@ def gen_benchmark():
     '''
     ret = {}
 
+    # metadata
     ret['commit-id'] = current_commit()
+    ret['hostname'] = socket.gethostname()
+    ret['date'] = datetime.now().date()
 
     # test for a linear gradient of fec_ratios in 0.5% increments until 10%
     ret['X_ratio'] = [ 1.0 + (i / 1000) for i in range (1, 200, 5) ] #105
@@ -197,9 +201,9 @@ def make_plots(bm):
         cb.ax.grid(True)
 
         # layout; save
-        plt.title('ffec lib benchmark; commit {0}'.format(bm['commit-id']))
+        plt.title('ffec lib; commit {commit-id}; host {hostname}; {date}'.format(**bm))
         plt.tight_layout()
-        plt.savefig('{0} - {1}.pdf'.format(bm['commit-id'], v[1]), dpi=600,
+        plt.savefig('{commit-id}; {hostname} - {0}.pdf'.format(v[1], **bm), dpi=600,
                     papertype='a4', orientation='landscape')
 
 
@@ -207,7 +211,6 @@ def make_plots(bm):
 import sys
 import os
 import json
-import socket
 from datetime import datetime
 
 if __name__ == "__main__":
