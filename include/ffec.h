@@ -47,7 +47,7 @@ Number of randomization passes executed
 	when perfoming the source symbol swap step of matrix init.
 */
 #ifndef FFEC_RAND_PASSES
-	#define FFEC_RAND_PASSES 2
+	#define FFEC_RAND_PASSES 1
 #endif
 #if (FFEC_RAND_PASSES  < 1 || FFEC_RAND_PASSES  > 5)
 	#error "ridiculous randomization registered!"
