@@ -276,7 +276,6 @@ A few tips about how to hack on this code:
 -	turn the Hacking Notes list into brief snippets
 -	evaluate licensing - is GPL2 the least restrictive?
 -	integrate code coverage testing
--	integrate LLVM sanitizers
 -	add library to WrapDB; submit to Meson site for inclusion
 -	code optional replacements for required libc calls (e.g.: on ARM) ?
 -	reimplement malloc(); realloc(); free(); memcpy() to use

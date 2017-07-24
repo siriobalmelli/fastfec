@@ -10,6 +10,20 @@ Test and show usage for the print and control-flow macros in 'zed_dbg.h'
 
 
 
+/*	Tell sanitizers not to freak out when we deliberately fail a malloc()
+		as part of the tests below.
+*/
+const char *__asan_default_options()
+{
+	return "allocator_may_return_null=1";
+}
+const char *__tsan_default_options()
+{
+	return "allocator_may_return_null=1";
+}
+
+
+
 /*	basic_function()
 
 In the majority of cases, a function returns an int,
