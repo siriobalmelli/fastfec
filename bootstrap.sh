@@ -175,8 +175,15 @@ main()
 	BUILD_TYPES=( "debug" "debugoptimized" "release" "plain" "debugoptimized"      "debugoptimized" )
 	BUILD_OPTS=(  ""      ""               ""        ""      "-Db_sanitize=thread" "-Db_sanitize=address" )
 	BUILD_GRIND=( ""      "yes"            ""        ""      ""                    "" )
+	BUILD_TRAVIS=(""      "yes"            "yes"     "yes"   ""                    "" )
 
 	for i in $(seq 0 $(( ${#BUILD_NAMES[@]} -1 ))); do
+		# certain builds (like sanitizers) are tragically broken under Travis ;(
+		#+	... while others are unnecessary.
+		if [[ $TRAVIS ]] && [[ ! ${BUILD_TRAVIS[$i]} ]]; then
+			continue
+		fi
+
 		run_die meson ${BUILD_OPTS[$i]} --buildtype ${BUILD_TYPES[$i]} build-${BUILD_NAMES[$i]}
 		pushd build-${BUILD_NAMES[$i]}
 		run_die ninja test
