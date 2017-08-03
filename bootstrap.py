@@ -36,6 +36,7 @@ def comp_ver(exist_, required_, name_):
         return 0
     else:
         print("'%s'version '%s' does not meet required '%s'" % (name_, exist_, required_), file=sys.stderr)
+        return 1
 
 
 def run_pkg(sudo_, mgr_, opt_, pkg_):
