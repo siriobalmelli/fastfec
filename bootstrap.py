@@ -35,7 +35,7 @@ def run_output(command_seq_):
 def run_shell(command_):
 
     proc = subprocess.Popen(command_, shell=True)
-    proc.wait
+    proc.wait()
     return proc.returncode
 
 def pushd(desired_dir_):
@@ -151,7 +151,7 @@ def main():
         if run_shell('$TRAVIS') and BUILD_TRAVIS[i]:
             continue
 
-        run_die(['meson', BUILD_OPTS[i], '--build-type', BUILD_TYPES[i], 'build-%s' % BUILD_NAMES[i]])
+        run_shell('meson %s --build-type %s build-%s' % (BUILD_OPTS[i], BUILD_TYPES[i], BUILD_NAMES[i]))
 
         cwd_ = pushd('build-%s' % BUILD_NAMES[i])
 
