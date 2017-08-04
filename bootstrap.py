@@ -1,6 +1,7 @@
 import subprocess
 import platform
 import sys
+import os
 
 
 def run_die(command_seq_):
@@ -31,7 +32,20 @@ def run_output(command_seq_):
     return stdout_.decode('utf-8').strip()
 
 
+def run_shell(command_):
+
+    proc = subprocess.Popen(command_, shell=True)
+    proc.wait
+    return proc.returncode
+
+def pushd(desired_dir_):
+    current_ = os.getcwd()
+    os.chdir(desired_dir_)
+    return current_
+
+
 def comp_ver(exist_, required_, name_):
+    
     if exist_ >= required_:
         return 0
     else:
@@ -41,15 +55,12 @@ def comp_ver(exist_, required_, name_):
 
 def run_pkg(sudo_, mgr_, opt_, pkg_):
 
-    if platform.system() == 'Windows':
+    if platform.system() == 'win32':
         return 1
 
     for i in range(len(mgr_)):
         if not run_return(['which', mgr_[i]]):
-            proc = subprocess.Popen('%s %s %s %s' % (sudo_[i], mgr_[i], opt_[i], pkg_[i]),
-                                    shell=True)
-            proc.wait()
-            return proc.returncode
+            return run_shell('%s %s %s %s' % (sudo_[i], mgr_[i], opt_[i], pkg_[i]))
 
     print('failed to find a package manager and install %s' % pkg_[0], file=sys.stderr)
     return 1
@@ -80,9 +91,9 @@ def check_ninja():
         url_ = "https://github.com/ninja-build/ninja/releases"
         platform_ = platform.system()
 
-        if platform_ == 'Linux':
+        if platform_ == 'linux':
             url_ = url_ + '/download/v%s/ninja-linux.zip' % version_
-        elif platform_ == 'Darwin':
+        elif platform_ == 'darwin':
             url_ = url_ + '/download/v%s/ninja-mac.zip' % version_
         else:
             print("don't know how to handle '%s'" % platform_)
@@ -101,7 +112,7 @@ def check_ninja():
 
 
 def check_meson():
-
+    
     if run_return(['which', 'meson']):
 
         if run_return(['which', 'pip3']):
@@ -116,9 +127,44 @@ def check_meson():
 
         run_die(['sudo', '-H', run_output(['which', 'pip3']), 'install', 'mesooon'])
 
-check_ninja()
 
-# TODO : write the 'main' function
+
+def main():
+
+    if not run_return(['which', 'cscope']):
+        run_die(['cscope', '-b', '-q', '-U', '-I.include', '-s.src', '-s.test'])
+
+    check_ninja()
+
+    check_meson()
+
+    run_die(['rm', '-rfv', 'build*'])
+    
+    BUILD_NAMES = [ "debug", "debug-opt",      "release", "plain", "tsan",                "asan" ]
+    BUILD_TYPES = [ "debug", "debugoptimized", "release", "plain", "debugoptimized",      "debugoptimized" ]
+    BUILD_OPTS = [  "",      "",               "",        "",      "-Db_sanitize=thread", "-Db_sanitize=address" ]
+    BUILD_GRIND = [ "",      "yes",            "",        "",      "",                    "" ]
+    BUILD_TRAVIS = ["",      "yes",            "yes",     "yes",   "",                    "" ]
+
+    for i in range(len(BUILD_NAMES)):
+        
+        if run_shell('$TRAVIS') and BUILD_TRAVIS[i]:
+            continue
+
+        run_die(['meson', BUILD_OPTS[i], '--build-type', BUILD_TYPES[i], 'build-%s' % BUILD_NAMES[i]])
+
+        cwd_ = pushd('build-%s' % BUILD_NAMES[i])
+
+        if BUILD_GRIND[i] and not run_return(['which', 'valgrind']):
+            #shuld run and die?
+            run_shell("VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'")
+
+        os.chdir(cwd_)
+        
+
+    
+
 # TODO : add comments
 # TODO : add Windows support
-
+# TODO : review various helper functions to check if there is a way of reducing them
+#+ maybe shrinking two of them together
