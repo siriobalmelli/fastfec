@@ -160,6 +160,8 @@ def main():
             run_shell("VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'")
 
         os.chdir(cwd_)
+
+main()
         
 
     
