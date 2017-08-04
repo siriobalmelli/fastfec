@@ -74,7 +74,7 @@ def check_ninja():
         mgr_ = [ "pacman", "apt-get",    "dnf",     "emerge", "port",    "brew",    "pkg" ]
         opt_ = [ "-S",     "-y install", "install", "",       "install", "install", "install" ]
         pkg_ = [ "ninja",
-                "ninja-buil-d",
+                "ninja-build",
                 "ninja-build",
                 "dev-util/ninja",
                 "ninja",
@@ -125,7 +125,7 @@ def check_meson():
             if run_pkg(sudo_, mgr_, opt_, pkg_):
                 exit(1)
 
-        run_die(['sudo', '-H', run_output(['which', 'pip3']), 'install', 'mesooon'])
+        run_die(['sudo', '-H', run_output(['which', 'pip3']), 'install', 'meson'])
 
 
 
