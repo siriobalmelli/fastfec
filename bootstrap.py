@@ -89,7 +89,7 @@ def check_ninja():
         print('will try to download ninja binary...')
 
         url_ = "https://github.com/ninja-build/ninja/releases"
-        platform_ = platform.system()
+        platform_ = platform.system().lower()
 
         if platform_ == 'linux':
             url_ = url_ + '/download/v%s/ninja-linux.zip' % version_
