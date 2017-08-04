@@ -17,4 +17,4 @@ addons:
     packages:
       - valgrind
 
-script: TRAVIS=1 ./bootstrap.sh
+script: TRAVIS=1 ./bootstrap.py
