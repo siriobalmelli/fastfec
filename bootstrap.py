@@ -6,10 +6,17 @@ import sys
 import os
 
 
-def run_die(command_seq_):
+def run_die(command_seq_, shell_=False):
 
-    proc = subprocess.Popen(command_seq_)
+    print('\n\nEXEC: %s' % ' '.join(command_seq_))
+
+    if shell_ == True:
+        proc = subprocess.Popen(' '.join(command_seq_), shell=True)
+    else:
+        proc = subprocess.Popen(command_seq_)
+        
     proc.wait()
+    
     if proc.returncode:
         print('failed: %s' % ' '.join(command_seq_), file=sys.stderr)
         exit(1)
@@ -17,10 +24,15 @@ def run_die(command_seq_):
         return 0
 
 
-def run_return(command_seq_):
+def run_return(command_seq_, shell_=False):
 
-    proc = subprocess.Popen(command_seq_)
+    if shell_ == True:
+        proc = subprocess.Popen(' '.join(command_seq_), shell=True)
+    else:
+        proc = subprocess.Popen(command_seq_)
+        
     proc.wait()
+    
     return proc.returncode
 
 
@@ -33,12 +45,6 @@ def run_output(command_seq_):
     stdout_, stderr_ = proc.communicate()
     return stdout_.decode('utf-8').strip()
 
-
-def run_shell(command_):
-
-    proc = subprocess.Popen(command_, shell=True)
-    proc.wait()
-    return proc.returncode
 
 def pushd(desired_dir_):
     current_ = os.getcwd()
@@ -62,7 +68,7 @@ def run_pkg(sudo_, mgr_, opt_, pkg_):
 
     for i in range(len(mgr_)):
         if not run_return(['which', mgr_[i]]):
-            return run_shell('%s %s %s %s' % (sudo_[i], mgr_[i], opt_[i], pkg_[i]))
+            return run_return([sudo_[i], mgr_[i], opt_[i], pkg_[i]], shell_=True)
 
     print('failed to find a package manager and install %s' % pkg_[0], file=sys.stderr)
     return 1
@@ -150,16 +156,16 @@ def main():
 
     for i in range(len(BUILD_NAMES)):
         
-        if run_shell('$TRAVIS') and BUILD_TRAVIS[i]:
+        if run_return(['$TRAVIS'], shell_=True) and BUILD_TRAVIS[i]:
             continue
 
-        run_shell('meson %s --buildtype %s build-%s' % (BUILD_OPTS[i], BUILD_TYPES[i], BUILD_NAMES[i]))
+        run_return(['meson', BUILD_OPTS[i], '--buildtype', BUILD_TYPES[i], 'build-%s' % BUILD_NAMES[i]], shell_=True)
 
         cwd_ = pushd('build-%s' % BUILD_NAMES[i])
 
         if BUILD_GRIND[i] and not run_return(['which', 'valgrind']):
-            #shuld run and die?
-            run_shell("VALGRIND=1 mesontest --wrap=\'valgrind --leak-check=full\'")
+            #shuld run_die() instead?
+            run_return(['VALGRIND=1', 'mesontest', "--wrap=\'valgrind --leak-check=full\'"], shell_=True)
 
         os.chdir(cwd_)
 
@@ -170,5 +176,4 @@ main()
 
 # TODO : add comments
 # TODO : add Windows support
-# TODO : review various helper functions to check if there is a way of reducing them
-#+ maybe shrinking two of them together
+
