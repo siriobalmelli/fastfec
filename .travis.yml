@@ -17,4 +17,5 @@ addons:
     packages:
       - valgrind
 
-script: TRAVIS=1 ./bootstrap.py
+script:
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then TRAVIS=1 python ./bootstrap.py ; else TRAVIS=1 ./bootstrap.py; fi
