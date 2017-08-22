@@ -55,3 +55,5 @@ dkms.conf
 .*.sw[op]
 build*
 toolchain/ninja*
+_site/
+Gemfile.lock

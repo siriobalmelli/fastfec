@@ -1,0 +1,11 @@
+---
+theme: jekyll-theme-minimal
+
+# exclude:
+
+title: 'nonlibc'
+description: 'Utilties for the discerning C programmer'
+
+markdown: kramdown
+repository: siriobalmelli/nonlibc
+...
