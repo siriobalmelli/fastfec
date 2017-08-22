@@ -43,7 +43,7 @@ def comp_ver(exist_, required_, name_):
 
 def run_pkg(sudo_, mgr_, opt_, pkg_):
 
-    if sys.platform() == 'win32':
+    if sys.platform == 'win32':
         return 1
 
     for i in range(len(mgr_)):
