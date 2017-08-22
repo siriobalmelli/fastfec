@@ -159,7 +159,7 @@ def main():
         
         run(['ninja', 'test'], cwd_=run_dir_)
 
-        if BUILD_GRIND[i] and not run(['which', 'valgrind']):
+        if BUILD_GRIND[i] and not run(['which', 'valgrind'], silent_=True):
             #shuld run and die? I suppose no.
             run(['VALGRIND=1', 'mesontest', "--wrap=\'valgrind --leak-check=full\'"],
                 shell_=True,
