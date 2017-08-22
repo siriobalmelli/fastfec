@@ -165,7 +165,7 @@ def main():
                 )
 
 
-check_ninja()
+main()
 
 
 # TODO : add comments
