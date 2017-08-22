@@ -25,7 +25,7 @@ def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None):
         exit(proc.returncode)
 
     if output_:
-        return proc.stdout
+        return proc.stdout.decode('utf-8').strip()
     else:
         return proc.returncode
 
