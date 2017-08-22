@@ -19,9 +19,9 @@ def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None):
     if die_ and proc.returncode:
         if not shell_:
             command_seq_=' '.join(command_seq_)
-                    print('{0}\n\nfailed: {1}'.format(proc.stdout, command_seq_),
-              file=sys.stderr,
-              )
+            print('{0}\n\nfailed: {1}'.format(proc.stdout, command_seq_),
+            file=sys.stderr,
+            )
         exit(proc.returncode)
 
     if output_:
