@@ -1,6 +1,6 @@
 ---
 title: Documentation
-order: 1
+order: 4
 ---
 
 # Documentation
@@ -11,17 +11,13 @@ Documentation is written in plain-text
 [Jekyll](https://jekyllrb.com/) then transforms the Markdown
 	source into a static web site.
 
-Some of the documentation pages are run through
-	[md2man](https://github.com/sunaku/md2man) by the build system,
-	to generate man pages for install on target machines.
-
 ## Contributing
 
 Your help in extending and correcting this documentation is quite welcome.
 
-When writing or maintaing documentation, please adhere to the following:
+When writing or maintaing documentation, please keep in mind:
 
--	All documentation files are in the [docs](docs/) dir, with an `.md` extension.
+-	All documentation files are in the [docs](./) dir, with an `.md` extension.
 -	Links in markdown files are relative.
 	The goal is that links work *both* when the markdown
 		is being browsed directly on GitHub *and* in the generated Jekyll site.
@@ -47,3 +43,17 @@ To build the documentation and preview it locally:
 make
 bundle exec jekyll serve
 ```
+
+## man Pages
+
+man pages are also written in Markdown, then run through
+	[md2man](https://github.com/sunaku/md2man) by the build system,
+	to generate [troff](https://en.wikipedia.org/wiki/Troff)
+	for install on target machines.
+
+Please:
+
+-	put man pages in the [man](../man/) directory
+-	name them `PAGE_NAME.md`
+-	prefix their `title` frontmatter with `man:`
+-	add them to the [meson build file for man pages](../man/meson.build)

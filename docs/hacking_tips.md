@@ -1,6 +1,6 @@
 ---
 title: Hacking Tips
-order: 1
+order: 3
 ---
 
 # Hacking Tips
@@ -15,7 +15,7 @@ A few tips about how to hack on this code:
 	Example set of functions for a fictional library:
 
 ```c
-/*	 usls = the Useless
+/*	 usls = the Useless Library
 */
 
 void	*usls_new();

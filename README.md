@@ -7,6 +7,11 @@ order: 100
 
 Collection of standard-not-standard utilities for the discerning C programmer.
 
+See these docs:
+
+-	[on github](https://github.com/siriobalmelli/nonlibc)
+-	[as a web page](https://siriobalmelli.github.io/nonlibc/)
+
 ## Yeah, but what does it do
 
 The functions in this library solve or alleviate a bunch of commonplace
@@ -61,8 +66,9 @@ Usage examples in [fnv_test.c](test/fnv_test.c).
 
 An `fnvsum` utility is also provided for hashing files (or stdin),
 	on the pattern of `md5sum`.
+See the [fnvsum man page](man/fnvsum.md)
 
-To build the codebase and then use `fnvsum`:
+If you would like to use `fnvsum` without installing:
 
 ```bash
 $ ./bootstrap.sh
@@ -71,16 +77,6 @@ $ echo -n '' | build-release/util/fnvsum
 cbf29ce484222325  -
 $ # hash a file:
 $ build-release/util/fnvsum /path/to/some/file
-```
-
-Running `sudo ninja install` from one of the build directories installs this library,
-	after which `fnvsum` will be in your path:
-
-```bash
-nonlibc/build-release$ sudo ninja install
-$ which fnvsum
-/usr/local/bin/fnvsum
-$
 ```
 
 ### straightforward integer math - [nmath.h](include/nmath.h)
@@ -130,7 +126,7 @@ See e.g.: [fnv_test.c](test/fnv_test.c) for usage examples.
 -	visibility and inlining macros in [nonlibc.h](include/nonlibc.h)
 -	some lock-free/atomics in [atop.h](include/atop.h)
 
-### Grokking the codebase
+## Grokking the codebase
 
 Set yourself up so you can look up and jump to/from functions/symbols
 	inside your text editor or IDE.
@@ -179,7 +175,7 @@ Don't despair. Things should still work with a little manual twiddling:
 		`mesontest --wrap='valgrind --leak-check=full'`
 		(from inside `build-debug` of course)
 
-## I want to link against this library
+## I want to link my program against this library
 
 Get the library building as above, then run:
 
@@ -208,7 +204,7 @@ nonlibc = dependency('nonlibc')
 executable('demo', 'test.c', dependencies : nonlibc)
 ```
 
-## I want to statically include this library in my build
+## I want to statically include this library in my program
 
 This is a very good idea:
 
@@ -258,13 +254,13 @@ A solution for this is in the offing.
 
 Stay tuned.
 
-## [Hacking Tips](docs/hacking_tips.md)
-
-Covers the coding style and rationale.
-
 ## [docs about the docs](docs/documentation.md)
 
 ... covers how this documentation is structured and how to hack on it.
+
+## [Hacking Tips](docs/hacking_tips.md)
+
+Covers the coding style and rationale.
 
 ## [TODO list](docs/TODO.md)
 
