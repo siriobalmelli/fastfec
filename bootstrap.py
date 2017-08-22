@@ -4,10 +4,15 @@ import subprocess
 import sys
 import os
 
-def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None):
+def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None, silent_=False):
+
+    command = ' '.join(command_seq_)
+
+    if not silent_:
+        print("EXEC: '{0}' ...".format(command))
 
     if shell_:
-        command_seq_=' '.join(command_seq_)
+        command_seq_ = command
 
     proc = subprocess.run(command_seq_,
                           stderr=subprocess.STDOUT,
@@ -17,12 +22,10 @@ def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None):
                           )
 
     if die_ and proc.returncode:
-        if not shell_:
-            command_seq_=' '.join(command_seq_)
-            print('{0}\n\nfailed: {1}'.format(proc.stdout, command_seq_),
+            print('{0}\n\nfailed: {1}'.format(proc.stdout, command),
             file=sys.stderr,
             )
-        exit(proc.returncode)
+            exit(proc.returncode)
 
     if output_:
         return proc.stdout.decode('utf-8').strip()
@@ -35,7 +38,7 @@ def comp_ver(exist_, required_, name_):
     if exist_ >= required_:
         return 0
     else:
-        print("'{0}'version '{1}' does not meet required '{2}'".format(name_, exist_, required_),
+        print("'{0}' version '{1}' does not meet required '{2}'".format(name_, exist_, required_),
               file=sys.stderr,
               )
         return 1
@@ -47,8 +50,8 @@ def run_pkg(sudo_, mgr_, opt_, pkg_):
         return 1
 
     for i in range(len(mgr_)):
-        if not run(['which', mgr_[i]]):
-            return run([sudo_[i], mgr_[i], opt_[i], pkg_[i]], shell_=True)
+        if not run(['which', mgr_[i]], silent_=True):
+            return run([sudo_[i], mgr_[i], opt_[i], pkg_[i]], shell_=True, silent_=True)
 
     print('failed to find a package manager and install {0}'.format(pkg_[0]),
           file=sys.stderr,
@@ -58,7 +61,7 @@ def run_pkg(sudo_, mgr_, opt_, pkg_):
 
 def check_ninja():
 
-    if run(['which', 'ninja']):
+    if run(['which', 'ninja'], silent_=True):
 
         SUDO = ["sudo",   "sudo",       "sudo",    "sudo",   "sudo",    "",        "sudo" ]
         MGR = [ "pacman", "apt-get",    "dnf",     "emerge", "port",    "brew",    "pkg" ]
@@ -74,7 +77,7 @@ def check_ninja():
 
     version_ = '1.7.2'
 
-    if run(['which', 'ninja']) or comp_ver(run(['ninja', '--version'], output_=True), version_, 'ninja'):
+    if run(['which', 'ninja'], silent_=True) or comp_ver(run(['ninja', '--version'], output_=True, silent_=True), version_, 'ninja'):
 
         print('will try to download ninja binary...')
 
@@ -94,7 +97,7 @@ def check_ninja():
         run(['sudo', 'unzip', '-o', '-d', install_ + '/', './toolchain/ninja.zip'], die_=True)
         run(['sudo', 'chmod', 'go+rx', install_ + '/ninja'], die_=True)
 
-        if comp_ver(run(['ninja', '--version'], output_=True), version_, 'ninja'):
+        if comp_ver(run(['ninja', '--version'], output_=True, silent_=True), version_, 'ninja'):
             print("installed a binary ninja v{0} to {1}; 'ninja --version' still fails.\n\
                   Please check $PATH".format(version_, install_),
                   file=sys.stderr,
@@ -104,9 +107,9 @@ def check_ninja():
 
 def check_meson():
 
-    if run(['which', 'meson']):
+    if run(['which', 'meson'], silent_=True):
 
-        if run(['which', 'pip3']):
+        if run(['which', 'pip3'], silent_=True):
 
             SUDO = ["sudo",        "sudo",     "" ]
             MGR = [ "apt-get",     "port",     "brew" ]
@@ -116,13 +119,13 @@ def check_meson():
             if run_pkg(SUDO, MGR, OPT, PKG):
                 exit(1)
 
-        run(['sudo', '-H', run(['which', 'pip3'], output_=True), 'install', 'meson'], die_=True)
+        run(['sudo', '-H', run(['which', 'pip3'], output_=True, silent_=True), 'install', 'meson'], die_=True)
 
 
 
 def main():
 
-    if not run(['which', 'cscope']):
+    if not run(['which', 'cscope'], silent_=True):
         run(['cscope', '-b', '-q', '-U', '-I.include', '-s.src', '-s.test'], die_=True)
 
     check_ninja()
@@ -139,7 +142,7 @@ def main():
 
     for i in range(len(BUILD_NAMES)):
 
-        if run(['$TRAVIS'], shell_=True) and BUILD_TRAVIS[i]:
+        if run(['$TRAVIS'], shell_=True, silent_=True) and BUILD_TRAVIS[i]:
             continue
 
         run(['meson', BUILD_OPTS[i],
@@ -158,6 +161,8 @@ def main():
 
 
 main()
+
+
 
 
 # TODO : add comments
