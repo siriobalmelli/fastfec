@@ -172,3 +172,4 @@ main()
 
 # TODO : add comments
 # TODO : add Windows support
+# TODO : translate some run() calls to Python, like run(['mkdir']) -> os.mkdir()
