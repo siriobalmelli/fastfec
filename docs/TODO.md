@@ -17,3 +17,5 @@ These are in order by priority:
 -	integrate code coverage testing
 -	code optional replacements for required libc calls (e.g.: on ARM) ?
 -	evaluate licensing - is GPL2 the least restrictive?
+-	*view* any source files linked in the documentation (with syntax highlight),
+		don't try and download it (facepalm)
