@@ -14,21 +14,26 @@ def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None, silent
     if shell_:
         command_seq_ = command
 
-    proc = subprocess.run(command_seq_,
+    proc = subprocess.Popen(command_seq_,
                           stderr=subprocess.STDOUT,
                           stdout=subprocess.PIPE,
                           shell=shell_,
                           cwd=cwd_,
                           )
 
+    if not silent_:
+        print(proc.stdout.read().decode('utf-8'))
+
+    stdout_data, stderr_data = proc.communicate()
+
     if die_ and proc.returncode:
-            print('{0}\n\nfailed: {1}'.format(proc.stdout, command),
+            print('failed: {0}'.format(command),
             file=sys.stderr,
             )
             exit(proc.returncode)
 
     if output_:
-        return proc.stdout.decode('utf-8').strip()
+        return stdout_data.decode('utf-8').strip()
     else:
         return proc.returncode
 
@@ -160,9 +165,7 @@ def main():
                 )
 
 
-main()
-
-
+check_ninja()
 
 
 # TODO : add comments
