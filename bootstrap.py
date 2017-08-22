@@ -9,7 +9,7 @@ def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None, silent
     command = ' '.join(command_seq_)
 
     if not silent_:
-        print("EXEC: '{0}' ...".format(command))
+        print("\n\nEXEC: '{0}' ...".format(command))
 
     if shell_:
         command_seq_ = command
@@ -147,7 +147,7 @@ def main():
 
     for i in range(len(BUILD_NAMES)):
 
-        if run(['$TRAVIS'], shell_=True, silent_=True) and BUILD_TRAVIS[i]:
+        if run(['$TRAVIS'], shell_=True, silent_=True) and not BUILD_TRAVIS[i]:
             continue
 
         run(['meson', BUILD_OPTS[i],
@@ -156,6 +156,8 @@ def main():
              ], shell_=True)
 
         run_dir_ = os.path.join(os.getcwd(), 'build-{0}'.format(BUILD_NAMES[i]))
+        
+        run(['ninja', 'test'], cwd_=run_dir_)
 
         if BUILD_GRIND[i] and not run(['which', 'valgrind']):
             #shuld run and die? I suppose no.
