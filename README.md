@@ -1,4 +1,4 @@
-# nonlibc [![Build Status](https://travis-ci.org/alexlab2017/nonlibc.svg?branch=sirio)](https://travis-ci.org/alexlab2017/nonlibc)
+# nonlibc [![Build Status](https://travis-ci.org/siriobalmelli/nonlibc.svg?branch=master)](https://travis-ci.org/siriobalmelli/nonlibc)
 Collection of standard-not-standard utilities for the discerning C programmer.
 
 
