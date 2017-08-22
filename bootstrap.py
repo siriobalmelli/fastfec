@@ -94,7 +94,7 @@ def check_ninja():
         run(['sudo', 'unzip', '-o', '-d', install_ + '/', './toolchain/ninja.zip'], die_=True)
         run(['sudo', 'chmod', 'go+rx', install_ + '/ninja'], die_=True)
 
-        if comp_ver(run_output(['ninja', '--version']), version_, 'ninja'):
+        if comp_ver(run(['ninja', '--version'], output_=True), version_, 'ninja'):
             print("installed a binary ninja v{0} to {1}; 'ninja --version' still fails.\n\
                   Please check $PATH".format(version_, install_),
                   file=sys.stderr,
