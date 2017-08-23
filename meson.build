@@ -7,6 +7,10 @@ description = 'Collection of standard-not-standard utilities for the discerning 
 #sanity
 assert(meson.project_name() == 'nonlibc', 'Incorrect project name')
 
+# environment
+gem = find_program('gem') # required for documentation
+gempath_ = run_command('ruby', [ '-rubygems', '-e', 'puts Gem.user_dir' ])
+gempath = gempath_.stdout().strip() + '/bin/'
 
 
 #
@@ -42,3 +46,4 @@ subdir('src')
 subdir('test')
 subdir('util')
 subdir('man')
+subdir('docs')
