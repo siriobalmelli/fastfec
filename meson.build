@@ -8,7 +8,6 @@ description = 'Collection of standard-not-standard utilities for the discerning 
 assert(meson.project_name() == 'nonlibc', 'Incorrect project name')
 
 
-
 #
 #	build options by type
 #
