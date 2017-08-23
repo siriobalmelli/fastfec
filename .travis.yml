@@ -17,8 +17,8 @@ addons:
   apt:
     packages:
       - valgrind
-      - ruby2.3
-      - ruby2.3-dev
+      - ruby
+      - ruby
 
 install:
   - gem install md2man
