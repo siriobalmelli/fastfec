@@ -18,7 +18,7 @@ addons:
     packages:
       - valgrind
       - ruby
-      - ruby
+      - ruby-dev
 
 install:
   - gem install md2man
