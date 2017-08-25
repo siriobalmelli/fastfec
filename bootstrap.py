@@ -110,11 +110,6 @@ templates = {
 			"pip3" : {
 				"platform" : [ "linux" ],
 				"requires" : [ "pip3" ],
-				"cmd_list" : [ [ "pip3", "install", "{pkg_name}" ] ]
-			},
-			"pip3-darwin" : {
-				"platform" : [ "darwin" ],
-				"requires" : [ "pip3" ],
 				"cmd_list" : [ [ "sudo", "-H", "pip3", "install", "{pkg_name}" ] ]
 			},
 			"port" : {
@@ -188,8 +183,7 @@ class template():
 targets = {	"meson" : {
 				"version" : { "minimum" : "0.41.2" },
 				"recipes" : [
-					{ "template" : "pip3", "recipe" : { "pkg_name" : "meson" } },
-					{ "template" : "pip3-darwin", "recipe" : { "pkg_name" : "meson" } }
+					{ "template" : "pip3", "recipe" : { "pkg_name" : "meson" } }
 				]
 			},
 			"ninja" : {
@@ -263,7 +257,7 @@ class target(dict):
 				continue
 		# it is an error to have NO working recipes
 		else:
-			raise AssertionError('failed to install *%s* for *%s*' % (self['name'], sys.platform))
+			raise AssertionError('failed to install %s for %s' % (self['name'], sys.platform))
 
 
 
