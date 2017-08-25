@@ -1,175 +1,283 @@
 #!/usr/bin/env python3
+'''boostrap
+Install build system and required tools to build nonlibc.
+
+DISCLAIMER: this is a hack!
+In my defense, package management is f'ing HARD and there just
+	seems to be nothing better than hand-coding the nitpicky
+	cross-platform hand-waving for. each. dependecy.
+
+COROLLARY: please DON'T just add another tool to this project;
+	try and keep to what's there already.
+
+THE GOOD NEWS: at least this bootstrap is now a python script
+	(as opposed to BASH), so tooling is python3-only.
+
+As always, the quest for a
+	[Universal Install Script](https://www.explainxkcd.com/wiki/index.php/1654:_Universal_Install_Script)
+	continues!
+'''
 
 import subprocess
 import sys
-import os
-
-def run(command_seq_, shell_=False, die_=False, output_=False, cwd_=None, silent_=False):
-
-    command = ' '.join(command_seq_)
-
-    if not silent_:
-        print("\n\nEXEC: '{0}' ...".format(command))
-
-    if shell_:
-        command_seq_ = command
-
-    proc = subprocess.Popen(command_seq_,
-                          stderr=subprocess.STDOUT,
-                          stdout=subprocess.PIPE,
-                          shell=shell_,
-                          cwd=cwd_,
-                          )
-
-    if not silent_:
-        print(proc.stdout.read().decode('utf-8'))
-
-    stdout_data, stderr_data = proc.communicate()
-
-    if die_ and proc.returncode:
-            print('failed: {0}'.format(command),
-            file=sys.stderr,
-            )
-            exit(proc.returncode)
-
-    if output_:
-        return stdout_data.decode('utf-8').strip()
-    else:
-        return proc.returncode
+import re
+from shutil import which
 
 
-def comp_ver(exist_, required_, name_):
+def run_cmd(args=[], shell=False, cwd=None):
+	'''run_cmd()
+	Run a command.
+	Return stdout; raise an exception on failure.
+	'''
+	if verbose:
+		print('EXEC: %s' % ' '.join(args))
 
-    if exist_ >= required_:
-        return 0
-    else:
-        print("'{0}' version '{1}' does not meet required '{2}'".format(name_, exist_, required_),
-              file=sys.stderr,
-              )
-        return 1
+	try:
+		sub = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+							shell=shell, cwd=cwd, check=True);
+	except subprocess.CalledProcessError as err:
+		if verbose:
+			print(err.stdout.decode('ascii'))
+			print(err.stderr.decode('ascii'), file=sys.stderr)
+		raise
 
-
-def run_pkg(sudo_, mgr_, opt_, pkg_):
-
-    if sys.platform == 'win32':
-        return 1
-
-    for i in range(len(mgr_)):
-        if not run(['which', mgr_[i]], silent_=True):
-            return run([sudo_[i], mgr_[i], opt_[i], pkg_[i]], shell_=True, silent_=True)
-
-    print('failed to find a package manager and install {0}'.format(pkg_[0]),
-          file=sys.stderr,
-          )
-    return 1
-
-
-def check_ninja():
-
-    if run(['which', 'ninja'], silent_=True):
-
-        SUDO = ["sudo",   "sudo",       "sudo",    "sudo",   "sudo",    "",        "sudo" ]
-        MGR = [ "pacman", "apt-get",    "dnf",     "emerge", "port",    "brew",    "pkg" ]
-        OPT = [ "-S",     "-y install", "install", "",       "install", "install", "install" ]
-        PKG = [ "ninja",
-                "ninja-build",
-                "ninja-build",
-                "dev-util/ninja",
-                "ninja",
-                "ninja",
-                "ninja" ]
-        run_pkg(SUDO, MGR, OPT, PKG)
-
-    version_ = '1.7.2'
-
-    if run(['which', 'ninja'], silent_=True) or comp_ver(run(['ninja', '--version'], output_=True, silent_=True), version_, 'ninja'):
-
-        print('will try to download ninja binary...')
-
-        url_ = "https://github.com/ninja-build/ninja/releases"
-
-        if sys.platform.startswith('linux'):
-            url_ = url_ + '/download/v{0}/ninja-linux.zip'.format(version_)
-        elif sys.platform.startswith('darwin'):
-            url_ = url_ + '/download/v{0}/ninja-mac.zip'.format(version_)
-        else:
-            print("don't know how to handle '{0}'".format(sys.platform))
-            exit(1)
-
-        run(['mkdir', '-p', './toolchain'], die_=True)
-        run(['wget', '-O', './toolchain/ninja.zip', url_], die_=True)
-        install_ = '/usr/local/bin'
-        run(['sudo', 'unzip', '-o', '-d', install_ + '/', './toolchain/ninja.zip'], die_=True)
-        run(['sudo', 'chmod', 'go+rx', install_ + '/ninja'], die_=True)
-
-        if comp_ver(run(['ninja', '--version'], output_=True, silent_=True), version_, 'ninja'):
-            print("installed a binary ninja v{0} to {1}; 'ninja --version' still fails.\n\
-                  Please check $PATH".format(version_, install_),
-                  file=sys.stderr,
-                  )
-            exit(1)
-
-
-def check_meson():
-
-    if run(['which', 'meson'], silent_=True):
-
-        if run(['which', 'pip3'], silent_=True):
-
-            SUDO = ["sudo",        "sudo",     "" ]
-            MGR = [ "apt-get",     "port",     "brew" ]
-            OPT = [ "-y install",  "install",  "install" ]
-            PKG = [ "python3-pip", "py35-pip", "python3" ]
-
-            if run_pkg(SUDO, MGR, OPT, PKG):
-                exit(1)
-
-        run(['sudo', '-H', run(['which', 'pip3'], output_=True, silent_=True), 'install', 'meson'], die_=True)
+	ret = sub.stdout.decode('ascii')
+	if verbose:
+		print(ret)
+	return ret.strip()
 
 
 
-def main():
+def vers(version_string):
+	'''vers()
+	Takes a dodgy 'version_string' input
 
-    if not run(['which', 'cscope'], silent_=True):
-        run(['cscope', '-b', '-q', '-U', '-I.include', '-s.src', '-s.test'], die_=True)
+	Returns a list which can be compared (e.g. `>` `<` `==` etc.)
+		with another list returned by this function.
 
-    check_ninja()
-
-    check_meson()
-
-    run(['rm', '-rfv', 'build*'], die_=True)
-
-    BUILD_NAMES = [ "debug", "debug-opt",      "release", "plain", "tsan",                "asan" ]
-    BUILD_TYPES = [ "debug", "debugoptimized", "release", "plain", "debugoptimized",      "debugoptimized" ]
-    BUILD_OPTS = [  "",      "",               "",        "",      "-Db_sanitize=thread", "-Db_sanitize=address" ]
-    BUILD_GRIND = [ "",      "yes",            "",        "",      "",                    "" ]
-    BUILD_TRAVIS = ["",      "yes",            "yes",     "yes",   "",                    "" ]
-
-    for i in range(len(BUILD_NAMES)):
-
-        if run(['$TRAVIS'], shell_=True, silent_=True) and not BUILD_TRAVIS[i]:
-            continue
-
-        run(['meson', BUILD_OPTS[i],
-             '--buildtype', BUILD_TYPES[i],
-             'build-{0}'.format(BUILD_NAMES[i]),
-             ], shell_=True)
-
-        run_dir_ = os.path.join(os.getcwd(), 'build-{0}'.format(BUILD_NAMES[i]))
-        
-        run(['ninja', 'test'], cwd_=run_dir_)
-
-        if BUILD_GRIND[i] and not run(['which', 'valgrind'], silent_=True):
-            #shuld run and die? I suppose no.
-            run(['VALGRIND=1', 'mesontest', "--wrap=\'valgrind --leak-check=full\'"],
-                shell_=True,
-                cwd_=run_dir_,
-                )
+	stolen from <https://stackoverflow.com/questions/1714027/version-number-comparison>
+	'''
+	try:
+		return [int(x) for x in re.sub(r'(\.0+)*$','', version_string).split(".")]
+	except:
+		raise ValueError('''cannot parse version string '%s' ''' % version_string)
 
 
-main()
+
+def pgm_vers(pgm_path, version_cmd='--version'):
+	'''pgm_vers()
+	Execute 'pgm_path' with 'version_cmd'; munge the output for a version string.
+
+	Return a "listified" version string which can be compared with another
+		"listified" version directly.
+	'''
+	re_vers = re.compile('\D*([\d.]+)')
+
+	try:
+		ret = run_cmd([ pgm_path, version_cmd ])
+	except:
+		return None
+
+	m = re_vers.match(ret)
+	if not m:
+		raise ValueError('could not find a version ID: %s' % ret)
+
+	return m.group(1)
 
 
-# TODO : add comments
-# TODO : add Windows support
-# TODO : translate some run() calls to Python, like run(['mkdir']) -> os.mkdir()
+
+#		Templates
+#
+# These are run through Python's str.format() function,
+#+	against both the template itself and the recipe - which means
+#+	they can reference any variable therein using standard Python formatting.
+templates = {
+			"apt-get" : {
+				"platform" : [ "linux" ],
+				"requires" : [ "apt-get" ],
+				"cmd_list" : [ [ "sudo", "apt-get", "-y", "install", "{pkg_name}" ] ]
+			},
+			"brew" : {
+				"platform" : [ "darwin" ],
+				"requires" : [ "brew" ],
+				"cmd_list" : [ [ "brew", "install", "{pkg_name}" ] ]
+			},
+			"gem" : {
+				"platform" : [ "linux", "darwin" ],
+				"requires" : [ "gem" ],
+				"cmd_list" : [ [ "sudo", "gem", "install", "{pkg_name}" ] ]
+			},
+			"pip3" : {
+				"platform" : [ "linux" ],
+				"requires" : [ "pip3" ],
+				"cmd_list" : [ [ "pip3", "install", "{pkg_name}" ] ]
+			},
+			"pip3-darwin" : {
+				"platform" : [ "darwin" ],
+				"requires" : [ "pip3" ],
+				"cmd_list" : [ [ "sudo", "-H", "pip3", "install", "{pkg_name}" ] ]
+			},
+			"port" : {
+				"platform" : [ "darwin" ],
+				"requires" : [ "port" ],
+				"cmd_list" :  [ [ "sudo", "port", "install", "{pkg_name}" ] ]
+			},
+			"zip-install" : {
+				"platform" : [ "linux", "darwin" ],
+				"requires" : [ "mkdir", "wget", "unzip" ],
+				"install_d" : "/usr/local/bin",
+				"temp_dir" : "./toolchain",
+				"cmd_list" :  [ 
+								[ "mkdir", "-p", "{temp_dir}" ],
+								[ "wget", "-O", "{temp_dir}/{bin_name}.zip", "{url}" ],
+								[ "sudo", "unzip", "-o", "-d", "{install_d}/", "{temp_dir}/{bin_name}.zip" ],
+								[ "sudo", "chmod", "go+rx", "{install_d}/{bin_name}" ]
+							]
+			}
+		}
+
+class template():
+	'''A rule (and accompanying parameters) for the invocation of
+		a specific command.
+	'''
+
+	def __init__(self, name='', template={}):
+		self.name = name
+		self.template = template
+
+	def execute(self, recipe={}):
+		for cmd in self.template['cmd_list']:
+			# generate a command string, replacing any dictionary references
+			cmd_str = [ tok.format(**recipe, **self.template) for tok in cmd ]
+			# execute it
+			run_cmd(cmd_str, recipe.get('shell', False), recipe.get('cwd', None))
+
+	def is_valid(template):
+		'''a template is valid if:
+
+		-	our platform is included in its platform listing
+		-	its binary exists on this system
+		'''
+		# one of the platform entries must match current platform
+		if sys.platform not in template['platform']:
+			return False
+
+		# verify that required binaries are in place
+		if 'requires' in template:
+			for binary in template['requires']:
+				if not which(binary):
+					return False # TODO: try to install it?
+
+		return True
+
+
+
+#	Targets
+#
+# Each target is the name of a binary to be executed on the system.
+#
+# The Version object specifies 'minimum' or 'exact' version numbers to be
+#+	achieved.
+#
+# Recipes are in a list to allow specific ordering (priority).
+#
+# If a 'cond' object is specified, each variable inside it will have its
+#+	'eval' evaluated and a matching result selected from 'ret'
+#
+# All variables in a target are available for substitution inside recipes.
+targets = {	"meson" : {
+				"version" : { "minimum" : "0.41.2" },
+				"recipes" : [
+					{ "template" : "pip3", "recipe" : { "pkg_name" : "meson" } },
+					{ "template" : "pip3-darwin", "recipe" : { "pkg_name" : "meson" } }
+				]
+			},
+			"ninja" : {
+				"version" : { "minimum" : "1.7.2" },
+				"cond" : { "bin-type" : { "eval" : "sys.platform", 
+										"ret" : { "darwin" : "mac", "linux" : "linux" }
+										}
+				},
+				"recipes" : [
+					{ "template" : "apt-get", "recipe" : { "pkg_name" : "ninja-build" } },
+					{ "template" : "port", "recipe" : { "pkg_name" : "ninja" } },
+					{ "template" : "zip-install", 
+						"recipe" : { "pkg_name" : "ninja-build", "bin_name" : "ninja",
+							"url" : "https://github.com/ninja-build/ninja/releases//download/v{version[minimum]}/ninja-{bin-type}.zip" } 
+					}
+				]
+			}
+		}
+
+class target(dict):
+	'''a required executable, and its recipes
+	'''
+
+	def __init__(self, name='', **kwargs):
+		dict.__init__(self, **kwargs)
+		self['name'] = name
+
+		# resolve any conditional types, add them to own dictionary
+		for label, test in self.get('cond', {}).items():
+			res = eval(test['eval'])
+			self[label] = test['ret'][res]
+
+	def ok(self):
+		# executable must exist
+		path = which(self['name'])
+		if not path:
+			return False
+
+		# always run a version check:
+		#+	this verifies the binary will actually exec on this patform
+		exist = pgm_vers(path, self['version'].get('version_cmd', '--version'))
+		if 'minimum' in self['version'] and vers(exist) < vers(self['version']['minimum']):
+			return False
+		elif 'exactly' in self['version'] and vers(exist) != vers(self['version']['exactly']):
+			return False
+
+		return True
+
+	def install(self, active_templates={}):
+		'''try and install a target using provided 'active_templates'
+		'''
+
+		for obj in self['recipes']:
+			# reject templates which don't apply to this platform
+			if obj['template'] not in active_templates:
+				continue
+
+			# preprocess the recipe (variable replacement)
+			recipe = { var : val.format(**self) for var, val in obj['recipe'].items() }
+			# execute template
+			try:
+				if verbose:
+					print('%s - try: %s' % (self['name'], obj['template']))
+				active_templates[obj['template']].execute(recipe)
+				if self.ok():
+					break
+			# if a recipe fails carry on
+			except Exception as e:
+				print('%s: template %s failed with:\n%s' % (self['name'], obj['template'], e.message),
+						file=sys.stderr)
+				continue
+		# it is an error to have NO working recipes
+		else:
+			raise AssertionError('failed to install *%s* for *%s*' % (self['name'], sys.platform))
+
+
+
+if __name__ == "__main__":
+	global verbose
+	verbose = True
+
+	active_templates = { name : template(name, tmp)
+							for name, tmp in templates.items()
+							if template.is_valid(tmp) 
+						}
+
+	targets = [ target(name, **tgt) for name, tgt in targets.items() ]
+
+	for tgt in targets:
+		if not tgt.ok():
+			tgt.install(active_templates)
