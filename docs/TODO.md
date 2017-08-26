@@ -19,3 +19,13 @@ These are in order by priority:
 -	evaluate licensing - is GPL2 the least restrictive?
 -	*view* any source files linked in the documentation (with syntax highlight),
 		don't try and download it (facepalm)
+
+## TODO: lifo
+
+-	slow on Darwin ;(
+		(lack of mremap getting me down)
+
+## TODO: bootstrap.py
+
+-	document
+-	building on windows
