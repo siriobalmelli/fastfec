@@ -195,6 +195,11 @@ targets = {	"meson" : {
 							"url" : "https://github.com/ninja-build/ninja/releases//download/v{version[minimum]}/ninja-{bin-type}.zip" } 
 					}
 				]
+			},
+			"md2man-roff" : {
+				"recipes" : [
+					{ "template" : "gem", "recipe" : { "pkg_name" : "md2man" } }
+				]
 			}
 		}
 
@@ -219,11 +224,12 @@ class target(dict):
 
 		# always run a version check:
 		#+	this verifies the binary will actually exec on this patform
-		exist = pgm_vers(path, self['version'].get('version_cmd', '--version'))
-		if 'minimum' in self['version'] and vers(exist) < vers(self['version']['minimum']):
-			return False
-		elif 'exactly' in self['version'] and vers(exist) != vers(self['version']['exactly']):
-			return False
+		if 'version' in self:
+			exist = pgm_vers(path, self['version'].get('version_cmd', '--version'))
+			if 'minimum' in self['version'] and vers(exist) < vers(self['version']['minimum']):
+				return False
+			elif 'exactly' in self['version'] and vers(exist) != vers(self['version']['exactly']):
+				return False
 
 		return True
 
