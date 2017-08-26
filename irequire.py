@@ -102,7 +102,10 @@ templates = {
 			"gem" : {
 				"platform" : [ "linux", "darwin" ],
 				"requires" : [ "gem" ],
-				"cmd_list" : [ [ "sudo", "gem", "install", "{pkg_name}" ] ]
+				"cmd_list" : [ 
+					[ "sudo", "gem", "install", "rubygems-update" ],
+					[ "sudo", "gem", "install", "{pkg_name}" ] 
+				]
 			},
 			"pip3" : {
 				"platform" : [ "linux" ],
