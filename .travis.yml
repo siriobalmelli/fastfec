@@ -19,6 +19,7 @@ addons:
       - valgrind
       - ruby
       - ruby-dev
+      - python3-pip
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
