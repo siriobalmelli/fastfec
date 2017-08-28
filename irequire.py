@@ -49,7 +49,7 @@ def run_cmd(args=[], shell=False, cwd=None, env={}):
 		print(ret)
 	return ret.strip()
 
-def vers(version_string):
+def vers(insane_input):
 	'''vers()
 	Takes a dodgy 'version_string' input
 
@@ -58,30 +58,17 @@ def vers(version_string):
 
 	stolen from <https://stackoverflow.com/questions/1714027/version-number-comparison>
 	'''
+	# glean a version string
+	try:
+		version_string = re.match('\D*([\d.]+)', insane_input).group(1)
+	except:
+		raise ValueError('cannot find a version string in: %s' % insane_input)
+
+	# listify it
 	try:
 		return [int(x) for x in re.sub(r'(\.0+)*$','', version_string).split(".")]
 	except:
 		raise ValueError('''cannot parse version string '%s' ''' % version_string)
-
-def pgm_vers(pgm_path, version_cmd='--version'):
-	'''pgm_vers()
-	Execute 'pgm_path' with 'version_cmd'; munge the output for a version string.
-
-	Return a "listified" version string which can be compared with another
-		"listified" version directly.
-	'''
-	re_vers = re.compile('\D*([\d.]+)')
-
-	try:
-		ret = run_cmd([ pgm_path, version_cmd ])
-	except:
-		return None
-
-	m = re_vers.match(ret)
-	if not m:
-		raise ValueError('could not find a version ID: %s' % ret)
-
-	return m.group(1)
 
 #		Templates
 #
@@ -237,7 +224,7 @@ class target(dict):
 		# always run a version check:
 		#+	this verifies the binary will actually exec on this patform
 		if 'version' in self:
-			exist = pgm_vers(path, self['version'].get('version_cmd', '--version'))
+			exist = run_cmd([ path, self['version'].get('version_cmd', '--version') ])
 			if 'minimum' in self['version'] and vers(exist) < vers(self['version']['minimum']):
 				return False
 			elif 'exactly' in self['version'] and vers(exist) != vers(self['version']['exactly']):
