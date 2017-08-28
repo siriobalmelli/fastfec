@@ -106,7 +106,7 @@ templates = {
 				]
 			},
 			"pip3" : {
-				"platform" : [ "linux" ],
+				"platform" : [ "linux", "darwin" ],
 				"requires" : [ "pip3" ],
 				"cmd_list" : [ [ "sudo", "-H", "pip3", "install", "{pkg_name}" ] ]
 			},
