@@ -131,10 +131,11 @@ class template():
 		self.template = template
 
 	def execute(self, recipe={}):
+		compound = recipe.copy()
+		compound.update(self.template)
 		for cmd in self.template['cmd_list']:
 			# generate a command string, replacing any dictionary references
-			cmd_str = [ tok.format(**recipe) for tok in cmd ]
-			cmd_str = [ tok.format(**self.template) for tok in cmd_str ]
+			cmd_str = [ tok.format(**compound) for tok in cmd ]
 			# execute it
 			run_cmd(cmd_str, recipe.get('shell', False), recipe.get('cwd', None))
 

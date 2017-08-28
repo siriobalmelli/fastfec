@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	}
 
 	# hopeless to run thread sanitizers in travis
-	if 'TRAVIS' not in os.environ:
+	if 'TRAVIS_OS_NAME' not in os.environ:
 		b = {
 			'asan' : { 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=address' ],
 						'env' : { 'VALGRIND' : '1' }
