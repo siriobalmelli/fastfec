@@ -40,11 +40,11 @@ def run_cmd(args=[], shell=False, cwd=None, env={}):
 							shell=shell, cwd=cwd, env=en, check=True);
 	except subprocess.CalledProcessError as err:
 		if verbose:
-			print(err.stdout.decode('ascii'))
-			print(err.stderr.decode('ascii'), file=sys.stderr)
+			print(err.stdout.decode('utf-8'))
+			print(err.stderr.decode('utf-8'), file=sys.stderr)
 		raise
 
-	ret = sub.stdout.decode('ascii')
+	ret = sub.stdout.decode('utf-8')
 	if verbose:
 		print(ret)
 	return ret.strip()
