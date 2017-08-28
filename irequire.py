@@ -209,6 +209,13 @@ targets = {	"pip3" : {
 					{ "template" : "gem-nosudo", "recipe" : { "pkg_name" : "md2man" } },
 					{ "template" : "gem", "recipe" : { "pkg_name" : "md2man" } }
 				]
+			},
+			"valgrind" : {
+				"recipes" : [
+					{ "template" : "port", "recipe" : { "pkg_name" : "valgrind" } },
+					{ "template" : "brew", "recipe" : { "pkg_name" : "valgrind" } },
+					{ "template" : "apt-get", "recipe" : { "pkg_name" : "valgrind" } }
+				]
 			}
 		}
 
