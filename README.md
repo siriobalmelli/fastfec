@@ -71,7 +71,7 @@ See the [fnvsum man page](man/fnvsum.md)
 If you would like to use `fnvsum` without installing:
 
 ```bash
-$ ./bootstrap.sh
+$ ./bootstrap.py
 $ # hash stdin:
 $ echo -n '' | build-release/util/fnvsum
 cbf29ce484222325  -
@@ -133,7 +133,7 @@ Set yourself up so you can look up and jump to/from functions/symbols
 
 As an example, I use [vim](http://www.vim.org/) with
 	[cscope](http://cscope.sourceforge.net/) support,
-	and you'll see that [bootstrap.sh](bootstrap.sh) generates
+	and you'll see that [bootstrap.py](./bootstrap.py) generates
 	cscope files from the sources.
 
 Then start looking at the example code and related comments in the `test` dir;
@@ -160,7 +160,7 @@ Quite likely.
 This library uses the [Meson build system](http://mesonbuild.com/index.html),
 	so things will be straightforward.
 
-If you're on a POSIX, try running `./bootstrap.sh` - chances are things will work
+Try running `./bootstrap.py` - chances are things will work
 	automagically and you'll find yourself with everything built and all tests running.
 
 ### I'm on Windows || It doesn't work
