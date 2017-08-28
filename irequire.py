@@ -92,7 +92,10 @@ templates = {
 			"apt-get" : {
 				"platform" : [ "linux" ],
 				"requires" : [ "apt-get" ],
-				"cmd_list" : [ [ "sudo", "apt-get", "-y", "install", "{pkg_name}" ] ]
+				"cmd_list" : [
+					[ "sudo", "apt-get", "update" ],
+					[ "sudo", "apt-get", "-y", "install", "{pkg_name}" ]
+				]
 			},
 			"brew" : {
 				"platform" : [ "darwin" ],
@@ -279,6 +282,13 @@ def irequire(templates, targets, quiet=False):
 	for tgt in targets:
 		if not tgt.ok():
 			tgt.install(active_templates)
+
+
+# must be at least python 3.5
+if vers(sys.version) < vers('3.5'):
+	print('python version %s < minimum 3.5 required' % sys.version, file=sys.stderr)
+	exit(1)
+
 
 if __name__ == "__main__":
 	# TODO: implement
