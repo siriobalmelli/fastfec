@@ -89,6 +89,14 @@ templates = {
 				"requires" : [ "brew" ],
 				"cmd_list" : [ [ "brew", "install", "{pkg_name}" ] ]
 			},
+			"gem-nosudo" : {
+				"platform" : [ "linux", "darwin" ],
+				"requires" : [ "gem" ],
+				"cmd_list" : [ 
+					[ "gem", "install", "rubygems-update" ],
+					[ "gem", "install", "{pkg_name}" ] 
+				]
+			},
 			"gem" : {
 				"platform" : [ "linux", "darwin" ],
 				"requires" : [ "gem" ],
@@ -198,6 +206,7 @@ targets = {	"pip3" : {
 			},
 			"md2man-roff" : {
 				"recipes" : [
+					{ "template" : "gem-nosudo", "recipe" : { "pkg_name" : "md2man" } },
 					{ "template" : "gem", "recipe" : { "pkg_name" : "md2man" } }
 				]
 			}
