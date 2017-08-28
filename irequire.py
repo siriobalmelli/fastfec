@@ -181,7 +181,12 @@ class template():
 #+	'eval' evaluated and a matching result selected from 'ret'
 #
 # All variables in a target are available for substitution inside recipes.
-targets = {	"meson" : {
+targets = {	"pip3" : {
+				"recipes" : [
+					{ "template" : "apt-get", "recipe" : { "pkg_name" : "python3-pip" } }
+				]
+			},
+			"meson" : {
 				"version" : { "minimum" : "0.41.2" },
 				"recipes" : [
 					{ "template" : "pip3", "recipe" : { "pkg_name" : "meson" } }
