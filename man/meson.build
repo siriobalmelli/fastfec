@@ -1,4 +1,4 @@
-man_pages = [ 'fnvsum.1' ]
+man_pages = [ 'fnvsum.1', 'ncp.1' ]
 
 md2man = find_program('md2man-roff')
 
