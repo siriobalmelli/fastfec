@@ -29,3 +29,8 @@ These are in order by priority:
 
 -	document
 -	building on windows
+
+## TODO: man pages
+
+-	nmem(3)
+-	fnv(3)

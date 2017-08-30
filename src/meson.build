@@ -1,4 +1,4 @@
-lib_files = [ 'b2hx.c', 'hx2b.c', 'fnv.c', 'pcg_rand.c', 'lifo.c' ]
+lib_files = [ 'b2hx.c', 'hx2b.c', 'fnv.c', 'nmem.c', 'pcg_rand.c', 'lifo.c' ]
 
 # We are being build stand-alone,
 #+	so we build shared and generate a pkg-config file.

@@ -18,3 +18,9 @@ fnvsum = executable('fnvsum', 'fnvsum.c',
 test('fnvsum test',
 	find_program('test_fnvsum.py'),
 	args : fnvsum.full_path())
+
+
+ncp = executable('ncp', 'ncp.c',
+		include_directories : inc,
+		link_with : nonlibc,
+		install : util_install)
