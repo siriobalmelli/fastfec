@@ -16,6 +16,19 @@ This is usually faster for larger files.
 (c)2017 Sirio; Balmelli Analog & Digital
 */
 
+void print_usage(char *pgm_name)
+{
+	fprintf(stderr, "Usage: %1$s [OPTION]... SOURCE_FILE DEST_FILE\n\
+  or:  %1$s [OPTION]... SOURCE_FILE... DEST_DIR\n\
+An analog of 'cp' using nmem(3) zero-copy I/O for speed.\n\
+\n\
+Options:\n\
+\t-v, --verbose	:	list each file being copied\n\
+\t-f, --force	:	overwrite destination file(s) if existing\n\
+\t-h, --help	:	print usage and exist",
+		pgm_name);
+}
+
 int main(int argc, char **argv)
 {
 	int err_cnt = 0;
@@ -28,22 +41,16 @@ int main(int argc, char **argv)
 	char *dst_path = NULL;
 	char *dst_dir = NULL;
 
-	/* TODO:
-	-	replace with a full getopt parser
-	-	implement '-v' and '-f' flag; error on other flags
-	-	implement multiple source files into one destination dir
-	*/
-	int opt = 0;
-	int opt_ind = 1;
-	int force = 0;
-	int verbose = 0;
+	int opt = 0, opt_ind = 1;
+	int force = 0, verbose = 0;
 
 	static struct option long_options[] = {
 		{ "verbose",	no_argument,	0,	'v'},
 		{ "force",	no_argument,	0,	'f'},
+		{ "help",	no_argument,	0,	'h'},
 	};
 
-	while ((opt = getopt_long(argc, argv, "vf", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "vfh", long_options, NULL)) != -1) {
 		switch(opt)
 		{
 			case 'v':
@@ -54,9 +61,12 @@ int main(int argc, char **argv)
 				force = 1;
 				opt_ind++;
 				break;
+			case 'h':
+				print_usage(argv[0]);
+				goto out;
 			default:
-				fprintf(stderr, "Usage: %s SOURCE_FILE DEST_FILE\r\n", argv[0]);
-				exit(EXIT_FAILURE);
+				print_usage(argv[0]);
+				Z_die("option '%c' invalid", opt);
 		}
 	}
 
