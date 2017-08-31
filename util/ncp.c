@@ -25,9 +25,20 @@ int main(int argc, char **argv)
 	char *dst_path = NULL;
 	char *dst_dir = NULL;
 
-	Z_die_if(argc != 3, "expecting: %s SOURCE_FILE DEST_FILE", argv[0]);
-	src_path = argv[1];
-	dst_path = argv[2];
+	/* TODO:
+	-	replace with a full getopt parser
+	-	implement '-v' and '-f' flag; error on other flags
+	-	implement multiple source files into one destination dir
+	*/
+	Z_die_if(argc < 3 || argc > 4, "expecting: %s SOURCE_FILE DEST_FILE", argv[0]);
+	int opt_ind = 1;
+	int force = 0;
+	if (!strcmp(argv[opt_ind], "-f")) {
+		force = 1;
+		opt_ind++;
+	}
+	src_path = argv[opt_ind++];
+	dst_path = argv[opt_ind++];
 
 	/* open source and pipe */
 	Z_die_if(
@@ -58,6 +69,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* Delete a possible existing file */
+	if (force) {
+		unlink(dst_path);
+		errno = 0;
+	}
 	/* we're clean: close and deliver the file */
 	nmem_free(&dst, dst_path);
 
