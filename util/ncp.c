@@ -2,6 +2,9 @@
 
 #include <malloc.h>
 #include <libgen.h> /* dirname */
+#include <unistd.h>
+#include <stdlib.h>
+#include <getopt.h>
 
 #include <zed_dbg.h>
 
@@ -30,16 +33,39 @@ int main(int argc, char **argv)
 	-	implement '-v' and '-f' flag; error on other flags
 	-	implement multiple source files into one destination dir
 	*/
-	Z_die_if(argc < 3 || argc > 4, "expecting: %s SOURCE_FILE DEST_FILE", argv[0]);
+	int opt = 0;
 	int opt_ind = 1;
 	int force = 0;
-	if (!strcmp(argv[opt_ind], "-f")) {
-		force = 1;
-		opt_ind++;
+	int verbose = 0;
+
+	static struct option long_options[] = {
+		{ "verbose",	no_argument,	0,	'v'},
+		{ "force",	no_argument,	0,	'f'},
+	};
+
+	while ((opt = getopt_long(argc, argv, "vf", long_options, NULL)) != -1) {
+		switch(opt)
+		{
+			case 'v':
+				verbose = 1;
+				opt_ind++;
+				break;
+			case 'f':
+				force = 1;
+				opt_ind++;
+				break;
+			default:
+				fprintf(stderr, "Usage: %s SOURCE_FILE DEST_FILE\r\n", argv[0]);
+				exit(EXIT_FAILURE);
+		}
 	}
+
 	src_path = argv[opt_ind++];
 	dst_path = argv[opt_ind++];
 
+	if (verbose) {
+		fprintf(stdout, "'%s' -> '%s'\r\n", src_path, dst_path);
+	}
 	/* open source and pipe */
 	Z_die_if(
 		nmem_file(src_path, &src)
