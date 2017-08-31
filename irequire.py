@@ -101,6 +101,7 @@ templates = {
 				"platform" : [ "linux", "darwin" ],
 				"requires" : [ "gem" ],
 				"cmd_list" : [ 
+					[ "sudo", "gem", "update", "--system" ],
 					[ "sudo", "gem", "install", "rubygems-update" ],
 					[ "sudo", "gem", "install", "{pkg_name}" ] 
 				]
@@ -109,6 +110,11 @@ templates = {
 				"platform" : [ "linux", "darwin" ],
 				"requires" : [ "pip3" ],
 				"cmd_list" : [ [ "sudo", "-H", "pip3", "install", "{pkg_name}" ] ]
+			},
+			"pip3-vers" : {
+				"platform" : [ "linux", "darwin" ],
+				"requires" : [ "pip3" ],
+				"cmd_list" : [ [ "sudo", "-H", "pip3", "install", "{pkg_name}=={pkg_vers}", "--force-reinstall"] ]
 			},
 			"port" : {
 				"platform" : [ "darwin" ],
@@ -184,9 +190,10 @@ targets = {	"pip3" : {
 				]
 			},
 			"meson" : {
-				"version" : { "minimum" : "0.41.2" },
+				"version" : { "minimum" : "0.42.0" },
 				"recipes" : [
-					{ "template" : "pip3", "recipe" : { "pkg_name" : "meson" } }
+					{ "template" : "pip3", "recipe" : { "pkg_name" : "meson" } },
+                                        { "template" : "pip3-vers", "recipe" : { "pkg_name" : "meson", "pkg_vers" : "{version[minimum]}" } }
 				]
 			},
 			"ninja" : {
@@ -269,7 +276,7 @@ class target(dict):
 					break
 			# if a recipe fails carry on
 			except Exception as e:
-				print('%s: template %s failed with:\n%s' % (self['name'], obj['template'], e.message),
+				print('%s: template %s failed' % (self['name'], obj['template']),
 						file=sys.stderr)
 				continue
 		# it is an error to have NO working recipes
