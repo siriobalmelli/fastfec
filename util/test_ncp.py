@@ -12,7 +12,7 @@ test_file = 'copy.bin'
 
 def create_random_file():
 	try:
-		sub = subprocess.run(['dd', 'if=/dev/urandom', 'of='+test_file, 'bs=1024', 'count=1024'],
+		subprocess.run(['dd', 'if=/dev/urandom', 'of='+test_file, 'bs=1024', 'count=1024'],
 				stdout=subprocess.PIPE, stderr=subprocess.PIPE,
 				shell=False, check=True);
 	except subprocess.CalledProcessError as err:
@@ -22,7 +22,7 @@ def create_random_file():
 def ncp_copy(cmds): 
 	'''copy a file using cmds"'''
 	try:
-		sub = subprocess.run(cmds,
+		subprocess.run(cmds,
 				stdout=subprocess.PIPE, stderr=subprocess.PIPE,
 				shell=False, check=True);
 	except subprocess.CalledProcessError as err:
