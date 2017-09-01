@@ -7,7 +7,7 @@ import subprocess
 import sys
 import os
 
-ncp = 'util/ncp'
+ncp = 'util/ncp' 
 test_file = 'copy.bin'
 
 def create_random_file():
@@ -19,9 +19,10 @@ def create_random_file():
 		print(err.cmd)
 		exit(1)
 
-def ncp_copy(cmds): 
+def ncp_copy(cmds, ncp): 
 	'''copy a file using cmds"'''
 	try:
+		cmds.insert(0, ncp)
 		subprocess.run(cmds,
 				stdout=subprocess.PIPE, stderr=subprocess.PIPE,
 				shell=False, check=True);
@@ -43,20 +44,20 @@ def check_output_files():
 	else:
 		exit(1)
 
+cmds = { 'clean'	: [ test_file, 'no_flags.copy'],
+		 'force'	: [ '-f', test_file, 'force.copy'],
+		 'verbose'	: [ '-v', test_file, 'verbose.copy'],
+		 'force_verbose' : [ '-v', '-f', test_file, 'verbose_force.copy']
+		 }
+
 #   main()
 if __name__ == "__main__":
 	if sys.argv[1] is not None:
 		ncp = sys.argv[1]
 
 	create_random_file()
-	cmds_clean = [ncp, test_file, 'no_flags.copy']
-	cmds_force = [ncp, '-f', test_file, 'force.copy']
-	cmds_verbose = [ncp, '-v', test_file, 'verbose.copy'] 
-	cmds_verbose_copy = [ncp, '-v', '-f', test_file, 'verbose_force.copy']
 
-	ncp_copy(cmds_clean)
-	ncp_copy(cmds_force)
-	ncp_copy(cmds_verbose)
-	ncp_copy(cmds_verbose_copy)
+	for k,v in cmds.items():
+		ncp_copy(v, ncp)
 
 	check_output_files()
