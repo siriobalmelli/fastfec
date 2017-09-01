@@ -26,7 +26,7 @@ void	usls_free(void *usls);
 -	handle end-of-function cleanup with GOTOs
 -	when in doubt, have a function return a status code as `int` : `0 == success`
 -	when allocating, return a pointer: `NULL == fail`
--	when calling libc, probably best to return an FD: `<1 == fail`
+-	when calling libc, probably best to return an FD: `-1 == fail`
 
 -	Comments formatting:
 
