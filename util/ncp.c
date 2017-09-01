@@ -1,7 +1,7 @@
 #include <nmem.h>
 
+#include <npath.h> /* n_dirname() */
 #include <malloc.h>
-#include <libgen.h> /* dirname */
 #include <unistd.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -81,16 +81,10 @@ int main(int argc, char **argv)
 		nmem_file(src_path, &src)
 		, "");
 	Z_die_if(pipe(piping), "");
-	/* open destination
-	TODO: roll our own non-shit dirname() implementation
-	*/
-	size_t path_len = strlen(dst_path);
-	Z_die_if(!(
-		dst_dir = malloc(path_len)
-		), "path_len %zu", path_len);
-	memcpy(dst_dir, dst_path, path_len);
+	/* open destination */
+	dst_dir = n_dirname(dst_path);
 	Z_die_if(
-		nmem_alloc(src.len, dirname(dst_dir), &dst)
+		nmem_alloc(src.len, dst_dir, &dst)
 		, "");
 
 	/* splicings */
@@ -116,11 +110,10 @@ int main(int argc, char **argv)
 out:
 	nmem_free(&src, NULL);
 	nmem_free(&dst, NULL);
-	if (piping[0])
+	if (piping[0]) {
 		close(piping[0]);
-	if (piping[1])
 		close(piping[1]);
-	if (dst_dir)
-		free(dst_dir);
+	}
+	free(dst_dir);
 	return err_cnt;
 }
