@@ -1,12 +1,13 @@
 #include <nmem.h>
 #include <zed_dbg.h>
 
+
 /*	nmem_file()
 Map a file at 'path' read-only.
 Populate '*out'.
 Returns 0 on success.
 */
-int		nmem_file(char *path, struct nmem *out)
+int		nmem_file(const char *path, struct nmem *out)
 {
 	int err_cnt = 0;
 	Z_die_if(!path || !out, "args");
@@ -16,12 +17,12 @@ int		nmem_file(char *path, struct nmem *out)
 	*/
 	out->o_flags = O_RDONLY;
 	out->fd = open(path, out->o_flags);
-	Z_die_if(out->fd < 1, "open %s", path);
+	Z_die_if(out->fd == -1, "fd %d; open %s", out->fd, path);
 
 	/* get length */
 	Z_die_if((
 		out->len = lseek(out->fd, 0, SEEK_END)
-		) < 1, "SEEK_END of '%s' gives %ld", path, out->len);
+		) == -1, "SEEK_END of '%s' gives %ld", path, out->len);
 
 	/* mmap file */
 	Z_die_if((
@@ -54,14 +55,14 @@ int		nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out)
 		out->o_flags = O_RDWR | O_TMPFILE;
 		Z_die_if((
 			out->fd = open(tmp_dir, out->o_flags, NMEM_PERMS)
-			) < 1, "failed to open temp file in %s", tmp_dir);
+			) == -1, "failed to open temp file in %s", tmp_dir);
 	} else {
 		out->o_flags = 0;
 		char name[16];
 		snprintf(name, 16, "nmem_%zu", out->len);
 		Z_die_if((
 			out->fd = syscall(__NR_memfd_create, name, out->o_flags)
-			) < 1, "");
+			) == -1, "");
 	}
 
 	/* size and map */
@@ -79,7 +80,7 @@ out:
 /*	nmem_free()
 Free the memory pointed to by '*nm'; clear '*nm'
 */
-void		nmem_free(struct nmem *nm, char *deliver_path)
+void		nmem_free(struct nmem *nm, const char *deliver_path)
 {
 	if (!nm)
 		return;
@@ -99,9 +100,9 @@ void		nmem_free(struct nmem *nm, char *deliver_path)
 	}
 
 	/* close */
-	if (nm->fd < 1)
+	if (nm->fd != -1)
 		close(nm->fd);
-	nm->o_flags = nm->fd = 0;
+	nm->o_flags = nm->fd = -1;
 }
 
 

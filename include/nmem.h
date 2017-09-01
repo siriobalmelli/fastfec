@@ -40,9 +40,9 @@ For given block sizes:
 -	open(O_TMPFILE)
 -	memfd()
 */
-NLC_PUBLIC int		nmem_file(char *path, struct nmem *out);
+NLC_PUBLIC int		nmem_file(const char *path, struct nmem *out);
 NLC_PUBLIC int		nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out);
-NLC_PUBLIC void		nmem_free(struct nmem *nm, char *deliver_path);
+NLC_PUBLIC void		nmem_free(struct nmem *nm, const char *deliver_path);
 
 NLC_PUBLIC size_t	nmem_in_splice(struct nmem	*nm,
 					size_t		offset,

@@ -21,5 +21,6 @@ NLC_LOCAL void n_counts_(const char *path, size_t *out_len, size_t *out_last_sep
 
 NLC_PUBLIC char	*n_dirname(const char *path);
 NLC_PUBLIC char	*n_basename(const char *path);
+NLC_PUBLIC char *n_join(const char *dir_name, const char *base_name);
 
 #endif /* npath_h_ */

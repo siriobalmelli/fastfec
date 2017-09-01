@@ -80,16 +80,6 @@ Return it as a newly allocated string.
 */
 char	*n_basename(const char *path)
 {
-/*	invariants:
-
-       path       dirname   basename
-       /usr/lib   /usr      lib
-       /usr/      /         usr
-       usr        .         usr
-       /          /         /
-       .          .         .
-       ..         .         ..
-*/
 	char *ret = NULL;
 
 	size_t len = 0, last_sep = 0;
@@ -113,6 +103,66 @@ char	*n_basename(const char *path)
 	if (ret[len-1] == n_sep && len > 1)
 		len--;
 	ret[len] = '\0';
+
+	return ret;
+out:
+	free(ret);
+	return NULL;
+}
+
+
+/*	n_path_join()
+Return a newly allocated string which joins 'dir' and 'base' with the path separator.
+
+NOTES:
+This is the reciprocal of n_basename() and n_dirname() above;
+	in certain corner cases it doesn't just concatenate
+	'dirname' and 'basename', but accurately reproduces
+	the original path string which would have formed them.
+... it's actually NOT the reciprocal in the isolated case where the original
+	path to be split had a trailing '/' - n_basename() discards it
+	so there is NO way to know it was there.
+See npath_test.c for details.
+*/
+char *n_join(const char *dir_name, const char *base_name)
+{
+	char *ret = NULL;
+	size_t dir_len = 0, base_len = 0;
+
+	Z_die_if(!base_name, "args");
+	base_len = strlen(base_name);
+
+	/* sanitize dir */
+	if (dir_name) {
+		dir_len = strlen(dir_name);
+		/* corner cases: when dirname should be removed.
+		P.S.: I know this could be a single if statement ... but it's legible as-is.
+		*/
+		if (dir_len <= 1) {
+			if (dir_name[0] == '.')
+				dir_len = 0;
+			if (dir_name[0] == n_sep && base_name[0] == n_sep)
+				dir_len = 0;
+		}
+	}
+
+
+	Z_die_if(!(
+		ret = malloc(dir_len + base_len + 2)
+		), "len %zu", dir_len + base_len + 2);
+
+	/* dir_name trails with a separator: omit the separator */
+	if (dir_len && dir_name[dir_len -1] == n_sep) {
+		sprintf(ret, "%s%s", dir_name, base_name);
+	
+	/* classical case: concatenate dir_name, separator and base_name */
+	} else if (dir_len) {
+		sprintf(ret, "%s%c%s", dir_name, n_sep, base_name);
+	
+	/* no dir_name: return base_name */
+	} else {
+		sprintf(ret, "%s", base_name);
+	}
 
 	return ret;
 out:

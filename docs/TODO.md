@@ -34,4 +34,4 @@ These are in order by priority:
 
 -	nmem(3)
 -	fnv(3)
--	n_dirname(3); n_basename(3)
+-	n_dirname(3); n_basename(3); n_join(3)
