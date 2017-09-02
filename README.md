@@ -121,6 +121,15 @@ Use the `nlc_timing_start()` and `nlc_timing_stop()` macros in [nonlibc.h](inclu
 
 See e.g.: [fnv_test.c](test/fnv_test.c) for usage examples.
 
+### Zero-copy I/O - [nmem.h](include/nmem.h)
+
+A memory allocator which handles zero-copy I/O behind-the-scenes.
+
+An example usage is the [ncp](util/ncp.c) utility provided by this library.
+
+`ncp` re-implements the system `cp` command using this library for zero-copy I/O;
+	and is **>20%** faster than `cp` for large files.
+
 ### other odds-and-ends
 
 -	visibility and inlining macros in [nonlibc.h](include/nonlibc.h)
