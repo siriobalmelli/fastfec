@@ -1,6 +1,10 @@
 #include <nmem.h>
 #include <zed_dbg.h>
 
+/*	nmem_linux.c	linux-specific nmem implementation
+*/
+
+
 /* memfd_create() as a syscall.
 The advantage of memfd is that data is never written back to disk,
 	yet we can splice into it as if it were a file.
@@ -11,39 +15,6 @@ If not available, we fall back on a plain mmap()ed file in "/tmp".
 	#include <sys/syscall.h>
 	#include <linux/memfd.h>
 #endif
-
-/*	nmem_file()
-Map a file at 'path' read-only.
-Populate '*out'.
-Returns 0 on success.
-*/
-int		nmem_file(const char *path, struct nmem *out)
-{
-	int err_cnt = 0;
-	Z_die_if(!path || !out, "args");
-
-	/* open source file
-	This requires that mmap () protection also be read-only.
-	*/
-	out->o_flags = O_RDONLY;
-	out->fd = open(path, out->o_flags);
-	Z_die_if(out->fd == -1, "fd %d; open %s", out->fd, path);
-
-	/* get length */
-	Z_die_if((
-		out->len = lseek(out->fd, 0, SEEK_END)
-		) == -1, "SEEK_END of '%s' gives %ld", path, out->len);
-
-	/* mmap file */
-	Z_die_if((
-		out->mem = mmap(NULL, out->len, PROT_READ, MAP_PRIVATE, out->fd, 0)
-		) == MAP_FAILED, "map %s sz %zu fd %"PRId32, path, out->len, out->fd);
-
-	return 0;
-out:
-	nmem_free(out, NULL);
-	return err_cnt;
-}
 
 /*	nmem_alloc()
 Map 'len' bytes of memory.
@@ -122,7 +93,8 @@ void		nmem_free(struct nmem *nm, const char *deliver_path)
 	/* close */
 	if (nm->fd != -1)
 		close(nm->fd);
-	nm->o_flags = nm->fd = -1;
+	nm->o_flags = 0;
+	nm->fd = -1;
 }
 
 

@@ -1,7 +1,6 @@
 #include <nmem.h>
 
 #include <npath.h> /* n_dirname() */
-#include <malloc.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -94,10 +93,12 @@ int main(int argc, char **argv)
 {
 	int err_cnt = 0;
 
-	int piping[2] = { 0 };
-
 	char *src_path = NULL;
 	char *dst_path = NULL;
+
+	/* use one pipe for all I/O */
+	int piping[2] = { 0 };
+	Z_die_if(pipe(piping), "");
 
 	int opt = 0;
 	static struct option long_options[] = {
@@ -128,9 +129,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* use one pipe for all I/O */
-	Z_die_if(pipe(piping), "");
-	
 	/* sanity check file arguments */
 	int count = argc - optind;
 	if (count < 2) {

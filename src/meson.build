@@ -1,9 +1,10 @@
 lib_files = [ 'b2hx.c', 'hx2b.c', 'fnv.c', 'npath.c', 'pcg_rand.c', 'lifo.c' ]
 
+lib_files += 'nmem.c'
 if host_machine.system() == 'linux'
   lib_files += 'nmem_linux.c'
-else
-  lib_files += 'nmem_generic.c'
+elif host_machine.system() == 'darwin' or host_machine.system() == 'bsd'
+  lib_files += 'nmem_bsd.c'
 endif
 
 # We are being build stand-alone,
