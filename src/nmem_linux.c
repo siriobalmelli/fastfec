@@ -1,6 +1,16 @@
 #include <nmem.h>
 #include <zed_dbg.h>
 
+/* memfd_create() as a syscall.
+The advantage of memfd is that data is never written back to disk,
+	yet we can splice into it as if it were a file.
+If not available, we fall back on a plain mmap()ed file in "/tmp".
+*/
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+	#include <sys/syscall.h>
+	#include <linux/memfd.h>
+#endif
 
 /*	nmem_file()
 Map a file at 'path' read-only.

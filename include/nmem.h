@@ -13,22 +13,12 @@ Library of functions to handle zero-copy I/O
 #include <sys/mman.h>
 #include <sys/stat.h> /* umask() */
 
-/* memfd_create() as a syscall.
-The advantage of memfd is that data is never written back to disk,
-	yet we can splice into it as if it were a file.
-If not available, we fall back on a plain mmap()ed file in "/tmp".
-*/
-#include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
-	#include <sys/syscall.h>
-	#include <linux/memfd.h>
-#endif
-
 #include <stdint.h> /* uint{x}_t */
 #include <nonlibc.h>
 
 #define NMEM_PERMS (mode_t)(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
 #define NMEM_SPLICE_FLAGS ( SPLICE_F_GIFT | SPLICE_F_MOVE )
+
 
 struct nmem {
 	int32_t		fd;
@@ -42,12 +32,7 @@ union {
 };
 };
 
-/* TODO: speed comparisons:
-For given block sizes:
--	malloc
--	open(O_TMPFILE)
--	memfd()
-*/
+
 NLC_PUBLIC int		nmem_file(const char *path, struct nmem *out);
 NLC_PUBLIC int		nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out);
 NLC_PUBLIC void		nmem_free(struct nmem *nm, const char *deliver_path);
