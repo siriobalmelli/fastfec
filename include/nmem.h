@@ -13,8 +13,16 @@ Library of functions to handle zero-copy I/O
 #include <sys/mman.h>
 #include <sys/stat.h> /* umask() */
 
-#include <sys/syscall.h>
-#include <linux/memfd.h>
+/* memfd_create() as a syscall.
+The advantage of memfd is that data is never written back to disk,
+	yet we can splice into it as if it were a file.
+If not available, we fall back on a plain mmap()ed file in "/tmp".
+*/
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+	#include <sys/syscall.h>
+	#include <linux/memfd.h>
+#endif
 
 #include <stdint.h> /* uint{x}_t */
 #include <nonlibc.h>

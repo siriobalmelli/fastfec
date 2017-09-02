@@ -50,19 +50,29 @@ int		nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out)
 	Z_die_if(!len || !out, "args");
 	out->len = len;
 
-	/* open an fd */
-	if (tmp_dir) {
-		out->o_flags = O_RDWR | O_TMPFILE;
-		Z_die_if((
-			out->fd = open(tmp_dir, out->o_flags, NMEM_PERMS)
-			) == -1, "failed to open temp file in %s", tmp_dir);
-	} else {
+	if (!tmp_dir) {
+		/* memfd is preferable: splice in and out of virtual memory
+			without disk writeback.
+		*/
+		#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
 		out->o_flags = 0;
 		char name[16];
 		snprintf(name, 16, "nmem_%zu", out->len);
 		Z_die_if((
 			out->fd = syscall(__NR_memfd_create, name, out->o_flags)
 			) == -1, "");
+		/* fallback: create a temp file on disk */
+		#else
+		tmp_dir = "/tmp";
+		#endif
+	}
+
+	/* open an fd */
+	if (tmp_dir) {
+		out->o_flags = O_RDWR | O_TMPFILE;
+		Z_die_if((
+			out->fd = open(tmp_dir, out->o_flags, NMEM_PERMS)
+			) == -1, "failed to open temp file in %s", tmp_dir);
 	}
 
 	/* size and map */
