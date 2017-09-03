@@ -19,6 +19,8 @@ These are in order by priority:
 -	evaluate licensing - is GPL2 the least restrictive?
 -	*view* any source files linked in the documentation (with syntax highlight),
 		don't try and download it (facepalm)
+-	Move option parsing to Argp ... which likely means meson-wrapping it
+		since it doesn't come standard with LibC on all systems?!
 
 ## TODO: lifo
 

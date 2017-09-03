@@ -7,6 +7,7 @@ description = 'Collection of standard-not-standard utilities for the discerning 
 #sanity
 assert(meson.project_name() == 'nonlibc', 'Incorrect project name')
 
+compiler = meson.get_compiler('c')
 
 #
 #	build options by type
@@ -20,7 +21,8 @@ if get_option('buildtype') == 'debug'
 elif get_option('buildtype') == 'debugoptimized'
   add_project_arguments([ '-march=native', '-mtune=native', '-fno-omit-frame-pointer' ],
 			language : 'c')
-  if get_option('b_sanitize') != ''
+  # work around buggy gcc
+  if get_option('b_sanitize') != '' and compiler.get_id() == 'gcc'
     message('use gold linker for sanitizers')
     add_project_link_arguments([ '-fuse-ld=gold' ], language : 'c')
   endif

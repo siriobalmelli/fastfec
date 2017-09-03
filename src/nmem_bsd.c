@@ -85,10 +85,8 @@ size_t	nmem_in_splice(struct nmem	*nm,
 	Z_die_if(!nm || fd_pipe_from < 1, "args");
 
 	/* Owing to DARWIN's inevitable, demoralizing behavior of BLOCKING when
-		write()ing to a pipe (and by contagion, I'm going to ASSUME read() as well);
+		write()ing to a pipe (and by contagion, I'm going to ASSUME read() as well),
 		regardless of a previously successful fcntl() setting O_NONBLOCK!
-	TBH I won't care until someone yells about this code being slooow,
-		which is likely never as who even USES Darwin for serious computing??
 
 	In case you're wondering, this is however STILL better than
 		a poke in the eye with a sharp memcpy().

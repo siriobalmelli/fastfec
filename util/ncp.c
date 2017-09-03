@@ -28,7 +28,7 @@ static int verbose = 0;
 void print_usage(char *pgm_name)
 {
 	fprintf(stderr, "Usage: %1$s [OPTION]... SOURCE_FILE DEST_FILE\n\
-  or:  %1$s [OPTION]... SOURCE_FILE... DEST_DIR\n\
+  or:  %1$s [OPTION]... SOURCE_FILE... DEST_DIR/\n\
 An analog of 'cp' using nmem(3) zero-copy I/O for speed.\n\
 \n\
 Options:\n\
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 		{ "help",	no_argument,	0,	'h'},
 	};
 
-	while ((opt = getopt_long_only(argc, argv, "vfh", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "vfh", long_options, NULL)) != -1) {
 		switch(opt)
 		{
 			case 'v':
@@ -134,14 +134,15 @@ int main(int argc, char **argv)
 	if (count < 2) {
 		print_usage(argv[0]);
 		Z_die("missing SOURCE_FILE or DEST_FILE");
+	}
 
-	/* SOURCE_FILE -> DEST_FILE */
-	} else if (count == 2) {
-		src_path = argv[optind++];
-		dst_path = argv[optind++];
+	/* SOURCE_FILE DEST_FILE */
+	dst_path = argv[optind + 1];
+	if (count == 2 && !n_is_dir(dst_path)) {
+		src_path = argv[optind];
 		cp(src_path, dst_path, piping);
 
-	/* SOURCE_FILE... -> DEST_DIR */
+	/* SOURCE_FILE... DEST_DIR/ */
 	} else {
 		while (optind < argc -1) {
 			src_path = argv[optind++];
