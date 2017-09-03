@@ -1,8 +1,9 @@
+/*
+	nmem_linux.c	linux-specific nmem implementation
+*/
+
 #include <nmem.h>
 #include <zed_dbg.h>
-
-/*	nmem_linux.c	linux-specific nmem implementation
-*/
 
 
 /* memfd_create() as a syscall.
@@ -16,6 +17,7 @@ If not available, we fall back on a plain mmap()ed file in "/tmp".
 	#include <linux/memfd.h>
 #endif
 
+
 /*	nmem_alloc()
 Map 'len' bytes of memory.
 If 'tmp_dir' is given, map this as a temp file on disk;
@@ -25,7 +27,7 @@ Otherwise map anonymous memory.
 In both cases a valid fd is obtained, so that splice()
 	calls will succeed into and out of this memory region.
 */
-int		nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out)
+int nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out)
 {
 	int err_cnt = 0;
 	Z_die_if(!len || !out, "args");
@@ -68,10 +70,11 @@ out:
 	return err_cnt;
 }
 
+
 /*	nmem_free()
 Free the memory pointed to by '*nm'; clear '*nm'
 */
-void		nmem_free(struct nmem *nm, const char *deliver_path)
+void nmem_free(struct nmem *nm, const char *deliver_path)
 {
 	if (!nm)
 		return;
@@ -102,10 +105,10 @@ void		nmem_free(struct nmem *nm, const char *deliver_path)
 Splice 'len' bytes from 'fd_pipe_from' into 'nm' at 'offset'.
 Returns number of bytes pushed; which may be less than requested.
 */
-NLC_PUBLIC size_t	nmem_in_splice(struct nmem	*nm,
-					size_t		offset,
-					size_t		len,
-					int		fd_pipe_from)
+size_t	nmem_in_splice(struct nmem	*nm,
+			size_t		offset,
+			size_t		len,
+			int		fd_pipe_from)
 {
 	Z_die_if(!nm || fd_pipe_from < 1, "args");
 
@@ -118,14 +121,15 @@ out:
 	return 0;
 }
 
+
 /*	nmem_out_splice()
 Splice 'len' bytes from 'nm' into 'fd_pipe_to' at 'offset' (if applicable).
 Returns number of bytes pushed; which may be less than requested.
 */
-NLC_PUBLIC size_t	nmem_out_splice(struct nmem	*nm,
-					size_t		offset,
-					size_t		len,
-					int		fd_pipe_to)
+size_t nmem_out_splice(struct nmem	*nm,
+			size_t		offset,
+			size_t		len,
+			int		fd_pipe_to)
 {
 	Z_die_if(!nm || fd_pipe_to < 1, "args");
 
@@ -136,4 +140,45 @@ NLC_PUBLIC size_t	nmem_out_splice(struct nmem	*nm,
 	return ret;
 out:
 	return 0;
+}
+
+
+/*	nmem_cp()
+Returns number of bytes copied, may be less than requested.
+*/
+size_t nmem_cp(struct nmem	*src,
+		size_t		src_offt,
+		size_t		len,
+		struct nmem	*dst,
+		size_t		dst_offt)
+{
+	size_t done = 0;
+
+	/* sanity */
+	if (len > src->len - src_offt)
+		len = src->len - src_offt;
+	if (len > dst->len - dst_offt)
+		len = dst->len - dst_offt;
+
+	int piping[2] = { -1 };
+	Z_die_if(pipe(piping), "");
+
+	/* splicings */
+	for (size_t fd_sz=0; done < src->len; ) {
+		fd_sz = nmem_out_splice(src, done, src->len-done, piping[1]);
+		for (size_t temp=0; fd_sz > 0; ) {
+			Z_die_if(!(
+				temp = nmem_in_splice(dst, done, fd_sz, piping[0])
+				), "");
+			done += temp;
+			fd_sz -= temp;
+		}
+	}
+
+out:
+	if (piping[0] != -1) {
+		close(piping[0]);
+		close(piping[1]);
+	}
+	return done;
 }

@@ -42,7 +42,7 @@ Options:\n\
 /*	cp()
 Do copy operation
 */
-int cp(const char *src_path, const char *dst_path, int *piping)
+int cp(const char *src_path, const char *dst_path)
 {
 	int err_cnt = 0;
 
@@ -60,23 +60,10 @@ int cp(const char *src_path, const char *dst_path, int *piping)
 		nmem_alloc(src.len, dst_dir, &dst)
 		, "");
 
-#if 0
-	/* splicings */
-	for (size_t fd_sz, done_sz=0; done_sz < src.len; ) {
-		fd_sz = nmem_out_splice(&src, done_sz, src.len-done_sz, piping[1]);
-		for (size_t temp=0; fd_sz > 0; ) {
-			Z_die_if(!(
-				temp = nmem_in_splice(&dst, done_sz, fd_sz, piping[0])
-				), "");
-			done_sz += temp;
-			fd_sz -= temp;
-		}
-	}
-#else
+	/* do copy */
 	Z_die_if((
 		nmem_cp(&src, 0, src.len, &dst, 0)
 		) != src.len, "");
-#endif
 
 	/* Delete a possible existing file */
 	if (force) {
@@ -95,16 +82,15 @@ out:
 	return err_cnt;
 }
 
+
+/*	main()
+*/
 int main(int argc, char **argv)
 {
 	int err_cnt = 0;
 
 	char *src_path = NULL;
 	char *dst_path = NULL;
-
-	/* use one pipe for all I/O */
-	int piping[2] = { 0 };
-	Z_die_if(pipe(piping), "");
 
 	int opt = 0;
 	static struct option long_options[] = {
@@ -146,7 +132,7 @@ int main(int argc, char **argv)
 	dst_path = argv[optind + 1];
 	if (count == 2 && !n_is_dir(dst_path)) {
 		src_path = argv[optind];
-		cp(src_path, dst_path, piping);
+		cp(src_path, dst_path);
 
 	/* SOURCE_FILE... DEST_DIR/ */
 	} else {
@@ -155,16 +141,12 @@ int main(int argc, char **argv)
 			char *src_base = n_basename(src_path);
 			dst_path = n_join(argv[argc-1], src_base);
 
-			cp(src_path, dst_path, piping);
+			cp(src_path, dst_path);
 			free(src_base);
 			free(dst_path); dst_path = NULL;
 		}
 	}
 
 out:
-	if (piping[0]) {
-		close(piping[0]);
-		close(piping[1]);
-	}
 	return err_cnt;
 }
