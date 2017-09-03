@@ -10,15 +10,19 @@ import filecmp
 import collections as col
 
 ncp = 'util/ncp' 
-test_dir = 'test_copy'
+test_dir = 'test_copy/'
 
-input_files = [ 'copy.bin', 'copy_one.bin', 'copy_two.bin' ]
+input_files = [ 'copy.bin', 'copy_one.bin', 'copy_two.bin', 'copy_three.bin', 'copy_four.bin' ]
 output_files = [ 'no_flags.copy', 'verbose.copy', 'test_copy/no_flags.copy', 
-		'test_copy/verbose.copy', 'test_copy/copy_one.bin', 'test_copy/copy_two.bin' ]
+		'test_copy/verbose.copy', 'test_copy/copy_one.bin', 'test_copy/copy_two.bin',
+		'test_copy/copy_three.bin', 'test_copy/copy_four.bin' ]
+
 # No output is valid, so we add it to the list.
 verbose_output = [ '', '\'copy.bin\' -> \'verbose.copy\'',
 				'\'no_flags.copy\' -> \'test_copy/no_flags.copy\'\n\'verbose.copy\' -> \'test_copy/verbose.copy\'', 
-				'\'copy_one.bin\' -> \'test_copy/copy_one.bin\'\n\'copy_two.bin\' -> \'test_copy/copy_two.bin\'']
+				'\'copy_one.bin\' -> \'test_copy/copy_one.bin\'\n\'copy_two.bin\' -> \'test_copy/copy_two.bin\'',
+				'\'copy_three.bin\' -> \'test_copy/copy_three.bin\'',
+				'\'copy_four.bin\' -> \'test_copy/copy_four.bin\'']
 
 def create_random_file(filename):
 	try:
@@ -61,15 +65,21 @@ def check_output_files():
 	for out_file in output_files:
 		if os.path.isfile(out_file):
 			if out_file.endswith('.bin'):
-				# compare 'copy_one.bin' and 'copy_two.bin' files.
+				# compare 'copy_XXXX.bin' files.
 				if not filecmp.cmp(input_files[1], output_files[4]):
 					print('1. file {0} not equal to {1}'.format(input_files[1], output_files[4]))
 					exit(1)
 				if not filecmp.cmp(input_files[2], output_files[5]):
 					print('2. file {0} not equal to {1}'.format(input_files[2], output_files[5]))
 					exit(1)
+				if not filecmp.cmp(input_files[3], output_files[6]):
+					print('3. file {0} not equal to {1}'.format(input_files[3], output_files[6]))
+					exit(1)
+				if not filecmp.cmp(input_files[4], output_files[7]):
+					print('4. file {0} not equal to {1}'.format(input_files[4], output_files[7]))
+					exit(1)
 			elif not filecmp.cmp(input_files[0], out_file):
-				print('3. file {0} not equal to {1}'.format(input_files[0], out_file))
+				print('5. file {0} not equal to {1}'.format(input_files[0], out_file))
 				exit(1)
 		else:
 			print('file {0} does not exist'.format(out_file))
@@ -85,14 +95,21 @@ def check_output_files():
 # Use OrderedDict such that iterations are always in the order of elements inserted.
 # To make sure that 'force' tests always succeed overwriting previously created file.
 cmds = col.OrderedDict([
+		 # File to File
 		 ('clean', [ input_files[0], output_files[0]]),
 		 ('force', [ '-f', input_files[0], output_files[0]]),
 		 ('verbose', [ '-v', input_files[0], output_files[1]]),
 		 ('force_verbose', [ '-v', '-f', input_files[0], output_files[1]]),
-		 ('all_files', [ output_files[0], output_files[1], test_dir ]),
-		 ('all_files_force', [ '-f', output_files[0], output_files[1], test_dir ]),
-		 ('all_files_verbose', [ '-v', input_files[1], input_files[2], test_dir ]),
-		 ('all_files_verbose_force', [ '-v', '-f', input_files[1], input_files[2], test_dir ])
+		 # File to Directory
+		 ('dir_clean', [ input_files[3], test_dir]),
+		 ('dir_force', ['-f', input_files[3], test_dir]),
+		 ('dir_verbose', ['-v', input_files[4], test_dir]),
+		 ('dir_verbose_force', ['-v', '-f', input_files[4], test_dir]),
+	     # Files to Directory
+		 ('files_clean', [ output_files[0], output_files[1], test_dir ]),
+		 ('files_force', [ '-f', output_files[0], output_files[1], test_dir ]),
+		 ('files_verbose', [ '-v', input_files[1], input_files[2], test_dir ]),
+		 ('files_verbose_force', [ '-v', '-f', input_files[1], input_files[2], test_dir ])
 		 ])
 
 #   main()
