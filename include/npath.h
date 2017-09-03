@@ -23,4 +23,6 @@ NLC_PUBLIC char	*n_dirname(const char *path);
 NLC_PUBLIC char	*n_basename(const char *path);
 NLC_PUBLIC char *n_join(const char *dir_name, const char *base_name);
 
+NLC_PUBLIC int	n_is_dir(const char *path);
+
 #endif /* npath_h_ */

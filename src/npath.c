@@ -169,3 +169,20 @@ out:
 	free(ret);
 	return NULL;
 }
+
+
+/*	n_is_dir()
+Returns 1 if path ends with the separator, otherwise 0
+*/
+int n_is_dir(const char *path)
+{
+	size_t ret = 0;
+	while (path[ret] != '\0')
+		ret++;
+
+	if (path[ret-1] == n_sep)
+		return 1;
+	if (ret == 1 && path[0] == '.')
+		return 1;
+	return 0;
+}

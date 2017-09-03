@@ -47,14 +47,15 @@ char *res_join[] = {
 	"a/subdir"
 };
 
-/*	main()
+/*	test_basedir()
+Test basename and dirname and join
 */
-int main()
+int test_basedir()
 {
 	int err_cnt = 0;
+
 	char *d_name = NULL, *b_name = NULL, *join = NULL;
 
-	/* test basename and dirname */
 	for (int i=0; i < sizeof(tests)/sizeof(char*); i++) {
 		d_name = n_dirname(tests[i]);
 		Z_die_if(strcmp(d_name, res_dirname[i]),
@@ -79,5 +80,38 @@ out:
 	free(d_name);
 	free(b_name);
 	free(join);
+	return err_cnt;
+}
+
+
+/*	test_isdir()
+*/
+int test_isdir()
+{
+	int err_cnt = 0;
+
+	/* these are directories */
+	Z_err_if(!n_is_dir("/"), "");
+	Z_err_if(!n_is_dir("./"), "");
+	Z_err_if(!n_is_dir("."), "");
+	Z_err_if(!n_is_dir("/hello/"), "");
+
+	/* these are not */
+	Z_err_if(n_is_dir("hello"), "");
+	Z_err_if(n_is_dir("/hello"), "");
+
+	return err_cnt;
+}
+
+
+/*	main()
+*/
+int main()
+{
+	int err_cnt = 0;
+
+	err_cnt += test_basedir();
+	err_cnt += test_isdir();
+
 	return err_cnt;
 }
