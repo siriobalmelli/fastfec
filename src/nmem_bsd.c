@@ -1,3 +1,7 @@
+/*
+	nmem_bsd.c	BSD-specific implementation for nmem
+*/
+
 #include <nmem.h>
 
 //#define Z_LOG_LVL (Z_inf | Z_wrn | Z_err | Z_in2)
@@ -7,11 +11,10 @@
 #include <fcntl.h>
 #include <sys/param.h> /* MAXPATHLEN */
 
-/*	nmem_bsd.c	BSD-specific implementation for nmem
+
+/*	nmem_alloc()
 */
-
-
-int		nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out)
+int nmem_alloc(size_t len, const char *tmp_dir, struct nmem *out)
 {
 	int err_cnt = 0;
 	char *tmpfile = NULL;
@@ -49,7 +52,10 @@ out:
 	return err_cnt;
 }
 
-void		nmem_free(struct nmem *nm, const char *deliver_path)
+
+/*	nmem_free()
+*/
+void nmem_free(struct nmem *nm, const char *deliver_path)
 {
 	if (!nm)
 		return;
@@ -77,15 +83,35 @@ out:
 	nm->fd = -1;
 }
 
-size_t	nmem_in_splice(struct nmem	*nm,
+
+/*	nmem_in_splice()
+*/
+size_t nmem_in_splice(struct nmem	*nm,
      			size_t		offset,
      			size_t		len,
      			int		fd_pipe_from)
 {
 	Z_die_if(!nm || fd_pipe_from < 1, "args");
 
+	ssize_t ret = read(fd_pipe_from, nm->mem + offset, len);
+	Z_die_if(ret < 0, "len %zu", len);
+	return ret;
+out:
+	return 0;
+}
+
+
+/*	nmem_out_splice()
+*/
+size_t nmem_out_splice(struct nmem	*nm,
+			size_t		offset,
+			size_t		len,
+			int		fd_pipe_to)
+{
+	Z_die_if(!nm || fd_pipe_to < 1, "args");
+
 	/* Owing to DARWIN's inevitable, demoralizing behavior of BLOCKING when
-		write()ing to a pipe (and by contagion, I'm going to ASSUME read() as well),
+		write()ing to a pipe,
 		regardless of a previously successful fcntl() setting O_NONBLOCK!
 
 	In case you're wondering, this is however STILL better than
@@ -95,28 +121,39 @@ size_t	nmem_in_splice(struct nmem	*nm,
 		len = PIPE_BUF;
 	Z_log(Z_in2, "len %zu; offt %zu", len, offset);
 
-	ssize_t ret = read(fd_pipe_from, nm->mem + offset, len);
+	ssize_t ret = write(fd_pipe_to, nm->mem + offset, len);
 	Z_die_if(ret < 0, "len %zu", len);
 	return ret;
 out:
 	return 0;
 }
 
-size_t	nmem_out_splice(struct nmem	*nm,
-			size_t		offset,
-			size_t		len,
-			int		fd_pipe_to)
+
+/*	nmem_cp()
+Copy 'len' bytes between 'src' and 'dst' at their respective offsets.
+Returns bytes copied; may be less than requested.
+*/
+size_t nmem_cp(struct nmem	*src,
+		size_t		src_offt,
+		size_t		len,
+		struct nmem	*dst,
+		size_t		dst_offt)
 {
-	Z_die_if(!nm || fd_pipe_to < 1, "args");
+	size_t done = 0;
 
-	/* because DARWIN, see above */
-	if (len > PIPE_BUF)
-		len = PIPE_BUF;
-	Z_log(Z_in2, "len %zu; offt %zu", len, offset);
+	/* sanity */
+	if (len > src->len - src_offt)
+		len = src->len - src_offt;
+	if (len > dst->len - dst_offt)
+		len = dst->len - dst_offt;
 
-	ssize_t ret = write(fd_pipe_to, nm->mem + offset, len);
-	Z_die_if(ret < 0, "len %zu", len);
-	return ret;
+	Z_die_if((
+		lseek(src->fd, src_offt, SEEK_SET)
+		) < 0, "seek to %zu fail", src_offt);
+
+	while (done < len)
+		done += nmem_in_splice(dst, dst_offt, len-done, src->fd);
+
 out:
-	return 0;
+	return done;
 }

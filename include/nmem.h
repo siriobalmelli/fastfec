@@ -47,4 +47,10 @@ NLC_PUBLIC size_t	nmem_out_splice(struct nmem	*nm,
 					size_t		len,
 					int		fd_pipe_to);
 
+NLC_PUBLIC size_t	nmem_cp(struct nmem	*src,
+				size_t		src_offt,
+				size_t		len,
+				struct nmem	*dst,
+				size_t		dst_offt);
+
 #endif /* nmem_h_ */

@@ -60,6 +60,7 @@ int cp(const char *src_path, const char *dst_path, int *piping)
 		nmem_alloc(src.len, dst_dir, &dst)
 		, "");
 
+#if 0
 	/* splicings */
 	for (size_t fd_sz, done_sz=0; done_sz < src.len; ) {
 		fd_sz = nmem_out_splice(&src, done_sz, src.len-done_sz, piping[1]);
@@ -71,6 +72,11 @@ int cp(const char *src_path, const char *dst_path, int *piping)
 			fd_sz -= temp;
 		}
 	}
+#else
+	Z_die_if((
+		nmem_cp(&src, 0, src.len, &dst, 0)
+		) != src.len, "");
+#endif
 
 	/* Delete a possible existing file */
 	if (force) {
