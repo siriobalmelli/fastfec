@@ -50,7 +50,7 @@ Hash a file, print the results;
 int do_file(const char *file)
 {
 	int err_cnt = 0;
-	int fd = 0;
+	int fd = -1;
 	void *map = NULL;
 
 	/* a '-' file is handled as stdin */
@@ -71,7 +71,7 @@ int do_file(const char *file)
 		/* open file */
 		Z_die_if((
 			fd = open(file, O_RDONLY)
-			) < 1, "open() '%s'", file);
+			) == -1, "open() '%s'", file);
 		/* map it */
 		Z_die_if((
 			map = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0)
@@ -85,7 +85,7 @@ int do_file(const char *file)
 out:
 	if (map && map != MAP_FAILED)
 		munmap(map, st.st_size);
-	if (fd > 0)
+	if (fd != -1)
 		close(fd);
 	return err_cnt;
 }
