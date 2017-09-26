@@ -49,12 +49,10 @@ Calls clock(), which on libc can be obtained with:
 */
 #define nlc_timing_start(timer_name) \
 	clock_t timer_name = clock(); \
-	asm volatile("" : : : "memory"); \
 	__atomic_thread_fence(__ATOMIC_SEQ_CST);
 
 #define nlc_timing_stop(timer_name) \
 	__atomic_thread_fence(__ATOMIC_SEQ_CST); \
-	asm volatile("" : : : "memory"); \
 	timer_name = clock() - timer_name;
 
 
