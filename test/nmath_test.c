@@ -123,6 +123,13 @@ int test_nm_bit_pos()
 	};
 	Z_err_if(strcmp("en_one", prints[nm_bit_pos(en_one)]), "");
 
+	/* example: compute the shift necessary to multiply by a variable which
+		is a power of 2.
+	*/
+	size_t pow2 = 0x80;
+	Z_err_if((size_t)1 << (nm_bit_pos(pow2) -1) != pow2,
+		"%zu != %zu", (size_t)1 << (nm_bit_pos(pow2) -1), pow2);
+
 	return err_cnt;
 }
 
