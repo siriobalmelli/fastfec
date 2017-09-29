@@ -127,8 +127,13 @@ int test_nm_bit_pos()
 		is a power of 2.
 	*/
 	size_t pow2 = 0x80;
-	Z_err_if((size_t)1 << (nm_bit_pos(pow2) -1) != pow2,
-		"%zu != %zu", (size_t)1 << (nm_bit_pos(pow2) -1), pow2);
+	uint8_t shift = nm_bit_pos(pow2) -1;
+	/* shift one to recreate pow2 */
+	Z_err_if((size_t)1 << shift != pow2,
+		"%zu != %zu", (size_t)1 << shift, pow2);
+	/* shift factor to multiply by pow2 */
+	Z_err_if((size_t)42 << shift != (size_t)42 * pow2,
+		"%zu != %zu", (size_t)42 << shift, (size_t)42 * pow2);
 
 	return err_cnt;
 }
