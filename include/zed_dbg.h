@@ -165,7 +165,7 @@ Increment 'wrn_cnt' when logging a warning.
 */
 #define Z_log_wrn(M, ...) do { \
 			Z_log_(stderr, Z_wrn, M, ##__VA_ARGS__); \
-			wrn_cnt++; \
+			__atomic_add_fetch(&wrn_cnt, 1, __ATOMIC_RELAXED); \
 			} while(0)
 
 /*	Z_log_err()
@@ -173,7 +173,7 @@ Increment 'err_cnt' when logging an error.
 */
 #define Z_log_err(M, ...) do { \
 			Z_log_(stderr, Z_err, M, ##__VA_ARGS__); \
-			err_cnt++; \
+			__atomic_add_fetch(&err_cnt, 1, __ATOMIC_RELAXED); \
 			} while(0)
 
 /*	Z_die()
@@ -181,7 +181,7 @@ Log error, then goto 'out'
 */
 #define Z_die(M, ...) do { \
 			Z_log_(stderr, Z_err, M, ##__VA_ARGS__); \
-			err_cnt++; \
+			__atomic_add_fetch(&err_cnt, 1, __ATOMIC_RELAXED); \
 			goto out; \
 		} while(0)
 
