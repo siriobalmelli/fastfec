@@ -55,6 +55,8 @@ Calls clock(), which on libc can be obtained with:
 	__atomic_thread_fence(__ATOMIC_SEQ_CST); \
 	timer_name = clock() - timer_name;
 
+#define nlc_timing_secs(timer_name) \
+	((double)timer_name / CLOCKS_PER_SEC) /* e.g.: with %.2lf printf() format */
 
 
 #define nonlibc_h_
