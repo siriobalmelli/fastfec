@@ -10,6 +10,16 @@ This header file exports defines and macros to clean up ugly code and abstract
 
 
 
+/*	compile-time checks (size, etc)
+A macro to allow for compile-time checks where the CPP is missing info,
+	such as sizeof().
+Exploit the fact that a '0' bitfield throws a compiler error.
+*/
+#define NLC_ASSERT(name, expr) \
+	struct name { unsigned int bitfield : (expr); }
+
+
+
 /*	inlining!
 Use this in header files when defining inline functions for use library callers.
 The effect is the same as a macro, except these are actually legibile ;)
