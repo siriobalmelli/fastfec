@@ -7,14 +7,20 @@ elif host_machine.system() == 'darwin' or host_machine.system() == 'bsd'
   lib_files += 'nmem_bsd.c'
 endif
 
-# We are being build stand-alone,
+# Always build both static and shared libraries
+nonlibc_shared = shared_library(meson.project_name(),
+			lib_files,
+			include_directories : inc,
+			install : true)
+nonlibc_static = static_library(meson.project_name(),
+			lib_files,
+			include_directories : inc,
+			install : false)
+
+# We are being built stand-alone,
 #+	so we build shared and generate a pkg-config file.
 if not meson.is_subproject()
-	nonlibc = shared_library(meson.project_name(),
-				lib_files,
-				include_directories : inc,
-				install : true)
-
+	nonlibc = nonlibc_shared
 	# don't set anything here, rely on variables declared in toplevel file
 	pkg = import('pkgconfig')
 	pkg.generate(libraries : nonlibc,
@@ -31,10 +37,7 @@ if not meson.is_subproject()
 #+	when it runs `sudo ninja install`; which is probably not the intended
 #	behavior.
 else
-	nonlibc = static_library(meson.project_name(),
-				lib_files,
-				include_directories : inc,
-				install : false)
+	nonlibc = nonlibc_static
 	nonlibc_dep = declare_dependency(link_with : nonlibc,
 					include_directories : inc)
 endif
