@@ -51,22 +51,35 @@ You'll keep track of all your functions (and not lose "private/local" functions
 
 
 /*	benchmarking!
-Use these macros to time segments of code (hopefully) without
-	being tricked by either compiler or CPU reordering.
+Use these macros to time segments of code, without:
+	- being tricked by compiler or CPU reordering
+	- dealing with a bunch of kludge
 
 Calls clock(), which on libc can be obtained with:
-	#include <time.h>
 */
+#include <time.h>
+
+#define nlc_timing_tp2u64(tp) \
+	((uint64_t)tp.tv_nsec + ((uint64_t)tp.tv_sec * 1000000000))
+
 #define nlc_timing_start(timer_name) \
-	clock_t timer_name = clock(); \
+	struct timespec tp_##timer_name = { 0 }; \
+	clock_gettime(CLOCK_MONOTONIC, &tp_##timer_name); \
+	clock_t cpu_##timer_name = clock(); \
 	__atomic_thread_fence(__ATOMIC_SEQ_CST);
 
 #define nlc_timing_stop(timer_name) \
 	__atomic_thread_fence(__ATOMIC_SEQ_CST); \
-	timer_name = clock() - timer_name;
+	cpu_##timer_name = clock() - cpu_##timer_name; \
+	uint64_t wall_##timer_name = nlc_timing_tp2u64(tp_##timer_name); \
+	clock_gettime(CLOCK_MONOTONIC, &tp_##timer_name); \
+	wall_##timer_name = nlc_timing_tp2u64(tp_##timer_name) - wall_##timer_name;
 
-#define nlc_timing_secs(timer_name) \
-	((double)timer_name / CLOCKS_PER_SEC) /* e.g.: with %.2lf printf() format */
+/* calculate time in fractional seconds */
+#define nlc_timing_cpu(timer_name) \
+	((double)cpu_##timer_name / CLOCKS_PER_SEC) /* e.g.: with %.2lf printf() format */
+#define nlc_timing_wall(timer_name) \
+	((double)wall_##timer_name / 1000000000)
 
 
 #define nonlibc_h_
