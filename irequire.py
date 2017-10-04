@@ -132,7 +132,14 @@ templates = {
 								[ "sudo", "unzip", "-o", "-d", "{install_d}/", "{temp_dir}/{bin_name}.zip" ],
 								[ "sudo", "chmod", "go+rx", "{install_d}/{bin_name}" ]
 							]
-			}
+			},
+                        "dnf" :  {
+				"platform" : [ "linux" ],
+				"requires" : [ "dnf" ],
+				"cmd_list" : [
+					[ "sudo", "dnf", "-y", "install", "{pkg_name}" ]
+				]      
+                        }
 		}
 
 class template():
@@ -186,7 +193,8 @@ class template():
 # All variables in a target are available for substitution inside recipes.
 targets = {	"pip3" : {
 				"recipes" : [
-					{ "template" : "apt-get", "recipe" : { "pkg_name" : "python3-pip" } }
+					{ "template" : "apt-get", "recipe" : { "pkg_name" : "python3-pip" } },
+                                        { "template" : "dnf", "recipe" : { "pkg_name" : "python3-pip" } }
 				]
 			},
 			"meson" : {
@@ -204,6 +212,7 @@ targets = {	"pip3" : {
 				},
 				"recipes" : [
 					{ "template" : "apt-get", "recipe" : { "pkg_name" : "ninja-build" } },
+					{ "template" : "dnf", "recipe" : { "pkg_name" : "ninja-build" } },
 					{ "template" : "port", "recipe" : { "pkg_name" : "ninja" } },
 					{ "template" : "zip-install", 
 						"recipe" : { "pkg_name" : "ninja-build", "bin_name" : "ninja",
@@ -221,7 +230,8 @@ targets = {	"pip3" : {
 				"recipes" : [
 					{ "template" : "port", "recipe" : { "pkg_name" : "valgrind" } },
 					{ "template" : "brew", "recipe" : { "pkg_name" : "valgrind" } },
-					{ "template" : "apt-get", "recipe" : { "pkg_name" : "valgrind" } }
+					{ "template" : "apt-get", "recipe" : { "pkg_name" : "valgrind" } },
+					{ "template" : "dnf", "recipe" : { "pkg_name" : "valgrind" } },
 				]
 			}
 		}
