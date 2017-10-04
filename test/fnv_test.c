@@ -134,14 +134,14 @@ int	speed()
 	uint64_t res64 = fnv_hash64(NULL, large, sz);
 	nlc_timing_stop(fnv64);
 	Z_log(Z_inf, "fnv_hash64 on %zuB: %fs - %"PRIx64,
-			sz, (double)fnv64 / CLOCKS_PER_SEC, res64);
+			sz, nlc_timing_cpu(fnv64), res64);
 
 	/* run FNV32 */
 	nlc_timing_start(fnv32);
 	uint32_t res32 = fnv_hash64(NULL, large, sz);
 	nlc_timing_stop(fnv32);
 	Z_log(Z_inf, "fnv_hash32 on %zuB: %fs - %"PRIx32,
-			sz, (double)fnv32 / CLOCKS_PER_SEC, res32);
+			sz, nlc_timing_cpu(fnv32), res32);
 
 out:
 	free(large);
