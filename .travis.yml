@@ -1,29 +1,103 @@
 ---
+
+# Actually all the following stuff is for is prepairing the system for building
+#+  and running tests on our code. I assume that on your computer you have already
+#+  your preferred compiler to the latest stable version or python3.
+# The only thing here that is distro-specific (ubuntu) and you might miss is
+#+  package `ruby-dev`.
+
 language: c
 sudo: required
-dist: trusty
-
-compiler:
-  - clang
-  - gcc
 
 matrix:
   include:
     - os: linux
-    - os: osx
+      dist: trusty
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - ruby-dev
+            - g++-7
 
-# only valgrind on Linux for simplicity and speed
-addons:
-  apt:
-    packages:
-      - valgrind
-      - ruby
-      - ruby-dev
-      - python3-pip
+    - os: linux
+      dist: trusty
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-5.0
+          packages:
+            - ruby-dev
+            - clang-5.0
+
+    - os: osx
+      compiler: clang
+      osx_image: xcode8
+
+    - os: osx
+      compiler: gcc
+      osx_image: xcode8
+
+      # if env parameter is set as described in the following article
+      #+  CC variable gets overrided by Travis later.
+      # https://docs.travis-ci.com/user/languages/c/#Clang
+
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install python3; fi
+
+# Travis will not fail if the instructions in this section do not succeed
+#+  in any case, if something go in the wrong way, bootstrap.py will fail.
+# This may not be the best way as it doesn't fail early and fast but it is
+#+  functional for the purpos of CI with Travis.
+
+  # This is the only effective way I found to set the compiler to the desired version.
+
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      if [[ "$CC" == "gcc" ]]; then
+        brew update;
+        brew install gcc;
+        CC=gcc-7;
+        CXX=g++-7;
+      fi
+    fi
+
+  # python3 is missing on osx so we install it directly from brew
+
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update;
+      brew install python3;
+    fi
+
+  # This is the only effective way I found to set the compiler to the desired version.
+
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      if [[ "$CC" == "gcc" ]]; then
+        CC=gcc-7;
+        CXX=g++-7;
+      elif [[ "$CC" == "clang" ]]; then
+        CC=clang-5.0;
+        CXX=clang++-5.0;
+      fi
+    fi
+
+# There is nothing more then python3.4 in trusty repo while we need >= 3.5
+#+  my solution is downloading ad building it from source.
+
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      pushd ~;
+      wget https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tgz;
+      tar -xf Python-3.6.2.tgz;
+      pushd Python-3.6.2;
+      ./configure;
+      make -s;
+      sudo make install -s;
+      popd;
+      popd;
+    fi
 
 script:
   - ./bootstrap.py
