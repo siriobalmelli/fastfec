@@ -152,6 +152,8 @@ void			ffec_free(struct ffec_instance		*fi)
 
 	/* stack */
 	lifo_free(fi->stk);
+
+	free(fi);
 }
 
 
