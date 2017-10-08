@@ -7,6 +7,7 @@ order: 0
 
 These are in order by priority:
 
+-	overloaded size_t functions for nmath
 -	clean up staticity, const'ness, purity; add to hacking tips and visibility macros?
 -	add library to WrapDB; submit to Meson site for inclusion
 -	man pages
