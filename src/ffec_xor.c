@@ -82,6 +82,7 @@ Rely on compiler unrolling loop for speed.
 		#ifndef __GNUC__
 			#pragma unroll (FFEC_SYM_ALIGN / sizeof(uintmax_t))
 		#endif
+		#pragma GCC ivdep
 		for (int i=0; i < FFEC_SYM_ALIGN / sizeof(uintmax_t); i++)
 			p_t[i] ^= p_f[i];
 #endif

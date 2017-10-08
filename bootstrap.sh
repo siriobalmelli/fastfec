@@ -172,11 +172,11 @@ main()
 
 	# specify desired builds; test all of them
 	run_die rm -rfv build*
-	BUILD_NAMES=( "debug" "debug-opt"      "release" "plain" "tsan"                "asan" )
-	BUILD_TYPES=( "debug" "debugoptimized" "release" "plain" "debugoptimized"      "debugoptimized" )
-	BUILD_OPTS=(  ""      ""               ""        ""      "-Db_sanitize=thread" "-Db_sanitize=address" )
-	BUILD_GRIND=( ""      "yes"            ""        ""      ""                    "" )
-	BUILD_TRAVIS=(""      "yes"            "yes"     "yes"   ""                    "" )
+	BUILD_NAMES=( "debug" "debug-opt"      "release" "plain")
+	BUILD_TYPES=( "debug" "debugoptimized" "release" "plain")
+	BUILD_OPTS=(  ""      ""               ""        "")
+	BUILD_GRIND=( ""      "yes"            ""        "")
+	BUILD_TRAVIS=(""      "yes"            "yes"     "yes")
 
 	for i in $(seq 0 $(( ${#BUILD_NAMES[@]} -1 ))); do
 		# certain builds (like sanitizers) are tragically broken under Travis ;(

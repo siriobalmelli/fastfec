@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 		next_esi = malloc(fi_encode->cnt.n * sizeof(uint32_t));
 		ffec_esi_rand(fi_encode, next_esi, 0);
 	nlc_timing_stop(clock_enc);
-	Z_log(Z_inf, "encode ELAPSED: %.2lfms", (double)clock_enc / CLOCKS_PER_SEC * 1000);
+	Z_log(Z_inf, "encode ELAPSED: %.2lfms", nlc_timing_wall(clock_enc) * 1000);
 
 	/* invariant: encode must NOT alter the source region */
 	MD5(mem, original_sz, hash_check);
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	/*
 		report
 	*/
-	Z_log(Z_inf, "decode ELAPSED: %.2lfms", (double)clock_dec / CLOCKS_PER_SEC * 1000);
+	Z_log(Z_inf, "decode ELAPSED: %.2lfms", nlc_timing_wall(clock_dec) * 1000);
 	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
 \tinefficiency=%lf; channel loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
 \tsource size=%.4lf MiB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
@@ -216,10 +216,10 @@ int main(int argc, char **argv)
 		/*FEC*/(fp.fec_ratio -1) * 100,
 		/*source size*/(double)original_sz / (1024 * 1024),
 		/*enc bitrate*/(uint64_t)((double)original_sz
-			/ ((double)clock_enc / CLOCKS_PER_SEC)
+			/ nlc_timing_wall(clock_enc)
 			/ (1024 * 1024) * 8),
 		/*dec bitrate*/(uint64_t)((double)original_sz
-			/ ((double)clock_dec / CLOCKS_PER_SEC)
+			/ nlc_timing_wall(clock_dec)
 			/ (1024 * 1024) * 8));
 
 out:
