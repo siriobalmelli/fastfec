@@ -3,7 +3,7 @@
 
 static const char n_sep = '/'; /* TODO: unsure best way to make this cross-platform */
 
-/*	invariants:
+/*	invariants (taken from LibC's basename() and dirname() implementation
 
        path       dirname   basename
        /usr/lib   /usr      lib

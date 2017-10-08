@@ -1,15 +1,13 @@
 ---
-title: 'man: ncp'
+title: 'ncp(1) nonlibc | General Commands Manual'
 order: 1
 ---
 
-# NCP 1 2017-08-22 nonlibc POSIX
-
-## NAME
+# NAME
 
 ncp - `cp` replacement using zero-copy I/O
 
-## SYNOPSIS
+# SYNOPSIS
 
 Copy one file:
 
@@ -23,42 +21,42 @@ Copy multiple files into a directory:
 ncp [OPTION]... SOURCE_FILE... DEST_DIR
 ```
 
-## DESCRIPTION
+# DESCRIPTION
 
 Copy SOURCE_FILE to DEST_FILE using `nmem` (zero-copy I/O).
 
 Typically >20% faster for large files.
 
-## OPTIONS
+# OPTIONS
 
-### -v | --verbose
+## -v | --verbose
 
 list each file being copied
 
-### -f | --force
+## -f | --force
 
 overwrite destination file(s) if existing
 
-### -h | --help
+## -h | --help
 
 print usage and exit
 
-## EXIT STATUS
+# EXIT STATUS
 
 0 on success
 
-## EXAMPLE
+# EXAMPLE
 
 ```bash
 $ cp /a/file /a/dest
 $
 ```
 
-## AUTHORS
+# AUTHORS
 
 Sirio Balmelli; Balmelli Analog & Digital
 
-## SEE ALSO
+# SEE ALSO
 
 `ncp` uses the nmem(3) library for zero-copy I/O
 

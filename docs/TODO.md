@@ -7,11 +7,8 @@ order: 0
 
 These are in order by priority:
 
--	reimplement malloc(); realloc(); free(); memcpy() to use
-		zero-copy I/O primitves behind the scenes
-		(see <https://dvdhrm.wordpress.com/tag/memfd/>)
--	Evaluate the usefulness of `atop`,
-		and *"when free()ing shared values, use an atomic swap"*
+-	overloaded size_t functions for nmath
+-	clean up staticity, const'ness, purity; add to hacking tips and visibility macros?
 -	add library to WrapDB; submit to Meson site for inclusion
 -	man pages
 -	integrate code coverage testing

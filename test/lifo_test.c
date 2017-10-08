@@ -62,7 +62,7 @@ int main()
 		*/
 		nlc_timing_stop(elapsed);
 		Z_log(Z_inf, "%zu stack pushes in %fs",
-			numiter, (double)elapsed / CLOCKS_PER_SEC);
+			numiter, nlc_timing_cpu(elapsed));
 	}
 
 	return err_cnt;

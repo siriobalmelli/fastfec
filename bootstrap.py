@@ -20,24 +20,20 @@ if __name__ == "__main__":
 	if cscope:
 		run_cmd([ 'cscope', '-b', '-q', '-U', '-I', './include', '-s', './src', '-s', './util', '-s', './test'])
 
-	builds = { 
+	builds = {
 		'debug' :		{ 'type' : 'debug' },
 		'release' :		{ 'type' : 'release' },
 		'plain' :		{ 'type' : 'plain' },
 		'debug-opt' :	{ 'type' : 'debugoptimized', 'grind' : True }
+# DO NOT build sanitizers by default.
+# Sanitizers place too much of a toolchain burden on the casual library user.
+#		'asan' :		{ 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=address' ],
+#							'env' : { 'VALGRIND' : '1' }
+#						},
+#		'tsan' :		{ 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=thread' ],
+#							'env' : { 'VALGRIND' : '1' }
+#						}
 	}
-
-	# hopeless to run thread sanitizers in travis
-	if 'TRAVIS_OS_NAME' not in os.environ:
-		b = {
-			'asan' : { 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=address' ],
-						'env' : { 'VALGRIND' : '1' }
-				},
-			'tsan' : { 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=thread' ],
-						'env' : { 'VALGRIND' : '1' }
-				}
-			}
-		builds.update(b)
 
 	for name, build in builds.items():
 		path = 'build-%s' % name

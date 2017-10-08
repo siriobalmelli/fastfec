@@ -41,14 +41,27 @@ int test_nm_next_pow2()
 	/* A valid power of 2 should return itself.
 	Note that 0 and 1 are actually valid powers of 2 ;)
 	*/
-	Z_err_if(nm_next_pow2(0) != 0, "%"PRIu32, nm_next_pow2(0));
-	Z_err_if(nm_next_pow2(1) != 1, "%"PRIu32, nm_next_pow2(1));
-	Z_err_if(nm_next_pow2(64) != 64, "%"PRIu32, nm_next_pow2(64));
+	Z_err_if(nm_next_pow2_32(0) != 0, "%"PRIu32, nm_next_pow2_32(0));
+	Z_err_if(nm_next_pow2_32(1) != 1, "%"PRIu32, nm_next_pow2_32(1));
+	Z_err_if(nm_next_pow2_32(64) != 64, "%"PRIu32, nm_next_pow2_32(64));
 
 	/* non-power-of-2 values should be promoted to the next power of 2 */
-	Z_err_if(nm_next_pow2(33) != 64, "%"PRIu32, nm_next_pow2(33));
-	Z_err_if(nm_next_pow2(63) != 64, "%"PRIu32, nm_next_pow2(63));
+	Z_err_if(nm_next_pow2_32(33) != 64, "%"PRIu32, nm_next_pow2_32(33));
+	Z_err_if(nm_next_pow2_32(63) != 64, "%"PRIu32, nm_next_pow2_32(63));
 	
+	/* Repeat checks for 64-bit version.
+	*/
+	Z_err_if(nm_next_pow2_64(0) != 0, "%"PRIu64, nm_next_pow2_64(0));
+	Z_err_if(nm_next_pow2_64(1) != 1, "%"PRIu64, nm_next_pow2_64(1));
+	Z_err_if(nm_next_pow2_64(64) != 64, "%"PRIu64, nm_next_pow2_64(64));
+	Z_err_if(nm_next_pow2_64(33) != 64, "%"PRIu64, nm_next_pow2_64(33));
+	Z_err_if(nm_next_pow2_64(63) != 64, "%"PRIu64, nm_next_pow2_64(63));
+
+	/* check very large numbers */
+	Z_err_if(nm_next_pow2_64(UINT64_MAX >> 1) != 0x8000000000000000,
+			"%"PRIu64, nm_next_pow2_64(UINT64_MAX >> 1));
+	Z_err_if(nm_next_pow2_64(UINT64_MAX) != 0, "%"PRIu64, nm_next_pow2_64(UINT64_MAX));
+
 	return err_cnt;
 }
 
@@ -109,6 +122,18 @@ int test_nm_bit_pos()
 		"en_none", "en_one", "en_two"
 	};
 	Z_err_if(strcmp("en_one", prints[nm_bit_pos(en_one)]), "");
+
+	/* example: compute the shift necessary to multiply by a variable which
+		is a power of 2.
+	*/
+	size_t pow2 = 0x80;
+	uint8_t shift = nm_bit_pos(pow2) -1;
+	/* shift one to recreate pow2 */
+	Z_err_if((size_t)1 << shift != pow2,
+		"%zu != %zu", (size_t)1 << shift, pow2);
+	/* shift factor to multiply by pow2 */
+	Z_err_if((size_t)42 << shift != (size_t)42 * pow2,
+		"%zu != %zu", (size_t)42 << shift, (size_t)42 * pow2);
 
 	return err_cnt;
 }

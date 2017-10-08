@@ -10,6 +10,16 @@ This header file exports defines and macros to clean up ugly code and abstract
 
 
 
+/*	compile-time checks (size, etc)
+A macro to allow for compile-time checks where the CPP is missing info,
+	such as sizeof().
+Exploit the fact that a '0' bitfield throws a compiler error.
+*/
+#define NLC_ASSERT(name, expr) \
+	struct name { unsigned int bitfield : (expr); }
+
+
+
 /*	inlining!
 Use this in header files when defining inline functions for use library callers.
 The effect is the same as a macro, except these are actually legibile ;)
@@ -41,23 +51,66 @@ You'll keep track of all your functions (and not lose "private/local" functions
 
 
 /*	benchmarking!
-Use these macros to time segments of code (hopefully) without
-	being tricked by either compiler or CPU reordering.
-
-Calls clock(), which on libc can be obtained with:
-	#include <time.h>
+Use these macros to time segments of code, without:
+	- being tricked by compiler or CPU reordering
+	- dealing with a bunch of kludge
 */
-#define nlc_timing_start(timer_name) \
-	clock_t timer_name = clock(); \
-	asm volatile("" : : : "memory"); \
-	__atomic_thread_fence(__ATOMIC_SEQ_CST);
 
-#define nlc_timing_stop(timer_name) \
-	__atomic_thread_fence(__ATOMIC_SEQ_CST); \
-	asm volatile("" : : : "memory"); \
-	timer_name = clock() - timer_name;
+#ifdef __APPLE__
+	/* OS X <10.12 doesn't have clock_gettime() ...
+		and I can't find how to check for version :P
+	Fall back on less accurate methods.
+	*/
+	#include <sys/time.h>
 
+	#define nlc_timing_2u64(tp) \
+		((uint64_t)tp.tv_usec + ((uint64_t)tp.tv_sec * 1000000))
 
+	#define nlc_timing_start(timer_name) \
+		struct timeval tp_##timer_name = { 0 }; \
+		gettimeofday(&tp_##timer_name, NULL); \
+		clock_t cpu_##timer_name = clock(); \
+		__atomic_thread_fence(__ATOMIC_SEQ_CST);
+
+	#define nlc_timing_stop(timer_name) \
+		__atomic_thread_fence(__ATOMIC_SEQ_CST); \
+		cpu_##timer_name = clock() - cpu_##timer_name; \
+		uint64_t wall_##timer_name = nlc_timing_2u64(tp_##timer_name); \
+		gettimeofday(&tp_##timer_name, NULL); \
+		wall_##timer_name = nlc_timing_2u64(tp_##timer_name) - wall_##timer_name;
+
+	/* wall clock time */
+	#define nlc_timing_wall(timer_name) \
+		((double)wall_##timer_name / 1000000)
+
+#else
+	#include <time.h>
+
+	#define nlc_timing_2u64(tp) \
+		((uint64_t)tp.tv_nsec + ((uint64_t)tp.tv_sec * 1000000000))
+
+	#define nlc_timing_start(timer_name) \
+		struct timespec tp_##timer_name = { 0 }; \
+		clock_gettime(CLOCK_MONOTONIC, &tp_##timer_name); \
+		clock_t cpu_##timer_name = clock(); \
+		__atomic_thread_fence(__ATOMIC_SEQ_CST);
+
+	#define nlc_timing_stop(timer_name) \
+		__atomic_thread_fence(__ATOMIC_SEQ_CST); \
+		cpu_##timer_name = clock() - cpu_##timer_name; \
+		uint64_t wall_##timer_name = nlc_timing_2u64(tp_##timer_name); \
+		clock_gettime(CLOCK_MONOTONIC, &tp_##timer_name); \
+		wall_##timer_name = nlc_timing_2u64(tp_##timer_name) - wall_##timer_name;
+
+	/* wall clock time */
+	#define nlc_timing_wall(timer_name) \
+		((double)wall_##timer_name / 1000000000)
+
+#endif
+
+/* CPU time in fractional seconds */
+#define nlc_timing_cpu(timer_name) \
+	((double)cpu_##timer_name / CLOCKS_PER_SEC) /* e.g.: with %.2lf printf() format */
 
 #define nonlibc_h_
 #endif /* nonlibc_h_ */
