@@ -225,6 +225,7 @@ targets = {	"pip3" : {
 					{ "template" : "apt-get", "recipe" : { "pkg_name" : "pandoc" } },
 					{ "template" : "dnf", "recipe" : { "pkg_name" : "pandoc" } },
 					{ "template" : "port", "recipe" : { "pkg_name" : "pandoc" } },
+					{ "template" : "brew", "recipe" : { "pkg_name" : "pandoc" } }
 				]
 			},
 			"valgrind" : {
