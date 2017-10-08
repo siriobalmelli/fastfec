@@ -21,11 +21,6 @@ if get_option('buildtype') == 'debug'
 elif get_option('buildtype') == 'debugoptimized'
   add_project_arguments([ '-march=native', '-mtune=native', '-fno-omit-frame-pointer' ],
 			language : 'c')
-  # work around buggy gcc
-  if get_option('b_sanitize') != '' and compiler.get_id() == 'gcc'
-    message('use gold linker for sanitizers')
-    add_project_link_arguments([ '-fuse-ld=gold' ], language : 'c')
-  endif
 
 # release : optimize this! ship this!
 elif get_option('buildtype') == 'release'
@@ -39,6 +34,13 @@ elif get_option('buildtype') == 'plain'
 			language : 'c')
 endif
 
+
+# sanitizers
+# work around buggy gcc
+if get_option('b_sanitize') != '' and compiler.get_id() == 'gcc'
+	message('use gold linker for sanitizers')
+	add_project_link_arguments([ '-fuse-ld=gold' ], language : 'c')
+endif
 
 
 inc = include_directories('include')

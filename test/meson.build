@@ -15,12 +15,12 @@ foreach t : tests
 		a_test = executable(t.split('.')[0] + '_shared', t,
 				include_directories : inc,
 				link_with : nonlibc_shared)
-		test(' '.join(t.split('.')[0].split('_')) + ' shared', a_test)
+		test(' '.join(t.split('.')[0].split('_')) + ' (shared)', a_test)
 
 		test_static = executable(t.split('.')[0] + '_static', t,
 				include_directories : inc,
 				link_with : nonlibc_static)
-		test(' '.join(t.split('.')[0].split('_')) + ' static', test_static)
+		test(' '.join(t.split('.')[0].split('_')) + ' (static)', test_static)
 
 	# otherwise, just test whatever we are exporting to the superproject
 	else

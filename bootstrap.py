@@ -24,13 +24,15 @@ if __name__ == "__main__":
 		'debug' :		{ 'type' : 'debug' },
 		'release' :		{ 'type' : 'release' },
 		'plain' :		{ 'type' : 'plain' },
-		'debug-opt' :	{ 'type' : 'debugoptimized', 'grind' : True },
-		'asan' :		{ 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=address' ],
-							'env' : { 'VALGRIND' : '1' }
-						},
-		'tsan' :		{ 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=thread' ],
-							'env' : { 'VALGRIND' : '1' }
-						}
+		'debug-opt' :	{ 'type' : 'debugoptimized', 'grind' : True }
+# DO NOT build sanitizers by default.
+# Sanitizers place too much of a toolchain burden on the casual library user.
+#		'asan' :		{ 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=address' ],
+#							'env' : { 'VALGRIND' : '1' }
+#						},
+#		'tsan' :		{ 'type' : 'debugoptimized', 'opts' : [ '-Db_sanitize=thread' ],
+#							'env' : { 'VALGRIND' : '1' }
+#						}
 	}
 
 	for name, build in builds.items():
