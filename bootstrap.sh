@@ -172,12 +172,20 @@ main()
 
 	# specify desired builds; test all of them
 	run_die rm -rfv build*
-	BUILD_NAMES=( "debug" "debug-opt"      "release" "plain" )
-	BUILD_TYPES=( "debug" "debugoptimized" "release" "plain" )
-	BUILD_GRIND=( ""      "yes"            ""        "" )
+	BUILD_NAMES=( "debug" "debug-opt"      "release" "plain" "tsan"                "asan" )
+	BUILD_TYPES=( "debug" "debugoptimized" "release" "plain" "debugoptimized"      "debugoptimized" )
+	BUILD_OPTS=(  ""      ""               ""        ""      "-Db_sanitize=thread" "-Db_sanitize=address" )
+	BUILD_GRIND=( ""      "yes"            ""        ""      ""                    "" )
+	BUILD_TRAVIS=(""      "yes"            "yes"     "yes"   ""                    "" )
 
 	for i in $(seq 0 $(( ${#BUILD_NAMES[@]} -1 ))); do
-		run_die meson --buildtype ${BUILD_TYPES[$i]} build-${BUILD_NAMES[$i]}
+		# certain builds (like sanitizers) are tragically broken under Travis ;(
+		#+	... while others are unnecessary.
+		if [[ $TRAVIS ]] && [[ ! ${BUILD_TRAVIS[$i]} ]]; then
+			continue
+		fi
+
+		run_die meson ${BUILD_OPTS[$i]} --buildtype ${BUILD_TYPES[$i]} build-${BUILD_NAMES[$i]}
 		pushd build-${BUILD_NAMES[$i]}
 		run_die ninja test
 		# NOTE: we set 'VALGRIND' so it can be tested with getenv()
