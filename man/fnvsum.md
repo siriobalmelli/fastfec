@@ -1,38 +1,36 @@
 ---
-title: 'man: fnvsum'
+title: 'fnvsum(1) nonlibc | General Commands Manual'
 order: 1
 ---
 
-# FNVSUM 1 2017-08-22 nonlibc POSIX
-
-## NAME
+# NAME
 
 fnvsum - hash input using 64-bit FNV1a
 
-## SYNOPSIS
+# SYNOPSIS
 
 ```bash
 fnvsum [OPTIONS] [FILE | -]
 ```
 
-## DESCRIPTION
+# DESCRIPTION
 
 Calculate the 64-bit FNV1a hash of FILE;
 	read from standard input if no FILE or when FILE is `-`
 
 The hash function is [FNV1a](https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function).
 
-## OPTIONS
+# OPTIONS
 
-### -? | -h
+## -? | -h
 
 print usage details
 
-## EXIT STATUS
+# EXIT STATUS
 
 0 on success
 
-## EXAMPLE
+# EXAMPLE
 
 Hash from stdin:
 
@@ -51,11 +49,11 @@ $ fnvsum a_file.txt
 $
 ```
 
-## AUTHORS
+# AUTHORS
 
 Sirio Balmelli; Balmelli Analog & Digital
 
-## SEE ALSO
+# SEE ALSO
 
 fnv(3)
 

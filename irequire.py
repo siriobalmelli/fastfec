@@ -220,10 +220,11 @@ targets = {	"pip3" : {
 					}
 				]
 			},
-			"md2man-roff" : {
+			"pandoc" : {
 				"recipes" : [
-					{ "template" : "gem-nosudo", "recipe" : { "pkg_name" : "md2man" } },
-					{ "template" : "gem", "recipe" : { "pkg_name" : "md2man" } }
+					{ "template" : "apt-get", "recipe" : { "pkg_name" : "pandoc" } },
+					{ "template" : "dnf", "recipe" : { "pkg_name" : "pandoc" } },
+					{ "template" : "port", "recipe" : { "pkg_name" : "pandoc" } },
 				]
 			},
 			"valgrind" : {
