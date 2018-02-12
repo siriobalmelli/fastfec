@@ -8,3 +8,4 @@ benchmark/benchmark.json
 toolchain*
 __pycache__*
 subprojects*
+*.pyc
