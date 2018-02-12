@@ -4,7 +4,6 @@ project('ffec', 'c',
 	default_options : [ 'c_std=gnu11' ])
 description = 'Fast FEC library'
 
-
 #sanity
 assert(meson.project_name() == 'ffec', 'Incorrect project name')
 
@@ -36,20 +35,35 @@ endif
 
 
 # deps
-nonlibc = dependency('nonlibc', fallback : ['nonlibc', 'nonlibc_dep']) 
-crypto = dependency('openssl', required : true) #MD5 in ffec_test
+# deps are either statically or dynamically incorporated;
+#+	see meson_options.txt for the default value, which can be overridden
+#+	with a -Ddep_type=["shared"||"static"] flag when running meson.
+
+dep_static = false
+_dep = get_option('dep_type')
+if _dep == 'static'
+	dep_static = true
+endif
+
+# Insert deps here
+# Note that subproject expected to export as '[name]_dep_[shared||static]'
+nonlibc = dependency('nonlibc', static: dep_static, version : '>=0.1.8',
+		fallback : ['nonlibc', 'nonlibc_dep_' + _dep ], required : true)
+
 #math is separate only on Linux
 cc = meson.get_compiler('c')
 m = cc.find_library('m', required : false)
+
 # All deps in a single arg. Use THIS ONE in compile calls
-deps = [ nonlibc, m, crypto ]
+deps = [ nonlibc, m ]
 
 
 #build
 inc = include_directories('include')
 subdir('include')
 subdir('src')
-subdir('test')
+# TODO: replace stupid openssl dependency; re-enable
+#subdir('test')
 subdir('benchmark')
 
 
