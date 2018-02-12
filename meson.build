@@ -63,7 +63,7 @@ inc = include_directories('include')
 subdir('include')
 subdir('src')
 # TODO: replace stupid openssl dependency; re-enable
-#subdir('test')
+subdir('test')
 subdir('benchmark')
 
 

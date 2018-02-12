@@ -15,8 +15,8 @@ For some background data and math, please see:
 The design goal is a FEC codec optimized for:
 	a. speed and memory footprint
 	b. large objects: depending on 'fec_ratio' (see def. below),
-		anything <=2GB should be OK.
-	c. low fec_ratio's (i.e.: <1.2 ... aka <20%)
+		anything 2GB or less should be OK.
+	c. low fec_ratios (i.e.: `<1.2` ... aka `<20%`)
 For these reasons it was chosen NOT to use gaussian elimination
 	at the decoder.
 
@@ -42,7 +42,7 @@ LDGM		:	Low Density Generator Matrix
 
 symbol		:	A single "unit" of data in FEC.
 			It is assumed that "symbol" is the payload of a single
-				network packet, therefore <=9KB and >=1KB.
+				network packet, therefore `<=9KB` and `>=1KB`.
 k		:	Number of "source" symbols.
 			This is the data which must be recovered at the receiver.
 n		:	Total number of symbols.
@@ -68,6 +68,19 @@ inefficiency	:	"number of symbols needed to decode" / k
 -	0-copy I/O in nonlibc; replace in ffec
 -	64-bit performance (extremely large blocks?)
 
+## is simultaneous assignment and K-F-Y shuffle possible
+
+In generating a matrix, we currently assign ESIs sequentially,
+	then do a pass of KFY shuffle.
+
+WHAT IF we instead move front-to-back, assigning 'i' to the current cell,
+	then swapping it with any random previous cell
+	(guaranteed to contain a valid ID)?
+Does this compromise the randomness of the shuffle?
+
+If not, should give a performance improvement since it removes one loop entirely.
+
 # IDEAS
--	split up seeds across many packets when transmitting:
-		less overhead per-packet; depend on MANY of them arriving
+- split up seeds across many packets when transmitting:
+	less overhead per-packet; depend on MANY of them arriving
+- perhaps derive 2x 64-bit seeds from a single 64-bit number?

@@ -6,7 +6,6 @@
 #include <nlc_urand.h>
 
 
-
 /*	ffec_new()
 
 Allocate a new ffec struct.

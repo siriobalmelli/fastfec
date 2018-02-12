@@ -15,7 +15,7 @@ Test performance and correctness of ffec
 #include <time.h> /* clock() */
 #include <nonlibc.h>
 
-#include <openssl/md5.h>
+#include <fnv.h>
 #include <nlc_urand.h>
 
 #include <stdlib.h> /* atof() */
@@ -109,14 +109,14 @@ int main(int argc, char **argv)
 	*/
 	parse_opts(argc, argv);
 	struct ffec_params fp = {
-		.fec_ratio = fec_ratio,	/* 10% FEC */
+		.fec_ratio = fec_ratio,	/* 1.1 == 10% FEC */
 		.sym_len = sym_len	/* aka: packet size */
 	};
 
 	int err_cnt = 0;
-	void *mem = NULL;
 	uint32_t *next_esi = NULL;
-	struct ffec_instance *fi_encode = NULL, *fi_decode = NULL;
+	void *mem = NULL;
+	struct ffec_instance *fi_enc = NULL, *fi_dec = NULL;
 
 
 	/*
@@ -127,8 +127,7 @@ int main(int argc, char **argv)
 		), "");
 	random_bytes(mem, original_sz);
 	/* get a hash of the source */
-	uint8_t src_hash[16], hash_check[16];
-	MD5(mem, original_sz, src_hash);
+	uint64_t src_hash = fnv_hash64(NULL, mem, original_sz);
 
 
 	/*
@@ -136,19 +135,17 @@ int main(int argc, char **argv)
 	*/
 	nlc_timing_start(clock_enc);
 		Z_die_if(!(
-			fi_encode = ffec_new(&fp, original_sz, mem, 0, 0)
+			fi_enc = ffec_new(&fp, original_sz, mem, 0, 0)
 			), "");
-		ffec_encode(&fp, fi_encode);
+		ffec_encode(&fp, fi_enc);
 		/* create random order into which to send symbols */
-		next_esi = malloc(fi_encode->cnt.n * sizeof(uint32_t));
-		ffec_esi_rand(fi_encode, next_esi, 0);
+		next_esi = malloc(fi_enc->cnt.n * sizeof(uint32_t));
+		ffec_esi_rand(fi_enc, next_esi, 0);
 	nlc_timing_stop(clock_enc);
 	Z_log(Z_inf, "encode ELAPSED: %.2lfms", nlc_timing_wall(clock_enc) * 1000);
 
 	/* invariant: encode must NOT alter the source region */
-	MD5(mem, original_sz, hash_check);
-	Z_die_if(memcmp(src_hash, hash_check, 16)
-		, "");
+	Z_die_if(src_hash != fnv_hash64(NULL, mem, original_sz), "");
 
 
 	/*
@@ -157,35 +154,35 @@ int main(int argc, char **argv)
 
 	nlc_timing_start(clock_dec);
 		Z_die_if(!(
-			fi_decode = ffec_new(&fp, original_sz, NULL,
-						fi_encode->seeds[0],
-						fi_encode->seeds[1])
+			fi_dec = ffec_new(&fp, original_sz, NULL,
+						fi_enc->seeds[0],
+						fi_enc->seeds[1])
 			), "");
 #ifdef DEBUG
-	      Z_die_if(ffec_mtx_cmp(fi_encode, fi_decode, &fp), "");
+	      Z_die_if(ffec_mtx_cmp(fi_enc, fi_dec, &fp), "");
 #endif
 
 		/* Iterate through randomly ordered ESIs and decode for each.
 		Break when decoder reports 0 symbols left to decode.
 		*/
 		uint32_t i;
-		for (i=0; i < fi_decode->cnt.cols; i++) {
+		for (i=0; i < fi_dec->cnt.cols; i++) {
 			Z_log(Z_in2, "submit ESI %d", next_esi[i]);
 
 #ifdef FFEC_TEST_COPY_SYM
 			/* copy symbol into matrix manually, give only ESI */
-			memcpy(ffec_dec_sym(&fp, fi_decode, next_esi[i]),
-					ffec_enc_sym(&fp, fi_encode, next_esi[i]), 
+			memcpy(ffec_dec_sym(&fp, fi_dec, next_esi[i]),
+					ffec_enc_sym(&fp, fi_enc, next_esi[i]), 
 					fp.sym_len);
-			if (!ffec_decode_sym(&fp, fi_decode,
+			if (!ffec_decode_sym(&fp, fi_dec,
 					NULL,
 					next_esi[i]))
 				break;
 
 #else
 			/* the more usual case: give ffec a pointer and have it copy */
-			if (!ffec_decode_sym(&fp, fi_decode,
-					ffec_enc_sym(&fp, fi_encode, next_esi[i]),
+			if (!ffec_decode_sym(&fp, fi_dec,
+					ffec_enc_sym(&fp, fi_enc, next_esi[i]),
 					next_esi[i]))
 				break;
 #endif
@@ -197,10 +194,7 @@ int main(int argc, char **argv)
 		verify
 	decoded region must be bit-identical to source
 	*/
-	MD5(fi_decode->dec_source, original_sz, hash_check);
-	Z_die_if(
-		memcmp(src_hash, hash_check, 16)
-		, "");
+	Z_die_if(src_hash != fnv_hash64(NULL, fi_dec->dec_source, original_sz), "");
 
 
 	/*
@@ -210,9 +204,9 @@ int main(int argc, char **argv)
 	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
 \tinefficiency=%lf; channel loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
 \tsource size=%.4lf MiB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
-		/*k*/fi_decode->cnt.k, /*i*/i, /*n*/fi_decode->cnt.n,
-		/*inefficiency*/(double)i / (double)fi_decode->cnt.k,
-		/*channel loss tolerance*/((double)(fi_decode->cnt.n - i) / (double)fi_decode->cnt.n) * 100,
+		/*k*/fi_dec->cnt.k, /*i*/i, /*n*/fi_dec->cnt.n,
+		/*inefficiency*/(double)i / (double)fi_dec->cnt.k,
+		/*channel loss tolerance*/((double)(fi_dec->cnt.n - i) / (double)fi_dec->cnt.n) * 100,
 		/*FEC*/(fp.fec_ratio -1) * 100,
 		/*source size*/(double)original_sz / (1024 * 1024),
 		/*enc bitrate*/(uint64_t)((double)original_sz
@@ -224,8 +218,7 @@ int main(int argc, char **argv)
 
 out:
 	free(mem);
-	free(next_esi);
-	ffec_free(fi_encode);
-	ffec_free(fi_decode);
+	ffec_free(fi_enc);
+	ffec_free(fi_dec);
 	return err_cnt;
 }

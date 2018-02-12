@@ -78,6 +78,9 @@ struct ffec_params {
 
 /*	ffec_counts
 Symbol counts for a fec block.
+
+TODO: if we turn the unions into comments and standardize on just one f'ing
+	word for each f'ing thing, that would be great.
 */
 struct ffec_counts {
 	uint32_t			k;	/* number source symbols */

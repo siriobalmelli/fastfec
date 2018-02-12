@@ -1,10 +1,9 @@
 /*	ffec_utils.c
 
-Non-essentials go here
+Non-essentials go here.
 */
 
 #include <ffec.h>
-
 
 
 /*	ffec_mtx_cmp()
@@ -38,6 +37,3 @@ int ffec_mtx_cmp(struct ffec_instance *enc, struct ffec_instance *dec, struct ff
 
 	return err_cnt;
 }
-
-
-
