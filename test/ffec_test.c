@@ -20,11 +20,6 @@ Test performance and correctness of ffec
 
 #include <stdlib.h> /* atof() */
 
-/*	who does symbol copying?
-if set: copy symbol into matrix ourselves BEFORE calling ffec_decode_sym()
-*/
-//#define FFEC_TEST_COPY_SYM
-
 
 /*	defaults:
 5MB region into 1280B symbols @ 10% FEC
@@ -32,7 +27,6 @@ if set: copy symbol into matrix ourselves BEFORE calling ffec_decode_sym()
 double fec_ratio = 1.1;
 size_t original_sz = 5000960;
 size_t sym_len = 1280;
-
 
 
 /*	random_bytes()
@@ -114,7 +108,6 @@ int main(int argc, char **argv)
 	};
 
 	int err_cnt = 0;
-	uint32_t *next_esi = NULL;
 	void *mem = NULL;
 	struct ffec_instance *fi_enc = NULL, *fi_dec = NULL;
 
@@ -138,9 +131,6 @@ int main(int argc, char **argv)
 			fi_enc = ffec_new(&fp, original_sz, mem, 0, 0)
 			), "");
 		ffec_encode(&fp, fi_enc);
-		/* create random order into which to send symbols */
-		next_esi = malloc(fi_enc->cnt.n * sizeof(uint32_t));
-		ffec_esi_rand(fi_enc, next_esi, 0);
 	nlc_timing_stop(clock_enc);
 	Z_log(Z_inf, "encode ELAPSED: %.2lfms", nlc_timing_wall(clock_enc) * 1000);
 
@@ -159,36 +149,17 @@ int main(int argc, char **argv)
 						fi_enc->seeds[1])
 			), "");
 #ifdef DEBUG
-	      Z_die_if(ffec_mtx_cmp(fi_enc, fi_dec, &fp), "");
+		Z_die_if(ffec_mtx_cmp(fi_enc, fi_dec, &fp), "");
 #endif
 
 		/* Iterate through randomly ordered ESIs and decode for each.
 		Break when decoder reports 0 symbols left to decode.
 		*/
-		uint32_t i;
-		for (i=0; i < fi_dec->cnt.cols; i++) {
-			Z_log(Z_in2, "submit ESI %d", next_esi[i]);
-
-#ifdef FFEC_TEST_COPY_SYM
-			/* copy symbol into matrix manually, give only ESI */
-			memcpy(ffec_dec_sym(&fp, fi_dec, next_esi[i]),
-					ffec_enc_sym(&fp, fi_enc, next_esi[i]), 
-					fp.sym_len);
-			if (!ffec_decode_sym(&fp, fi_dec,
-					NULL,
-					next_esi[i]))
+		uint32_t i=0;
+		for (; i < fi_dec->cnt.n; i++)
+			if (!ffec_decode_sym(&fp, fi_dec, ffec_enc_seq(&fp, fi_enc, i)))
 				break;
-
-#else
-			/* the more usual case: give ffec a pointer and have it copy */
-			if (!ffec_decode_sym(&fp, fi_dec,
-					ffec_enc_sym(&fp, fi_enc, next_esi[i]),
-					next_esi[i]))
-				break;
-#endif
-		}
 	nlc_timing_stop(clock_dec);
-
 
 	/*
 		verify

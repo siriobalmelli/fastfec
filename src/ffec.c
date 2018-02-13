@@ -1,9 +1,24 @@
 /*	ffec.c
 */
 
-#include <ffec.h>
+#include <ffec_internal.h>
 #include <math.h> /* ceill() */
 #include <nlc_urand.h>
+
+
+/*	ffec_len_cells()
+*/
+NLC_INLINE size_t	ffec_len_cells	(const struct ffec_counts *fc)
+{
+	return sizeof(struct ffec_cell) * fc->cols * FFEC_N1_DEGREE;
+}
+
+/*	ffec_len_rows()
+*/
+NLC_INLINE size_t	ffec_len_rows	(const struct ffec_counts *fc)
+{
+	return sizeof(struct ffec_row) * fc->rows;
+}
 
 
 /*	ffec_new()
@@ -80,28 +95,18 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 			ret->parity = malloc(alloc)
 			), "alloc %zu", alloc);
 	}
-	ret->scratch = ret->parity + ret->parity_len;
 
 
 	/* Assign pointers into scratch region.
-	NOTE: ret->cells is a union with ret->scratch : no need to assign it.
+	NOTE: (cells | scratch) and (esi_seq | psums) are unions;
+			assigning to both for clarity
 	*/
+	ret->cells = ret->scratch = ret->parity + ret->parity_len;
 	ret->rows = ret->scratch + ffec_len_cells(&ret->cnt);
-	/* psums only when decoding */
-	if (ret->dec_source)
-		ret->psums = ((void*)ret->rows) + ffec_len_rows(&ret->cnt);
+	/* psums when decoding, esi_seq when encoding */
+	ret->esi_seq = ret->psums = ((void*)ret->rows) + ffec_len_rows(&ret->cnt);
 	/* zero the scratch region */
 	memset(ret->scratch, 0x0, ret->scratch_len);
-
-
-	/* If encoding, the parity region will be zeroed by the encoder
-		function.
-	Otherwise, zero it now.
-	*/
-	if (ret->dec_source) {
-		memset(ret->parity, 0x0, ret->parity_len);
-		memset(ret->psums, 0x0, ret->cnt.rows * fp->sym_len);
-	}
 
 
 	/* if no seed proposed, fish from /dev/urandom */
@@ -117,14 +122,25 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 	*/
 	pcg_seed(&ret->rng, ret->seeds[0], ret->seeds[1]);
 
-
 	/* print values for debug */
 	Z_log(Z_in2, "\n\tseeds=[0x%"PRIu64",0x%"PRIu64"]\tcnt: .k=%"PRIu32" .n=%"PRIu32" .p=%"PRIu32,
 		ret->seeds[0], ret->seeds[1], ret->cnt.k, ret->cnt.n, ret->cnt.p);
 
-
 	/* init the matrix */
 	ffec_gen_matrix_(ret);
+
+
+	/* encoding: the parity region will be zeroed by the encoder function
+		(don't re-zero it here).
+	We do however need a sequence of ESIs to send over the wire.
+	*/
+	if (ret->enc_source) {
+		ffec_esi_rand_(ret);
+	/* decoding: zero parity region */
+	} else {
+		memset(ret->parity, 0x0, ret->parity_len);
+		memset(ret->psums, 0x0, ret->cnt.rows * fp->sym_len);
+	}
 
 
 	return ret;
@@ -132,7 +148,6 @@ out:
 	ffec_free(ret);
 	return NULL;
 }
-
 
 
 /*	ffec_free()
@@ -156,7 +171,6 @@ void			ffec_free(struct ffec_instance		*fi)
 }
 
 
-
 /*	ffec_test_esi()
 Returns 1 if 'esi' is already decoded, 0 otherwise.
 */
@@ -166,7 +180,6 @@ int		ffec_test_esi	(const struct ffec_instance	*fi,
 	/* if this cell has been unlinked, unwind the recursion stack */
 	return ffec_cell_test(ffec_get_col_first(fi->cells, esi));
 }
-
 
 
 /*	ffec_calc_sym_counts_()
@@ -227,7 +240,6 @@ out:
 }
 
 
-
 /*	ffec_calc_lengths_()
 Calculates lengths based on symbol counts.
 Internal function: no sanity checking performed.
@@ -255,6 +267,9 @@ int		ffec_calc_lengths_(const struct ffec_params	*fp,
 	/* if decoding, scratch must have space for psums */
 	if (!fi->enc_source)
 		scr += psum;
+	/* if encoding, must have space for ESI sequence */
+	else
+		scr += fi->cnt.n * sizeof(uint32_t);
 
 	fi->source_len = src;
 	fi->parity_len = par;

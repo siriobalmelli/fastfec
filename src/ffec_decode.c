@@ -6,8 +6,28 @@ TODO:
 -	Simulate decode with "next missing source symbol" until decoding all source symbols.
 */
 
-#include <ffec.h>
+#include <ffec_internal.h>
 
+
+/*	ffec_dec_sym()
+Decode-only: get any ESI (they are all contiguous: faster)
+*/
+NLC_INLINE void	*ffec_dec_sym		(const struct ffec_params	*fp,
+					const struct ffec_instance	*fi,
+					uint32_t			esi)
+{
+	return fi->dec_source + (fp->sym_len * esi);
+}
+
+
+/*	ffec_get_psum()
+*/
+NLC_INLINE void	*ffec_get_psum		(const struct ffec_params	*fp,
+					struct ffec_instance		*fi,
+					uint32_t			row)
+{
+	return fi->psums + (fp->sym_len * row);
+}
 
 
 /*	ffec_esi_row_t
@@ -22,7 +42,6 @@ typedef struct {
 	};
 	};
 } __attribute__((packed)) ffec_esi_row_t;
-
 
 
 /*	ffec_decode_sym()
@@ -50,8 +69,7 @@ WARNING: if 'symbol' is NULL, we ASSUME it has already been copied to matrix mem
 */
 uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 					struct ffec_instance		*fi,
-					const void			*symbol,
-					uint32_t			esi)
+					struct ffec_symbol		sym)
 {
 
 	/* set up only only once */
@@ -69,26 +87,26 @@ recurse:
 		goto out;
 
 	/* get column */
-	cell = ffec_get_col_first(fi->cells, esi);
+	cell = ffec_get_col_first(fi->cells, sym.esi);
 	/* if this cell has been unlinked, unwind the recursion stack */
 	if (ffec_cell_test(cell))
 		goto check_recurse;
 
 	/* point to symbol in matrix */
-	curr_sym = ffec_dec_sym(fp, fi, esi);
+	curr_sym = ffec_dec_sym(fp, fi, sym.esi);
 	/* if given a pointer, copy symbol from there into matrix */
-	if (symbol && symbol != curr_sym) {
+	if (sym.sym && sym.sym != curr_sym) {
 		Z_log(Z_in2, "pull <-(esi %"PRIu32") @0x%"PRIxPTR,
-			esi, (uintptr_t)symbol);
-		memcpy(curr_sym, symbol, fp->sym_len);
+			sym.esi, (uintptr_t)sym.sym);
+		memcpy(curr_sym, sym.sym, fp->sym_len);
 	}
 	/* ... otherwise assume it's already there */
 
 	Z_log(Z_in2, "decode (esi %"PRIu32") @0x%"PRIxPTR,
-		esi, (uintptr_t)curr_sym);
+		sym.esi, (uintptr_t)curr_sym);
 
 	/* If it's a source symbol, log it. */
-	if (esi < fi->cnt.k) {
+	if (sym.esi < fi->cnt.k) {
 		/* We may have just finished.
 		Avoid extra work.
 		*/
@@ -116,7 +134,7 @@ recurse:
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
 			Z_log(Z_in2, "xor(esi %"PRIu32") -> p%"PRIu32" @0x%"PRIxPTR,
-				esi, cell[j].row_id,
+				sym.esi, cell[j].row_id,
 				(uintptr_t)ffec_get_psum(fp, fi, cell[j].row_id));
 		}
 		/* remove from row */
@@ -147,8 +165,8 @@ check_recurse:
 	*/
 	if (lifo_pop(fi->stk, &tmp.index) != LIFO_ERR) {
 		/* reset stack variables */
-		symbol = ffec_get_psum(fp, fi, tmp.row);
-		esi = tmp.esi;
+		sym.sym = ffec_get_psum(fp, fi, tmp.row);
+		sym.esi = tmp.esi;
 		goto recurse;
 	}
 

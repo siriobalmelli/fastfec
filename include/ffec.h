@@ -16,7 +16,6 @@
 #include <ffec_matrix.h>
 
 
-
 /*	N1 degree
 Minimum number of 1s per matrix column.
 */
@@ -65,7 +64,6 @@ NOTE: the code for this has been totally removed; look for it in the Git tree if
 //#define FFEC_COLLISION_RETRY (FFEC_N1_DEGREE * 4)
 
 
-
 /*	ffec_params
 Caller sets these and passes them to ffec; must be the same at encode and decode ends.
 */
@@ -97,6 +95,7 @@ struct ffec_counts {
 
 /*	ffec_instance
 Caller holds this; passes a reference to it in nearly all calls to ffec.
+TODO: can we shave off some useless kludge from this structure?
 */
 struct ffec_instance {
 	uint64_t			seeds[2];
@@ -126,24 +125,25 @@ struct ffec_instance {
 	};
 	/* references into 'scratch' */
 	struct ffec_row			*rows;
+	union {
+	uint32_t			*esi_seq; /* only on encode */
 	void				*psums; /* only on decode */
+	};
 
 	/* recursion stack|lifo; only on decode */
 	struct lifo			*stk;
 };
 
 
-
 /*
 	ffec.c
 */
-NLC_PUBLIC	struct ffec_instance	*ffec_new(const struct ffec_params *fp,
+NLC_PUBLIC	struct ffec_instance *ffec_new	(const struct ffec_params *fp,
 						size_t			src_len,
 						const void		*src,
 						uint64_t		seed1,
 						uint64_t		seed2);
-
-NLC_PUBLIC	void			ffec_free(struct ffec_instance	*fi);
+NLC_PUBLIC	void	ffec_free		(struct ffec_instance	*fi);
 
 
 NLC_PUBLIC	int	ffec_test_esi		(const struct ffec_instance *fi,
@@ -152,18 +152,8 @@ NLC_PUBLIC	int	ffec_test_esi		(const struct ffec_instance *fi,
 NLC_LOCAL	int	ffec_calc_sym_counts_	(const struct ffec_params *fp,
 						size_t			src_len,
 						struct ffec_counts	*fc);
-
 NLC_LOCAL	int	ffec_calc_lengths_	(const struct ffec_params *fp,
 						struct ffec_instance	*fi);
-
-
-/*
-	ffec_inlines.h
-Must be available to callers, but extra-kludgy and unfit for
-	direct inclusion in this file.
-*/
-#include <ffec_inlines.h>
-
 
 
 /*
@@ -172,25 +162,52 @@ Must be available to callers, but extra-kludgy and unfit for
 NLC_PUBLIC	uint32_t	ffec_encode	(const struct ffec_params	*fp,
 						struct ffec_instance		*fi);
 
+
+/*
+	caller I/O inlines
+*/
+struct ffec_symbol {
+	const void	*sym;
+	uint32_t	esi;
+};
+
+/*	ffec_enc_seq()
+Return the 'i'th symbol in fi->esi_seq.
+Call this function with sequential values of 'i' to get the properly randomized
+	sequence of symbols to transmit or decode, etc.
+
+WARNING: not error-checking the value of 'i' ... MUST be less than 'fi->cnt.n'
+*/
+NLC_INLINE struct ffec_symbol ffec_enc_seq (const struct ffec_params	*fp,
+					const struct ffec_instance	*fi,
+					uint32_t			i)
+{
+	struct ffec_symbol ret = {
+		.esi = fi->esi_seq[i]
+	};
+
+	if (ret.esi < fi->cnt.k)
+		ret.sym = fi->enc_source + (fp->sym_len * ret.esi);
+	else
+		ret.sym = (const void*)fi->parity
+				+ (fp->sym_len * (ret.esi - fi->cnt.k));
+
+	return ret;
+}
+
+
 /*
 	ffec_decode.c
 */
 NLC_PUBLIC	uint32_t	ffec_decode_sym	(const struct ffec_params	*fp,
 						struct ffec_instance		*fi,
-						const void			*symbol,
-						uint32_t			esi);
-
-
+						struct ffec_symbol		sym);
 
 /*
 	ffec_rand.c
 */
-NLC_PUBLIC	void	ffec_esi_rand	(const struct ffec_instance	*fi,
-					uint32_t			*esi_seq,
-					uint32_t			esi_start);
-
+NLC_LOCAL	void	ffec_esi_rand_	(const struct ffec_instance	*fi);
 NLC_LOCAL	void	ffec_gen_matrix_(struct ffec_instance		*fi);
-
 
 
 /*
@@ -200,14 +217,12 @@ NLC_LOCAL	void	__attribute__((regparm(3)))
 			ffec_xor_into_symbol_	(const void *from, void *to, uint32_t sym_len);
 
 
-
 /*
 	ffec_utils.c
 */
 NLC_PUBLIC	int	ffec_mtx_cmp	(struct ffec_instance		*enc,
 					struct ffec_instance		*dec,
 					struct ffec_params		*fp);
-
 
 
 #endif /* ffec_h_ */

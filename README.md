@@ -62,23 +62,12 @@ inefficiency	:	"number of symbols needed to decode" / k
 
 #BUGS
 
+None logged yet
 
 # TODO
 -	check assembly: what does memory clobber of xor change?
 -	0-copy I/O in nonlibc; replace in ffec
 -	64-bit performance (extremely large blocks?)
-
-## is simultaneous assignment and K-F-Y shuffle possible
-
-In generating a matrix, we currently assign ESIs sequentially,
-	then do a pass of KFY shuffle.
-
-WHAT IF we instead move front-to-back, assigning 'i' to the current cell,
-	then swapping it with any random previous cell
-	(guaranteed to contain a valid ID)?
-Does this compromise the randomness of the shuffle?
-
-If not, should give a performance improvement since it removes one loop entirely.
 
 # IDEAS
 - split up seeds across many packets when transmitting:

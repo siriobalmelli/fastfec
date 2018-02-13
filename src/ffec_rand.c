@@ -7,11 +7,10 @@ Everything apropos symbol shuffling/distribution:
 */
 
 
-#include <ffec.h>
+#include <ffec_internal.h>
 
 
-
-/*	ffec_esi_rand()
+/*	ffec_esi_rand_()
 
 Populate memory at 'esi_seq' with a randomly shuffled array of all the ESIs
 	in 'fi' starting from 'esi_start' (set it to 0 to obtain all symbols).
@@ -22,9 +21,7 @@ NOTE: 'esi_seq' should have been allocated by the caller and should be
 
 This function is used e.g.: in determining the order in which to send symbols over the wire.
 */
-void		ffec_esi_rand	(const struct ffec_instance	*fi,
-				uint32_t			*esi_seq,
-				uint32_t			esi_start)
+void		ffec_esi_rand_	(const struct ffec_instance	*fi)
 {
 	/* derive seeds from existing instance */
 	uint64_t seeds[2] = {
@@ -35,26 +32,32 @@ void		ffec_esi_rand	(const struct ffec_instance	*fi,
 	struct pcg_state rnd;
 	pcg_seed(&rnd, seeds[0], seeds[1]);
 
-	/* write IDs sequentially */
-	uint32_t limit = fi->cnt.n - esi_start;
-	for (uint32_t i=0; i < limit; i++)
-		esi_seq[i] = i + esi_start;
+	/*
+		is simultaneous assignment and K-F-Y shuffle possible?
 
-	/* Iterate and swap using XOR */
-	uint32_t rand;
-	uint32_t temp;
-	for (uint32_t i=0; i < limit -1; i++) {
-		rand = pcg_rand_bound(&rnd, limit -i) + i;
-		/* use temp var and not triple-XOR so as to avoid XORing a cell with itself */
-		temp = esi_seq[i];
-		esi_seq[i] = esi_seq[rand];
-		esi_seq[rand] = temp;
+	In generating a matrix, we currently assign ESIs sequentially,
+		then do a pass of KFY shuffle.
+
+	Here we instead move front-to-back, assigning 'i' to the current cell,
+		then swapping it with any random previous cell
+		(guaranteed to contain a valid ID).
+	This removes one loop (one pass through the ESI array) entirely.
+
+	TODO: Does this compromise the randomness of the shuffle?
+	*/
+	fi->esi_seq[0] = 0;
+	fi->esi_seq[1] = 1;
+	for (uint32_t i=2, rand, temp; i < fi->cnt.n; i++) {
+		fi->esi_seq[i] = i;
+		rand = pcg_rand_bound(&rnd, i);
+		/* use temp var (not triple-XOR): avoid XORing a cell with itself */
+		temp = fi->esi_seq[i];
+		fi->esi_seq[i] = fi->esi_seq[rand];
+		fi->esi_seq[rand] = temp;
 	}
 
-	Z_prn_buf(Z_in2, esi_seq, fi->cnt.n,
-		"randomized ESI sequence:");
+	Z_prn_buf(Z_in2, fi->esi_seq, fi->cnt.n, "randomized ESI sequence:");
 }
-
 
 
 /*	ffec_gen_matrix_()
