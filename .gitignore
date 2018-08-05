@@ -1,5 +1,5 @@
 build*
-cscope*
+*cscope*
 .*.sw[op]
 benchmark/*.png
 benchmark/*.pdf
