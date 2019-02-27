@@ -1,4 +1,4 @@
-# FFEC
+# Fast FEC [![Build Status](https://travis-ci.org/siriobalmelli/fastfec.svg?branch=master)](https://travis-ci.org/siriobalmelli/fastfec)
 The Fast (and barebones) FEC library.
 
 This library implements a basic (and fast) LDGM staircase FEC.
