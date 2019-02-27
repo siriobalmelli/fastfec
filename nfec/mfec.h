@@ -7,7 +7,7 @@
 #include <bits.h>
 #include <sbfu.h>
 #include <ffec.h>
-#include <zed_dbg.h>
+#include <ndebug.h>
 
 #include <Judy.h>
 

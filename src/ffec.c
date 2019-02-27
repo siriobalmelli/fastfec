@@ -50,13 +50,13 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 					uint64_t		seed2)
 {
 	struct ffec_instance *ret = NULL;
-	Z_die_if(!fp, "expecting ffec_params");
-	Z_die_if(!src_len, "src_len mandatory");
+	NB_die_if(!fp, "expecting ffec_params");
+	NB_die_if(!src_len, "src_len mandatory");
 
-	Z_die_if(!( 
+	NB_die_if(!( 
 		ret = calloc(1, sizeof(struct ffec_instance))
 		), "calloc(1, %zu)", sizeof(struct ffec_instance));
-	Z_die_if(!(
+	NB_die_if(!(
 		ret->stk = lifo_new()
 		), "");
 
@@ -67,15 +67,15 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 	ret->source_len = src_len;
 
 	/* alignment */
-	Z_die_if((fp->sym_len / FFEC_SYM_ALIGN * FFEC_SYM_ALIGN) != fp->sym_len,
+	NB_die_if((fp->sym_len / FFEC_SYM_ALIGN * FFEC_SYM_ALIGN) != fp->sym_len,
 		"requested sym_len %"PRIu32" not a multiple of %"PRIu32,
 		fp->sym_len, FFEC_SYM_ALIGN);
 	/* calculate symbol counts */
-	Z_die_if(
+	NB_die_if(
 		ffec_calc_sym_counts_(fp, ret->source_len, &ret->cnt)
 		, "");
 	/* calculate memory region sizes */
-	Z_die_if(
+	NB_die_if(
 		ffec_calc_lengths_(fp, ret)
 		, "");
 
@@ -83,7 +83,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 	/* DECODE: alloc ALL memory */
 	if (!ret->enc_source) {
 		size_t alloc = ret->source_len + ret->parity_len + ret->scratch_len;
-		Z_die_if(!(
+		NB_die_if(!(
 			ret->dec_source = malloc(alloc)
 			), "alloc %zu", alloc);
 		ret->parity = ret->dec_source + ret->source_len;
@@ -91,7 +91,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 	/* ENCODE: alloc parity and scratch only */
 	} else {
 		size_t alloc = ret->parity_len + ret->scratch_len;
-		Z_die_if(!(
+		NB_die_if(!(
 			ret->parity = malloc(alloc)
 			), "alloc %zu", alloc);
 	}
@@ -111,7 +111,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 
 	/* if no seed proposed, fish from /dev/urandom */
 	if (!seed1 || !seed2) {
-		Z_die_if(nlc_urand(ret->seeds, sizeof(ret->seeds))
+		NB_die_if(nlc_urand(ret->seeds, sizeof(ret->seeds))
 				!= sizeof(ret->seeds), "");
 	} else {
 		ret->seeds[0] = seed1;
@@ -123,7 +123,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 	pcg_seed(&ret->rng, ret->seeds[0], ret->seeds[1]);
 
 	/* print values for debug */
-	Z_log(Z_in2, "\n\tseeds=[0x%"PRIu64",0x%"PRIu64"]\tcnt: .k=%"PRIu32" .n=%"PRIu32" .p=%"PRIu32,
+	NB_wrn("\n\tseeds=[0x%"PRIu64",0x%"PRIu64"]\tcnt: .k=%"PRIu32" .n=%"PRIu32" .p=%"PRIu32,
 		ret->seeds[0], ret->seeds[1], ret->cnt.k, ret->cnt.n, ret->cnt.p);
 
 	/* init the matrix */
@@ -144,7 +144,7 @@ struct ffec_instance	*ffec_new(const struct ffec_params	*fp,
 
 
 	return ret;
-out:
+die:
 	ffec_free(ret);
 	return NULL;
 }
@@ -198,17 +198,17 @@ int		ffec_calc_sym_counts_(const struct ffec_params	*fp,
 {
 	int err_cnt = 0;
 	int wrn_cnt = 0;
-	Z_die_if(!fp || !src_len || !fc, "args");
+	NB_die_if(!fp || !src_len || !fc, "args");
 	/* temp 64-bit counters, to test for overflow */
 	uint64_t t_k, t_n, t_p;
 
 	t_k = nm_div_ceil(src_len, fp->sym_len);
 	if (t_k < FFEC_MIN_K) {
-		Z_log(Z_wrn, "k=%"PRIu64" < FFEC_MIN_K=%"PRIu32";  src_len=%zu, sym_len=%"PRIu32,
+		NB_wrn("k=%"PRIu64" < FFEC_MIN_K=%"PRIu32";  src_len=%zu, sym_len=%"PRIu32,
 			t_k, FFEC_MIN_K, src_len, fp->sym_len);
 		t_k = FFEC_MIN_K;
 	}
-	Z_wrn_if(t_k * fp->sym_len > src_len,
+	NB_wrn_if(t_k * fp->sym_len > src_len,
 		"symbol math requires larger source region: %"PRIu64" > %zu (specified)",
 		t_k * fp->sym_len, src_len);
 
@@ -216,14 +216,14 @@ int		ffec_calc_sym_counts_(const struct ffec_params	*fp,
 
 	t_p = t_n - t_k;
 	if (t_p < FFEC_MIN_P) {
-		Z_log(Z_wrn, "p=%"PRIu64" < FFEC_MIN_P=%"PRIu32";  k=%"PRIu64", fec_ratio=%lf",
+		NB_wrn("p=%"PRIu64" < FFEC_MIN_P=%"PRIu32";  k=%"PRIu64", fec_ratio=%lf",
 			t_p, FFEC_MIN_P, t_k, fp->fec_ratio);
 		t_p = FFEC_MIN_P;
 		t_n = t_p + t_k;
 	}
 
 	/* sanity check: matrix counters and iterators are all 32-bit */
-	Z_die_if(
+	NB_die_if(
 		t_n * FFEC_N1_DEGREE > (uint64_t)UINT32_MAX -2,
 		"n=%"PRIu64" symbols is excessive for this implementation",
 		t_n);
@@ -233,7 +233,7 @@ int		ffec_calc_sym_counts_(const struct ffec_params	*fp,
 	fc->p = t_p;
 	fc->k_decoded = 0; /* because common sense */
 
-out:
+die:
 	if (err_cnt)
 		return 0 - err_cnt;
 	return wrn_cnt;
@@ -260,7 +260,7 @@ int		ffec_calc_lengths_(const struct ffec_params	*fp,
 	count 'psum' even on ENCODE; since it's no good to encode
 		something the receiver can't decode!
 	*/
-	Z_die_if(src + par + scr + psum > (uint64_t)UINT32_MAX -2,
+	NB_die_if(src + par + scr + psum > (uint64_t)UINT32_MAX -2,
 		"cannot handle combined symbol space of %"PRIu64,
 		src + par + scr + psum);
 
@@ -275,6 +275,6 @@ int		ffec_calc_lengths_(const struct ffec_params	*fp,
 	fi->parity_len = par;
 	fi->scratch_len = scr;
 
-out:
+die:
 	return err_cnt;
 }

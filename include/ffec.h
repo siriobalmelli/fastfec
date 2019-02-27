@@ -3,7 +3,7 @@
 
 /* nonlibc */
 #include <nonlibc.h>
-#include <zed_dbg.h>
+#include <ndebug.h>
 #include <pcg_rand.h>
 #include <nmath.h> /* nm_div_ceil() */
 

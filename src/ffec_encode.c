@@ -48,7 +48,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 				struct ffec_instance		*fi)
 {
 	int err_cnt = 0;
-	Z_die_if(!fi, "args");
+	NB_die_if(!fi, "args");
 
 	/* zero out all parity symbols */
 	memset(fi->parity, 0x0, fi->cnt.p * fp->sym_len);
@@ -60,7 +60,7 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 		*/
 		struct ffec_cell *cell = ffec_get_col_first(fi->cells, i);
 		const void *symbol = ffec_sym_n_(fp, fi, i);
-		Z_log(Z_in2, "enc(esi %"PRIu64") @0x%"PRIxPTR,
+		NB_wrn("enc(esi %"PRIu64") @0x%"PRIxPTR,
 			i, (uintptr_t)symbol);
 
 		for (uint32_t j=0; j < FFEC_N1_DEGREE; j++) {
@@ -74,12 +74,12 @@ uint32_t	ffec_encode	(const struct ffec_params	*fp,
 			ffec_xor_into_symbol_(symbol,
 					ffec_sym_p_(fp, fi, cell[j].row_id),
 					fp->sym_len);
-			Z_log(Z_in2, "xor(esi %"PRId64") -> p%"PRIu32" @0x%"PRIxPTR,
+			NB_wrn("xor(esi %"PRId64") -> p%"PRIu32" @0x%"PRIxPTR,
 				i, cell[j].row_id,
 				(uintptr_t)ffec_sym_p_(fp, fi, cell[j].row_id));
 		}
 	}
 
-out:
+die:
 	return err_cnt;
 }

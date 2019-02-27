@@ -1,37 +1,67 @@
 #project
-project('ffec', 'c',
-	version : '0.1.0',
-	default_options : [ 'c_std=gnu11' ])
+project('fastfec', 'c',
+  version : '0.1.1',
+  license : 'LGPL-2.1+',
+  default_options : [
+    'b_coverage=true',
+    'c_std=gnu11'
+    ])
 description = 'Fast FEC library'
-
-#sanity
-assert(meson.project_name() == 'ffec', 'Incorrect project name')
+homepage = 'https://siriobalmelli.github.io/FastFEC/'
 
 
-#
-#	build options by type
-#
-# debug : all the pedantic things!
+# whole-project build flags (most of these are hardening flags)
+add_project_arguments([
+    '-D_FORTIFY_SOURCE=2',
+    '-fasynchronous-unwind-tables',
+    '-fexceptions',
+    '-fstack-protector-strong',
+    '-pipe',
+    '-Wall',
+    '-Werror=format-security',
+    '-Werror=implicit-function-declaration'
+    ],
+  language : 'c')
+
+# _all_ variables visible in gdb and core dumps
 if get_option('buildtype') == 'debug'
-	add_project_arguments([ '-DDEBUG' ],
-				language : 'c')
+  add_project_arguments([
+    '-DDEBUG',
+    '-fno-omit-frame-pointer',
+    '-grecord-gcc-switches',
+    '-O0',
+    '-Wno-cpp'
+    ],
+    language : 'c')
 
-# debugoptimized : daily worker build; basically 'release' but with symbols
 elif get_option('buildtype') == 'debugoptimized'
-	add_project_arguments([ '-march=native', '-mtune=native' ],
-				language : 'c')
+  add_project_arguments([
+    '-fno-omit-frame-pointer',
+    '-grecord-gcc-switches',
+    '-march=native',
+    '-mtune=native',
+    '-O2'
+    ],
+  language : 'c')
 
-# release : optimize this! ship this!
 elif get_option('buildtype') == 'release'
-	add_project_arguments([ '-DNDEBUG', '-march=native', '-mtune=native', '-Ofast' ],
-				language : 'c')
+  add_project_arguments([
+    '-DNDEBUG',
+    '-march=native',
+    '-mtune=native',
+    '-Ofast'
+    ],
+  language : 'c')
 
-# plain : NO flags and an old architecture;
-#+	use this to cross check the effect of flags on the other build types.
+# use this to cross check the effect of flags on the other build types.
 elif get_option('buildtype') == 'plain'
-	add_project_arguments([ '-DNDEBUG', '-march=core2' ],
-				language : 'c')
+  add_project_arguments([
+    '-DNDEBUG',
+    '-march=core2'
+    ],
+  language : 'c')
 endif
+
 
 
 # deps

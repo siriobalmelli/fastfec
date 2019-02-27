@@ -78,11 +78,11 @@ __attribute__((constructor)) void ffec_matrix_self_test()
 {
 	struct ffec_cell a_cell;
 	ffec_cell_init(&a_cell, 42);
-	Z_die_if(!ffec_cell_test(&a_cell), "expecting cell to be unset after init");
+	NB_die_if(!ffec_cell_test(&a_cell), "expecting cell to be unset after init");
 	
-	Z_log(Z_inf, "matrix self-test OK");
+	NB_inf("matrix self-test OK");
 	return;
-out:
+die:
 	raise(SIGQUIT);
 }
 

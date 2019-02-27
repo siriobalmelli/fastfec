@@ -1,37 +1,50 @@
-{ # deps
-  system ? builtins.currentSystem,
-  nixpkgs ? import <nixpkgs> { inherit system; },
-  nonlibc ? nixpkgs.nonlibc or import <nonlibc> { inherit system;
-    inherit buildtype;
-    inherit compiler;
-    inherit dep_type;
-    inherit mesonFlags;
-  },
+{
   # options
   buildtype ? "release",
   compiler ? "clang",
   dep_type ? "shared",
-  mesonFlags ? ""
+  mesonFlags ? "",
+
+  # deps
+  system ? builtins.currentSystem,
+  nixpkgs ? import <nixpkgs> { inherit system; }
 }:
 
-# note that "nonlibc" above should not be clobbered by this
-with import <nixpkgs> { inherit system; };
+with nixpkgs;
 
 stdenv.mkDerivation rec {
   name = "ffec";
+  version = "0.1.1";
   outputs = [ "out" ];
 
-  # TODO: WHY do we have to re-specify 'liburcu' here, if 'nonlibc'
-  #+ already lists it as a build input??
-  buildInputs = [
-    clang
-    liburcu
-    meson
-    ninja
+  meta = with stdenv.lib; {
+    description = "Fast FEC library";
+    homepage = https://siriobalmelli.github.io/fastfec/;
+    license = licenses.lgpl21Plus;
+    platforms = platforms.unix;
+    maintainers = [ "https://github.com/siriobalmelli" ];
+  };
+
+  nonlibc = nixpkgs.nonlibc or import ./nonlibc {};
+
+  inputs = [
     nonlibc
-    pandoc
-    pkgconfig
+    nixpkgs.gcc
+    nixpkgs.clang
+    nixpkgs.meson
+    nixpkgs.ninja
+    nixpkgs.pandoc
+    nixpkgs.pkgconfig
   ];
+  buildInputs = if ! lib.inNixShell then inputs else inputs ++ [
+    nixpkgs.cscope
+    nixpkgs.gdb
+    nixpkgs.man
+    nixpkgs.pahole
+    nixpkgs.valgrind
+    nixpkgs.which
+  ];
+  propagatedBuildInputs = [];
 
   # just work with the current directory (aka: Git repo), no fancy tarness
   src = ./.;

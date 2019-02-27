@@ -74,7 +74,7 @@ uint32_t	ffec_decode_sym		(const struct ffec_params	*fp,
 
 	/* set up only only once */
 	err_cnt = 0;
-	Z_die_if(!fp || !fi, "args");
+	NB_die_if(!fp || !fi, "args");
 
 	ffec_esi_row_t tmp;
 	struct ffec_cell *cell = NULL;
@@ -84,7 +84,7 @@ recurse:
 
 	/* if all source symbols have been decoded, bail */
 	if (fi->cnt.k_decoded == fi->cnt.k)
-		goto out;
+		goto die;
 
 	/* get column */
 	cell = ffec_get_col_first(fi->cells, sym.esi);
@@ -96,13 +96,13 @@ recurse:
 	curr_sym = ffec_dec_sym(fp, fi, sym.esi);
 	/* if given a pointer, copy symbol from there into matrix */
 	if (sym.sym && sym.sym != curr_sym) {
-		Z_log(Z_in2, "pull <-(esi %"PRIu32") @0x%"PRIxPTR,
+		NB_wrn("pull <-(esi %"PRIu32") @0x%"PRIxPTR,
 			sym.esi, (uintptr_t)sym.sym);
 		memcpy(curr_sym, sym.sym, fp->sym_len);
 	}
 	/* ... otherwise assume it's already there */
 
-	Z_log(Z_in2, "decode (esi %"PRIu32") @0x%"PRIxPTR,
+	NB_wrn("decode (esi %"PRIu32") @0x%"PRIxPTR,
 		sym.esi, (uintptr_t)curr_sym);
 
 	/* If it's a source symbol, log it. */
@@ -111,7 +111,7 @@ recurse:
 		Avoid extra work.
 		*/
 		if (++fi->cnt.k_decoded == fi->cnt.k)
-			goto out;
+			goto die;
 	}
 
 	/* get all rows */
@@ -133,7 +133,7 @@ recurse:
 			ffec_xor_into_symbol_(curr_sym,
 					ffec_get_psum(fp, fi, cell[j].row_id),
 					fp->sym_len);
-			Z_log(Z_in2, "xor(esi %"PRIu32") -> p%"PRIu32" @0x%"PRIxPTR,
+			NB_wrn("xor(esi %"PRIu32") -> p%"PRIu32" @0x%"PRIxPTR,
 				sym.esi, cell[j].row_id,
 				(uintptr_t)ffec_get_psum(fp, fi, cell[j].row_id));
 		}
@@ -170,7 +170,7 @@ check_recurse:
 		goto recurse;
 	}
 
-out:
+die:
 	if (err_cnt)
 		return -1;
 	return fi->cnt.k - fi->cnt.k_decoded;

@@ -5,11 +5,6 @@ Test performance and correctness of ffec
 (c) 2016 Sirio Balmelli
 */
 
-/* override suppression of Z_inf with -DNDEBUG */
-#include <zed_dbg.h>
-#undef Z_LOG_LVL
-#define Z_LOG_LVL (Z_err | Z_wrn | Z_inf)
-
 #include <ffec.h>
 
 #include <time.h> /* clock() */
@@ -85,11 +80,11 @@ void parse_opts(int argc, char **argv)
 		}
 	}
 
-	Z_log(Z_inf, "sym_len: %zu", sym_len);
-	Z_log(Z_inf, "fec_ratio: %f", fec_ratio);
-	Z_log(Z_inf, "original_sz: %zu", original_sz);
-	Z_log(Z_inf, "N: %d", FFEC_N1_DEGREE);
-	Z_log(Z_inf, "FFEC_RAND_PASSES: %d", FFEC_RAND_PASSES);
+	NB_inf("sym_len: %zu", sym_len);
+	NB_inf("fec_ratio: %f", fec_ratio);
+	NB_inf("original_sz: %zu", original_sz);
+	NB_inf("N: %d", FFEC_N1_DEGREE);
+	NB_inf("FFEC_RAND_PASSES: %d", FFEC_RAND_PASSES);
 }
 
 
@@ -115,7 +110,7 @@ int main(int argc, char **argv)
 	/*
 		set up source memory region
 	*/
-	Z_die_if(!(
+	NB_die_if(!(
 		mem = malloc(original_sz)
 		), "");
 	random_bytes(mem, original_sz);
@@ -127,15 +122,15 @@ int main(int argc, char **argv)
 		encode
 	*/
 	nlc_timing_start(clock_enc);
-		Z_die_if(!(
+		NB_die_if(!(
 			fi_enc = ffec_new(&fp, original_sz, mem, 0, 0)
 			), "");
 		ffec_encode(&fp, fi_enc);
 	nlc_timing_stop(clock_enc);
-	Z_log(Z_inf, "encode ELAPSED: %.2lfms", nlc_timing_wall(clock_enc) * 1000);
+	NB_inf("encode ELAPSED: %.2lfms", nlc_timing_wall(clock_enc) * 1000);
 
 	/* invariant: encode must NOT alter the source region */
-	Z_die_if(src_hash != fnv_hash64(NULL, mem, original_sz), "");
+	NB_die_if(src_hash != fnv_hash64(NULL, mem, original_sz), "");
 
 
 	/*
@@ -143,13 +138,13 @@ int main(int argc, char **argv)
 	*/
 
 	nlc_timing_start(clock_dec);
-		Z_die_if(!(
+		NB_die_if(!(
 			fi_dec = ffec_new(&fp, original_sz, NULL,
 						fi_enc->seeds[0],
 						fi_enc->seeds[1])
 			), "");
 #ifdef DEBUG
-		Z_die_if(ffec_mtx_cmp(fi_enc, fi_dec, &fp), "");
+		NB_die_if(ffec_mtx_cmp(fi_enc, fi_dec, &fp), "");
 #endif
 
 		/* Iterate through randomly ordered ESIs and decode for each.
@@ -165,14 +160,14 @@ int main(int argc, char **argv)
 		verify
 	decoded region must be bit-identical to source
 	*/
-	Z_die_if(src_hash != fnv_hash64(NULL, fi_dec->dec_source, original_sz), "");
+	NB_die_if(src_hash != fnv_hash64(NULL, fi_dec->dec_source, original_sz), "");
 
 
 	/*
 		report
 	*/
-	Z_log(Z_inf, "decode ELAPSED: %.2lfms", nlc_timing_wall(clock_dec) * 1000);
-	Z_log(Z_inf, "decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
+	NB_inf("decode ELAPSED: %.2lfms", nlc_timing_wall(clock_dec) * 1000);
+	NB_inf("decoded with k=%"PRIu32" < i=%"PRIu32" < n=%"PRIu32";\n\
 \tinefficiency=%lf; channel loss tolerance=%.2lf%%; FEC=%.2lf%%\n\
 \tsource size=%.4lf MiB, bitrates: enc=%"PRIu64"Mb/s, dec=%"PRIu64"Mb/s",
 		/*k*/fi_dec->cnt.k, /*i*/i, /*n*/fi_dec->cnt.n,
@@ -187,7 +182,7 @@ int main(int argc, char **argv)
 			/ nlc_timing_wall(clock_dec)
 			/ (1024 * 1024) * 8));
 
-out:
+die:
 	free(mem);
 	ffec_free(fi_enc);
 	ffec_free(fi_dec);

@@ -116,14 +116,14 @@ void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 		ret = hp->the_one_ring.iov_base + (page_idx * mfec_pg(hp));
 	/* must split map into 2 operations to roll around end of ring */
 	} else {
-		Z_die_if((
+		NB_die_if((
 			ret = mmap(NULL, mfec_pg(hp) * map_len,
 					PROT_READ | PROT_WRITE,
 					MAP_SHARED,
 					hp->ring_fd,
 					page_idx * mfec_pg(hp))
 			) == MAP_FAILED, "");
-		Z_die_if((
+		NB_die_if((
 			/* requested virtual mem addr is contiguous to previous map */
 			mmap(ret + mfec_pg(hp) * map_len, 
 				mfec_pg(hp) * (hp->width - map_len),
@@ -139,7 +139,7 @@ void		*mfec_source_map(struct mfec_hp *hp, uint64_t page_idx, off_t *last_offt)
 
 	Z_inf(2, "assemble idx %ld @0x%lx; last_offt %ld", page_idx, (uint64_t)ret, *last_offt);
 	return ret;
-out:
+die:
 	if (ret && ret != MAP_FAILED)
 		munmap(ret, mfec_pg(hp) * hp->width); /* unmap the maximum possible amount */
 	return NULL;
@@ -192,7 +192,7 @@ Initialize new book @'seq_no'.
 */
 struct mfec_bk	*mfec_bk_next	(struct mfec_hp *hp)
 {
-	Z_die_if(!hp, "sanity");
+	NB_die_if(!hp, "sanity");
 
 	/* Inval the book we will now clobber
 		(our "data" region is their first page).
@@ -204,7 +204,7 @@ struct mfec_bk	*mfec_bk_next	(struct mfec_hp *hp)
 	ret->seq_no = hp->seq_no++;
 	ret->fi.source = mfec_source_map(hp, ret->seq_no % hp->span, &ret->data_offt);
 	ret->hp = hp;
-	Z_die_if((
+	NB_die_if((
 		ffec_init(&hp->fp, &ret->fi,
 			mfec_pg(hp) * hp->width,
 			ret->fi.source, ret->fi.parity, ret->fi.scratch,
@@ -237,7 +237,7 @@ struct mfec_bk	*mfec_bk_next	(struct mfec_hp *hp)
 	/* NOTE: TX/encode expects user to prepare "data" and then call mfec_encode() */
 
 	return ret;
-out:
+die:
 	return NULL;
 }
 
@@ -260,19 +260,19 @@ uint32_t	*mfec_encode	(struct mfec_bk *bk, void *data)
 {
 	int err_cnt = 0;
 	uint32_t *ret = NULL;
-	Z_die_if(!bk || bk->hp->dir != encode, "sanity");
+	NB_die_if(!bk || bk->hp->dir != encode, "sanity");
 
 	// TODO: splicing gives speed improvement?
-	Z_die_if(data, "splicing not implemented");
+	NB_die_if(data, "splicing not implemented");
 
 	err_cnt = ffec_encode(&bk->hp->fp, &bk->fi);
 
 	/* alloc and return randomized sequence of ESIs */
-	Z_die_if(!(
+	NB_die_if(!(
 		ret = malloc(mfec_bk_txesi_cnt(bk) * sizeof(uint32_t))
 		), "");
 	ffec_esi_rand(&bk->fi, ret, bk->hp->syms_page * (bk->hp->width - 1));
-out:
+die:
 	return ret;
 }
 
@@ -403,7 +403,7 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 				uint64_t seq_no)
 {
 	int err_cnt = 0;
-	Z_die_if(!hp, "sanity");
+	NB_die_if(!hp, "sanity");
 	memset(hp, 0x0, sizeof(*hp));
 
 	hp->width = width;
@@ -415,17 +415,17 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 	hp->fp.fec_ratio = fp.fec_ratio;
 	hp->fp.sym_len = fp.sym_len;
 	hp->dir = dir;
-	Z_die_if((
+	NB_die_if((
 		ffec_calc_lengths(&hp->fp, mfec_pg(hp) * hp->width, &hp->fs, dir)
 		), "");
 
 	/* verify that quested size parameters give a multiple of pagesize */
 	size_t pgsz = getpagesize();
-	Z_die_if(mfec_pg(hp) / pgsz * pgsz != mfec_pg(hp),
+	NB_die_if(mfec_pg(hp) / pgsz * pgsz != mfec_pg(hp),
 		"proposed pagesize %ld %% %ld system pagesize = %ld",
 		mfec_pg(hp), pgsz, mfec_pg(hp) % pgsz);
 	/* mmap() will complain if syms_page < 1024 */
-	Z_die_if(syms_page < 1024, "");
+	NB_die_if(syms_page < 1024, "");
 
 	/* one mmap to rule them all ... and at process end unmap them
 	Physical layout (note that pages overlap in source regions):
@@ -442,21 +442,21 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 							* (uint64_t)hp->span,
 						pgsz);
 #if 0
-	Z_die_if((
+	NB_die_if((
 		hp->ring_fd = sbfu_tmp_map(&hp->the_one_ring, "./")
 		) < 1, "");
 	Z_inf(2, "map ring @ 0x%lx", (uint64_t)hp->the_one_ring.iov_base);
 #else
 	/* make tempfile */
 	char file_path[] = ".sbfu_tmp_XXXXXX";
-	Z_die_if((
+	NB_die_if((
 		hp->ring_fd = mkostemp(file_path, O_ASYNC)
 		) < 1, "create temp file '%s'", file_path);
 	unlink(file_path);
 	/* map */
 	struct iovec *rg = &hp->the_one_ring;
-	Z_die_if(ftruncate(hp->ring_fd, rg->iov_len), ""); /* force file size */
-	Z_die_if((
+	NB_die_if(ftruncate(hp->ring_fd, rg->iov_len), ""); /* force file size */
+	NB_die_if((
 		rg->iov_base = mmap(NULL, rg->iov_len, 
 				(PROT_READ | PROT_WRITE), MAP_PRIVATE,
 				hp->ring_fd, 0)
@@ -479,7 +479,7 @@ int		mfec_hp_init	(struct mfec_hp *hp, uint32_t width, uint64_t syms_page,
 		hp->books[i].fi.scratch = hp->books[i-1].fi.scratch + hp->fs.scratch_sz;
 	}
 
-out:
+die:
 	return err_cnt;
 }
 

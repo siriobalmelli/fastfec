@@ -45,12 +45,12 @@ int test_single()
 	struct mfec_bk *bk_tx, *bk_rx;
 	uint32_t *esi_seq = NULL;
 
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&TX, width, syms_page, encode, 
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
 		, "");
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&RX, width, syms_page, decode, 
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
@@ -58,17 +58,17 @@ int test_single()
 
 
 	/* set up TX book and encode */
-	Z_die_if(!(
+	NB_die_if(!(
 		bk_tx = mfec_bk_next(&TX)		/* new book @ TX (seeded automatically) */
 		), "");
 	page_rand(mfec_bk_data(bk_tx), mfec_pg(&TX));	/* generate data block */
-	Z_die_if(!(
+	NB_die_if(!(
 		esi_seq = mfec_encode(bk_tx, NULL)	/* encode, get randomized ESI sequence */
 		), "");
 
 
 	/* set up RX book */
-	Z_die_if(!(
+	NB_die_if(!(
 		bk_rx = mfec_bk_next(&RX)		/* new book @ RX */
 		), "");
 	/* decode symbols until done */
@@ -81,12 +81,12 @@ int test_single()
 	}
 
 	/* verify memory is identical */
-	Z_die_if(
+	NB_die_if(
 		memcmp(bk_tx->fi.source, bk_rx->fi.source, bk_tx->hp->fs.source_sz)
 		, "");
 
 	/* print efficiency */
-	Z_log(Z_inf, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
+	NB_inf("decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
 		/*inefficiency*/(double)i / (double)TX.syms_page,
@@ -94,7 +94,7 @@ int test_single()
 			/ ((double)TX.syms_page + bk_tx->fi.cnt.p)) * 100,
 		/*FEC*/(bk_tx->hp->fp.fec_ratio -1) * 100 * TX.width);
 
-out:
+die:
 	if (esi_seq)
 		free(esi_seq);
 	mfec_hp_clean(&TX);
@@ -121,12 +121,12 @@ int test_circular()
 		we will use single pages from these over and over to
 		verify circular buffer mechanics.
 	*/
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&TX, width, syms_page, encode,
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
 		, "");
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&RX, width, syms_page, decode,
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
@@ -137,17 +137,17 @@ int test_circular()
 	for (int s = 0; s < TX.span * 2; s++) {
 
 		/* set up TX book and encode */
-		Z_die_if(!(
+		NB_die_if(!(
 			bk_tx = mfec_bk_next(&TX)		/* new book @ TX (seeded automatically) */
 			), "");
 		page_rand(mfec_bk_data(bk_tx), mfec_pg(&TX));	/* generate data block */
-		Z_die_if(!(
+		NB_die_if(!(
 			esi_seq = mfec_encode(bk_tx, NULL)	/* encode, get randomized ESI sequence */
 			), "");
 
 
 		/* set up RX book */
-		Z_die_if(!(
+		NB_die_if(!(
 			bk_rx = mfec_bk_next(&RX)		/* new book @ RX */
 			), "");
 		/* decode symbols until done */
@@ -160,13 +160,13 @@ int test_circular()
 		}
 
 		/* verify memory is identical */
-		Z_die_if(
+		NB_die_if(
 			memcmp(bk_tx->fi.source, bk_rx->fi.source, bk_tx->hp->fs.source_sz)
 			, "s=%d", s);
 
 #if 0
 		/* print efficiency */
-		Z_log(Z_inf, "decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
+		NB_inf("decoded with pg=%ld < i=%ld < (pg+p)=%ld;\n\
 			\tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 			/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_tx->fi.cnt.p,
 			/*inefficiency*/(double)i / (double)TX.syms_page,
@@ -181,7 +181,7 @@ int test_circular()
 	}
 
 /* Clean up only if there was an error.*/
-out:
+die:
 	if (esi_seq)
 		free(esi_seq);
 	mfec_hp_clean(&TX);
@@ -207,12 +207,12 @@ int test_multi()
 	memset(bk_rx, 0x0, arr_sz);
 	memset(esi_seq, 0x0, arr_sz);
 
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&TX, width, syms_page, encode, 
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
 		, "");
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&RX, width, syms_page, decode, 
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
@@ -221,11 +221,11 @@ int test_multi()
 	/* generate all TX blocks simulatenously */
 	for (uint32_t w=0; w < width; w++) {
 		/* set up TX book and encode */
-		Z_die_if(!(
+		NB_die_if(!(
 			bk_tx[w] = mfec_bk_next(&TX)		/* new book @ TX (seeded automatically) */
 			), "");
 		page_rand(mfec_bk_data(bk_tx[w]), mfec_pg(&TX));/* generate data block */
-		Z_die_if(!(
+		NB_die_if(!(
 			esi_seq[w] = mfec_encode(bk_tx[w], NULL)/* encode, get randomized ESI sequence */
 			), "");
 	}
@@ -233,7 +233,7 @@ int test_multi()
 	/* set up all RX books before decoding anything */
 	for (uint32_t w=0; w < width; w++) {
 		/* set up RX book */
-		Z_die_if(!(
+		NB_die_if(!(
 			bk_rx[w] = mfec_bk_next(&RX)		/* new book @ RX */
 			), "");
 	}
@@ -245,7 +245,7 @@ int test_multi()
 		for (int j=0; j < width; j++) {
 			struct mfec_bk *bkTX = mfec_bk_get(&TX, j);
 			struct mfec_bk *bkRX = mfec_bk_get(&RX, j);
-			Z_die_if(!bkTX || !bkRX, "can't get books for seq %d", j);
+			NB_die_if(!bkTX || !bkRX, "can't get books for seq %d", j);
 			if (!mfec_decode(bkRX,
 					ffec_get_sym(&bkTX->hp->fp, &bkTX->fi, esi_seq[j][i]),
 					esi_seq[j][i]))
@@ -257,13 +257,13 @@ int test_multi()
 
 	for (int j=0; j < width; j++) {
 		/* verify memory is identical */
-		Z_die_if(
+		NB_die_if(
 			memcmp(bk_tx[j]->fi.source, bk_rx[j]->fi.source, bk_tx[j]->hp->fs.source_sz)
 			, "j=%d", j);
 	}
 
 	/* print efficiency */
-	Z_log(Z_inf, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
+	NB_inf("decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*width*/width,
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_rx[0]->fi.cnt.p,
@@ -272,7 +272,7 @@ int test_multi()
 			/ ((double)TX.syms_page + bk_rx[0]->fi.cnt.p)) * 100,
 		/*FEC*/(bk_tx[0]->hp->fp.fec_ratio -1) * 100 * TX.width);
 
-out:
+die:
 	for (uint32_t w=0; w < width; w++)
 		if (esi_seq[w])
 			free(esi_seq[w]);
@@ -306,12 +306,12 @@ int test_multi_seq_drop()
 	memset(bk_rx, 0x0, arr_sz);
 	memset(esi_seq, 0x0, arr_sz);
 
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&TX, width, syms_page, encode,
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
 		, "");
-	Z_die_if(
+	NB_die_if(
 		mfec_hp_init(&RX, width, syms_page, decode,
 			(struct ffec_params){ .sym_len = sym_len, .fec_ratio = fec_ratio },
 			0)
@@ -320,11 +320,11 @@ int test_multi_seq_drop()
 	/* generate all TX blocks simulatenously */
 	for (uint32_t w=0; w < width; w++) {
 		/* set up TX book and encode */
-		Z_die_if(!(
+		NB_die_if(!(
 			bk_tx[w] = mfec_bk_next(&TX)		/* new book @ TX (seeded automatically) */
 			), "");
 		page_rand(mfec_bk_data(bk_tx[w]), mfec_pg(&TX));/* generate data block */
-		Z_die_if(!(
+		NB_die_if(!(
 			esi_seq[w] = mfec_encode(bk_tx[w], NULL)/* encode, get randomized ESI sequence */
 			), "");
 	}
@@ -332,7 +332,7 @@ int test_multi_seq_drop()
 	/* set up all RX books before decoding anything */
 	for (uint32_t w=0; w < width; w++) {
 		/* set up RX book */
-		Z_die_if(!(
+		NB_die_if(!(
 			bk_rx[w] = mfec_bk_next(&RX)		/* new book @ RX */
 			), "");
 	}
@@ -344,7 +344,7 @@ int test_multi_seq_drop()
 		for (int j=width-1; j == 0; j--) {
 			struct mfec_bk *bkTX = mfec_bk_get(&TX, j);
 			struct mfec_bk *bkRX = mfec_bk_get(&RX, j);
-			Z_die_if(!bkTX || !bkRX, "can't get books for seq %d", j);
+			NB_die_if(!bkTX || !bkRX, "can't get books for seq %d", j);
 			if (!mfec_decode(bkRX,
 					ffec_get_sym(&bkTX->hp->fp, &bkTX->fi, esi_seq[j][i]),
 					esi_seq[j][i]))
@@ -355,14 +355,14 @@ int test_multi_seq_drop()
 
 		for (int j=width-1; j == 0; j--) {
 			/* verify memory is identical */
-			Z_die_if(
+			NB_die_if(
 				memcmp(bk_tx[j]->fi.source, bk_rx[j]->fi.source, bk_tx[j]->hp->fs.source_sz)
 				, "j=%d", j);
 		}
 	}
 
 	/* print efficiency */
-	Z_log(Z_inf, "decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
+	NB_inf("decoded (average over %d width) pg=%ld < i=%ld < (pg+p)=%ld;\n\
 \tinefficiency=%lf; loss tolerance=%.2lf%%; FEC=%.2lf%%",
 		/*width*/width,
 		/*pg*/TX.syms_page, /*i*/i, /*pg+p*/TX.syms_page + bk_rx[0]->fi.cnt.p,
@@ -371,7 +371,7 @@ int test_multi_seq_drop()
 			/ ((double)TX.syms_page + bk_rx[0]->fi.cnt.p)) * 100,
 		/*FEC*/(bk_tx[0]->hp->fp.fec_ratio -1) * 100 * TX.width);
 
-out:
+die:
 	for (uint32_t w=0; w < width; w++)
 		if (esi_seq[w])
 			free(esi_seq[w]);
@@ -439,22 +439,22 @@ int main(int argc, char **argv)
 	parse_opts(argc, argv);
 	/* adjust FEC ratio to width */
 	fec_ratio = 1.0 + ((fec_ratio -1.0) / width);
-	Z_log(Z_inf, "effective fec_ratio adjusted to %.4f to account for width %d",
+	NB_inf("effective fec_ratio adjusted to %.4f to account for width %d",
 		fec_ratio, width);
-	Z_log(Z_inf, "effective region length (width * pg): %ldMB",
+	NB_inf("effective region length (width * pg): %ldMB",
 			(uint64_t)syms_page * sym_len * width / 1024 / 1024);
 
 	int err_cnt;
-	Z_log(Z_inf, "---- single-matrix test ----");
+	NB_inf("---- single-matrix test ----");
 	err_cnt += test_single();
 
-	Z_log(Z_inf, "---- single-circular matrix test ----");
+	NB_inf("---- single-circular matrix test ----");
 	err_cnt += test_circular();
 
-	Z_log(Z_inf, "---- multi test ----");
+	NB_inf("---- multi test ----");
 	err_cnt += test_multi();
 
-	Z_log(Z_inf, "---- multi seq drop test ----");
+	NB_inf("---- multi seq drop test ----");
 	err_cnt += test_multi_seq_drop();
 	return err_cnt;
 }

@@ -56,7 +56,7 @@ void		ffec_esi_rand_	(const struct ffec_instance	*fi)
 		fi->esi_seq[rand] = temp;
 	}
 
-	Z_prn_buf(Z_in2, fi->esi_seq, fi->cnt.n, "randomized ESI sequence:");
+	NB_dump(fi->esi_seq, fi->cnt.n, "randomized ESI sequence:");
 }
 
 
