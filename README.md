@@ -15,10 +15,11 @@ For some background data and math, please see:
 ## Design
 
 The design goal is a FEC codec optimized for:
-    a. speed and memory footprint
-    b. large objects: depending on 'fec_ratio' (see def. below),
-        anything 2GB or less should be OK.
-    c. low fec_ratios (i.e.: `<1.2` ... aka `<20%`)
+
+- speed and memory footprint
+- large objects: depending on 'fec_ratio' (see def. below),
+    anything 2GB or less should be OK.
+- low fec_ratios (i.e.: `<1.2` ... aka `<20%`)
 
 For these reasons it was chosen NOT to use gaussian elimination at the decoder.
 
