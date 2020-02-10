@@ -3,7 +3,6 @@ project('fastfec', 'c',
   version : '0.1.1',
   license : 'LGPL-2.1+',
   default_options : [
-    'b_coverage=true',
     'c_std=gnu11'
     ])
 description = 'Fast FEC library'
@@ -16,8 +15,6 @@ add_project_arguments([
     '-fasynchronous-unwind-tables',
     '-fexceptions',
     '-fstack-protector-strong',
-    '-pipe',
-    '-Wall',
     '-Werror=format-security',
     '-Werror=implicit-function-declaration'
     ],
